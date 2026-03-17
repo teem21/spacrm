@@ -5355,5 +5355,4 @@ function App() {
   );
 }
 
-// Entry point
-export default App;
+// Entry point — App is used globally from index.html

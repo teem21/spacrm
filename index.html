@@ -304,11 +304,13 @@
       try {
         const res = await fetch('app.jsx');
         let code = await res.text();
-        // Remove ES module export
-        code = code.replace(/^export\s+default\s+\w+;?\s*$/m, '');
-        // Transform JSX via Babel
+        // Remove any ES module imports/exports (not supported in classic scripts)
+        code = code.replace(/^export\s+default\s+\w+;?\s*$/gm, '');
+        code = code.replace(/^import\s+.*$/gm, '');
+        // Transform JSX via Babel (sourceType 'script' = no module syntax)
         const transformed = Babel.transform(code, {
           presets: ['react'],
+          sourceType: 'script',
           filename: 'app.jsx'
         }).code;
         // Execute

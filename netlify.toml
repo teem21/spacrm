@@ -1,0 +1,10 @@
+[build]
+  publish = "."
+  command = ""
+
+# Serve .jsx files with correct MIME type
+[[headers]]
+  for = "/*.jsx"
+  [headers.values]
+    Content-Type = "text/javascript; charset=utf-8"
+    Access-Control-Allow-Origin = "*"
