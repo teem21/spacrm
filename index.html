@@ -75,6 +75,7 @@
 
     // ── Supabase Storage Adapter ──
     // Implements the same { get, set, delete, list } API the app expects
+    (function() {
     const sb = window.supabaseClient;
 
     window.storage = {
@@ -214,6 +215,7 @@
         return { keys: [] };
       }
     };
+    })();
   </script>
 
   <!-- Shim: convert vanilla lucide icons into React components -->
