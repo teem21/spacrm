@@ -66,33 +66,31 @@ const UserStorage = {
   },
 
   async createUser(login, password, name, role) {
-    // Create via Supabase Auth signUp with metadata
-    // Use a secondary client to avoid logging out current admin
-    const tempClient = supabase.createClient(
-      window.SUPABASE_URL || 'https://uzjeunhutriqalzucgpe.supabase.co',
-      window.SUPABASE_ANON_KEY || sb.supabaseKey
-    );
+    // Create user via SQL function (bypasses email confirmation)
     const email = login + "@example.com";
-    const { data, error } = await tempClient.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name, login, role },
-      },
+    const { data, error } = await sb.rpc('create_confirmed_user', {
+      p_email: email,
+      p_password: password,
+      p_name: name,
+      p_login: login,
+      p_role: role,
     });
     if (error) return { error: error.message };
-    return { user: { id: data.user.id, name, login, role } };
+    return { user: { id: data, name, login, role } };
   },
 
   async deleteUser(userId) {
-    // Delete profile (auth user remains but profile is gone = effectively disabled)
-    const { error } = await sb.from("profiles").delete().eq("id", userId);
+    // Delete auth user (profile cascades via FK)
+    const { error } = await sb.rpc('delete_auth_user', { p_user_id: userId });
     if (error) console.error("deleteUser error:", error);
   },
 
   async updatePassword(userId, newPassword) {
-    // Only works for current user via Supabase Auth
-    const { error } = await sb.auth.updateUser({ password: newPassword });
+    // Update password via SQL function
+    const { error } = await sb.rpc('update_user_password', {
+      p_user_id: userId,
+      p_new_password: newPassword,
+    });
     if (error) return { error: error.message };
     return { ok: true };
   },
@@ -135,18 +133,15 @@ const UserStorage = {
   },
 
   async initDefaultAdmin() {
-    // Check if any profiles exist; if not, create default admin via signUp
+    // Check if any profiles exist; if not, create default admin via SQL function
     const { count } = await sb.from("profiles").select("*", { count: "exact", head: true });
     if (count === 0) {
-      const email = "admin@example.com";
-      const tempClient = supabase.createClient(
-        'https://uzjeunhutriqalzucgpe.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6amV1bmh1dHJpcWFsenVjZ3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MDAxNzYsImV4cCI6MjA4OTI3NjE3Nn0._17Iv4Vav439wpzEUD8jsQ8UoflBKMh1e-EqyWmwPt4'
-      );
-      const { error } = await tempClient.auth.signUp({
-        email,
-        password: "admin123",
-        options: { data: { name: "Администратор", login: "admin", role: "admin" } },
+      const { error } = await sb.rpc('create_confirmed_user', {
+        p_email: 'admin@example.com',
+        p_password: 'admin123',
+        p_name: 'Администратор',
+        p_login: 'admin',
+        p_role: 'admin',
       });
       if (error) console.error("initDefaultAdmin error:", error);
     }
