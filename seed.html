@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Seed Test Data</title>
+  <style>
+    body { background: #0B0F14; color: #e0e0e0; font-family: monospace; padding: 40px; }
+    button { padding: 12px 24px; font-size: 16px; cursor: pointer; border-radius: 8px; border: none; background: #6C5CE7; color: #fff; margin: 8px; }
+    button:hover { background: #7e6ff0; }
+    button.danger { background: #E74C3C; }
+    button.danger:hover { background: #C0392B; }
+    pre { background: #1a1e26; padding: 16px; border-radius: 8px; margin-top: 16px; overflow: auto; max-height: 400px; }
+  </style>
+</head>
+<body>
+  <h2>Генерация тестовых данных для CRM (Supabase)</h2>
+  <p>Будут созданы 2 салона с записями на март 2026</p>
+  <button onclick="seed()">Сгенерировать данные</button>
+  <button class="danger" onclick="clearAll()">Очистить всё в Supabase</button>
+  <pre id="log"></pre>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://uzjeunhutriqalzucgpe.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6amV1bmh1dHJpcWFsenVjZ3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MDAxNzYsImV4cCI6MjA4OTI3NjE3Nn0._17Iv4Vav439wpzEUD8jsQ8UoflBKMh1e-EqyWmwPt4';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const log = (msg) => { document.getElementById('log').textContent += msg + '\n'; };
+    const makeId = () => Math.random().toString(36).slice(2, 10);
+    const minsToTime = (m) => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+    function randomPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function toSnake(s) { return s.replace(/([A-Z])/g, '_$1').toLowerCase(); }
+    function objToSnake(o) {
+      if (!o || typeof o !== 'object' || Array.isArray(o)) return o;
+      const out = {};
+      for (const k in o) out[toSnake(k)] = o[k];
+      return out;
+    }
+
+    const clientNames = [
+      "Анна Иванова", "Мария Петрова", "Елена Сидорова", "Ольга Козлова",
+      "Наталья Морозова", "Татьяна Волкова", "Светлана Лебедева", "Ирина Новикова",
+      "Екатерина Соколова", "Дарья Попова", "Юлия Павлова", "Алина Васильева",
+      "Полина Кузнецова", "Виктория Смирнова", "Александра Фёдорова", "Ксения Михайлова",
+      "Валерия Егорова", "Диана Орлова", "Софья Андреева", "Арина Макарова"
+    ];
+    const phones = [
+      "+7 701 123 4567", "+7 702 234 5678", "+7 705 345 6789", "+7 707 456 7890",
+      "+7 708 567 8901", "+7 771 678 9012", "+7 775 789 0123", "+7 776 890 1234",
+      "+7 777 901 2345", "+7 778 012 3456"
+    ];
+
+    const procedureTemplates = [
+      { name: "Тайский массаж 1ч",    category: "massage", duration: 60,  price: 5000, therapists_required: 1 },
+      { name: "Тайский массаж 1.5ч",  category: "massage", duration: 90,  price: 7000, therapists_required: 1 },
+      { name: "Тайский массаж 2ч",    category: "massage", duration: 120, price: 9000, therapists_required: 1 },
+      { name: "Ойл массаж 1ч",        category: "massage", duration: 60,  price: 5000, therapists_required: 1 },
+      { name: "Ойл массаж 1.5ч",      category: "massage", duration: 90,  price: 7000, therapists_required: 1 },
+      { name: "Массаж в 4 руки 1ч",   category: "massage", duration: 60,  price: 9000, therapists_required: 2 },
+      { name: "Сауна",                 category: "sauna",   duration: 60,  price: 3000, therapists_required: 0 },
+      { name: "Пиллинг",               category: "peeling", duration: 30,  price: 2000, therapists_required: 1 },
+    ];
+
+    function generateBooking(salonId, date, procList) {
+      const proc = randomPick(procList);
+      const startHour = randomInt(10, 20);
+      const startMin = randomPick([0, 15, 30, 45]);
+      const startM = startHour * 60 + startMin;
+      const endM = startM + proc.duration;
+      const clientCount = proc.category === "massage" ? randomInt(1, 2) : randomInt(1, 3);
+      const isSauna = proc.category === "sauna";
+      const isPeeling = proc.category === "peeling";
+
+      const today = new Date(); today.setHours(0,0,0,0);
+      const bDate = new Date(date + "T00:00:00");
+      let status;
+      if (bDate < today) {
+        const r = Math.random();
+        if (r < 0.50) status = "completed";
+        else if (r < 0.70) status = "booked";
+        else if (r < 0.80) status = "cancelled_refund";
+        else if (r < 0.90) status = "cancelled_no_refund";
+        else status = "no-show";
+      } else {
+        status = "booked";
+      }
+
+      const roomId = isSauna || isPeeling ? null : `${salonId}-room-1`;
+
+      return {
+        id: makeId(),
+        salon_id: salonId,
+        date,
+        client_name: randomPick(clientNames),
+        client_phone: randomPick(phones),
+        client_count: clientCount,
+        booking_type: "single_procedure",
+        procedure_id: proc.id,
+        combo_id: null,
+        segments: [{
+          procedureId: proc.id,
+          procedureName: proc.name,
+          startTime: minsToTime(startM),
+          endTime: minsToTime(endM),
+          roomId,
+          therapistCount: isSauna ? 0 : clientCount * proc.therapists_required,
+          resourceType: isSauna ? "sauna" : isPeeling ? "peeling" : "room",
+        }],
+        total_start_time: minsToTime(startM),
+        total_end_time: minsToTime(endM + 15),
+        total_price: proc.price * clientCount,
+        status,
+        created_at: new Date().toISOString(),
+        notes: "",
+      };
+    }
+
+    async function seed() {
+      log("Начинаю генерацию...");
+
+      // First, sign in as admin to pass RLS
+      log("Авторизация как admin...");
+      const { error: authErr } = await sb.auth.signInWithPassword({
+        email: "admin@example.com",
+        password: "admin123",
+      });
+      if (authErr) {
+        log("⚠️ Не удалось войти как admin: " + authErr.message);
+        log("Создаю admin аккаунт...");
+        const { error: signUpErr } = await sb.auth.signUp({
+          email: "admin@example.com",
+          password: "admin123",
+          options: { data: { name: "Администратор", login: "admin", role: "admin" } },
+        });
+        if (signUpErr) {
+          log("❌ Ошибка создания admin: " + signUpErr.message);
+          return;
+        }
+        // Sign in after signup
+        const { error: authErr2 } = await sb.auth.signInWithPassword({
+          email: "admin@example.com",
+          password: "admin123",
+        });
+        if (authErr2) {
+          log("❌ Ошибка входа после создания: " + authErr2.message);
+          return;
+        }
+      }
+      log("✓ Авторизация успешна");
+
+      // Create salons
+      const salons = [
+        {
+          id: "salon-1", name: "Тай Спа Центр",
+          rooms: [
+            { id: "salon-1-room-1", name: "Кабинка 1", beds: 2 },
+            { id: "salon-1-room-2", name: "Кабинка 2", beds: 2 },
+            { id: "salon-1-room-3", name: "VIP Кабинка", beds: 3 },
+          ],
+          therapist_count: 6,
+          has_sauna: true, sauna_capacity: 4, sauna_duration: 60,
+          has_peeling: true, peeling_max_per_hour: 4, peeling_masters_max: 2, peeling_time_per_person: 30,
+          work_start: "10:00", work_end: "22:00", day_off: "monday", buffer_minutes: 15,
+        },
+        {
+          id: "salon-2", name: "Релакс & СПА",
+          rooms: [
+            { id: "salon-2-room-1", name: "Кабинка 1", beds: 2 },
+            { id: "salon-2-room-2", name: "Кабинка 2", beds: 2 },
+          ],
+          therapist_count: 4,
+          has_sauna: true, sauna_capacity: 3, sauna_duration: 60,
+          has_peeling: true, peeling_max_per_hour: 3, peeling_masters_max: 1, peeling_time_per_person: 30,
+          work_start: "10:00", work_end: "21:00", day_off: "sunday", buffer_minutes: 15,
+        }
+      ];
+
+      const { error: salonErr } = await sb.from("salons").upsert(salons, { onConflict: "id" });
+      if (salonErr) { log("❌ Ошибка салонов: " + salonErr.message); return; }
+      log("✓ Созданы 2 салона");
+
+      for (const salon of salons) {
+        // Create procedures
+        const procList = procedureTemplates.map(p => ({
+          id: makeId(), salon_id: salon.id, name: p.name,
+          category: p.category, duration: p.duration, price: p.price,
+          therapists_required: p.therapists_required, is_active: true,
+        }));
+
+        // Delete old procedures for this salon first
+        await sb.from("procedures").delete().eq("salon_id", salon.id);
+        const { error: procErr } = await sb.from("procedures").insert(procList);
+        if (procErr) { log("❌ Процедуры " + salon.name + ": " + procErr.message); continue; }
+        log(`✓ ${salon.name}: ${procList.length} процедур`);
+
+        // Generate bookings
+        const bookings = [];
+        for (let day = 1; day <= 31; day++) {
+          const dateStr = `2026-03-${String(day).padStart(2, '0')}`;
+          const d = new Date(dateStr + "T00:00:00");
+          if (d.getMonth() !== 2) continue;
+          const dayOfWeek = d.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+          if (dayOfWeek === salon.day_off) continue;
+
+          const count = randomInt(3, 7);
+          for (let i = 0; i < count; i++) {
+            bookings.push(generateBooking(salon.id, dateStr, procList));
+          }
+        }
+
+        // Delete old bookings for this salon in March
+        await sb.from("bookings").delete()
+          .eq("salon_id", salon.id)
+          .gte("date", "2026-03-01")
+          .lte("date", "2026-03-31");
+
+        // Insert in batches of 100 (Supabase limit)
+        for (let i = 0; i < bookings.length; i += 100) {
+          const batch = bookings.slice(i, i + 100);
+          const { error: bookErr } = await sb.from("bookings").insert(batch);
+          if (bookErr) { log("❌ Записи " + salon.name + " batch " + i + ": " + bookErr.message); }
+        }
+        log(`✓ ${salon.name}: ${bookings.length} записей на март 2026`);
+
+        // Empty combos (just delete old ones)
+        await sb.from("combos").delete().eq("salon_id", salon.id);
+      }
+
+      log("\n✅ Готово! Перейдите в CRM и обновите страницу (Ctrl+Shift+R)");
+    }
+
+    async function clearAll() {
+      log("Авторизация...");
+      const { error: authErr } = await sb.auth.signInWithPassword({
+        email: "admin@example.com", password: "admin123",
+      });
+      if (authErr) { log("❌ Не удалось войти: " + authErr.message); return; }
+
+      log("Удаление данных...");
+      await sb.from("bookings").delete().neq("id", "");
+      await sb.from("procedures").delete().neq("id", "");
+      await sb.from("combos").delete().neq("id", "");
+      await sb.from("activity_logs").delete().neq("id", "");
+      await sb.from("salons").delete().neq("id", "");
+      log("✅ Все данные удалены из Supabase");
+    }
+  </script>
+</body>
+</html>

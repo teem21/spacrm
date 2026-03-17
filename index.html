@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPA CRM</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0B0F14; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React 18 (dev for error messages) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- Lucide vanilla (for icon SVG data) -->
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+
+  <!-- Babel standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <!-- Supabase-backed Storage Adapter -->
+  <script>
+    const SUPABASE_URL = 'https://uzjeunhutriqalzucgpe.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6amV1bmh1dHJpcWFsenVjZ3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MDAxNzYsImV4cCI6MjA4OTI3NjE3Nn0._17Iv4Vav439wpzEUD8jsQ8UoflBKMh1e-EqyWmwPt4';
+
+    window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ── camelCase ↔ snake_case helpers ──
+    function toSnake(s) { return s.replace(/([A-Z])/g, '_$1').toLowerCase(); }
+    function toCamel(s) { return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase()); }
+    function objToSnake(o) {
+      if (!o || typeof o !== 'object' || Array.isArray(o)) return o;
+      const out = {};
+      for (const k in o) out[toSnake(k)] = o[k];
+      return out;
+    }
+    function objToCamel(o) {
+      if (!o || typeof o !== 'object' || Array.isArray(o)) return o;
+      const out = {};
+      for (const k in o) out[toCamel(k)] = o[k];
+      return out;
+    }
+
+    // ── Parse storage key → { table, filters } ──
+    function parseKey(key) {
+      if (key === 'spa-crm:salons') return { table: 'salons' };
+      if (key === 'spa-crm:users') return { table: 'profiles' };
+      if (key === 'spa-crm:activity-logs') return { table: 'activity_logs' };
+      if (key === 'spa-crm:current-user') return { table: '__session__' };
+
+      const procMatch = key.match(/^spa-crm:procedures:(.+)$/);
+      if (procMatch) return { table: 'procedures', filters: { salon_id: procMatch[1] } };
+
+      const comboMatch = key.match(/^spa-crm:combos:(.+)$/);
+      if (comboMatch) return { table: 'combos', filters: { salon_id: comboMatch[1] } };
+
+      const bookMatch = key.match(/^spa-crm:bookings:([^:]+):(\d{4}-\d{2})$/);
+      if (bookMatch) return { table: 'bookings', filters: { salon_id: bookMatch[1], ym: bookMatch[2] } };
+
+      return null;
+    }
+
+    // ── Date helpers for month range ──
+    function ymToRange(ym) {
+      const [y, m] = ym.split('-').map(Number);
+      const from = ym + '-01';
+      const lastDay = new Date(y, m, 0).getDate();
+      const to = ym + '-' + String(lastDay).padStart(2, '0');
+      return { from, to };
+    }
+
+    // ── Supabase Storage Adapter ──
+    // Implements the same { get, set, delete, list } API the app expects
+    const sb = window.supabaseClient;
+
+    window.storage = {
+      async get(key) {
+        const parsed = parseKey(key);
+        if (!parsed) return null;
+
+        // Session: handled by Supabase Auth
+        if (parsed.table === '__session__') {
+          const { data: { session } } = await sb.auth.getSession();
+          if (!session) return null;
+          const { data: profile } = await sb.from('profiles')
+            .select('*').eq('id', session.user.id).single();
+          if (!profile) return null;
+          const user = { id: profile.id, name: profile.name, login: profile.login, role: profile.role };
+          return { value: JSON.stringify(user) };
+        }
+
+        let query = sb.from(parsed.table).select('*');
+
+        if (parsed.filters) {
+          if (parsed.filters.salon_id) query = query.eq('salon_id', parsed.filters.salon_id);
+          if (parsed.filters.ym) {
+            const range = ymToRange(parsed.filters.ym);
+            query = query.gte('date', range.from).lte('date', range.to);
+          }
+        }
+
+        if (parsed.table === 'activity_logs') query = query.order('timestamp', { ascending: false });
+
+        const { data, error } = await query;
+        if (error) { console.error('Supabase get error:', error); return null; }
+        if (!data || data.length === 0) return { value: JSON.stringify([]) };
+
+        // Convert snake_case → camelCase
+        const camelData = data.map(row => {
+          const c = objToCamel(row);
+          // Preserve JSONB fields as-is (rooms, steps, segments)
+          if (row.rooms !== undefined) c.rooms = row.rooms;
+          if (row.steps !== undefined) c.steps = row.steps;
+          if (row.segments !== undefined) c.segments = row.segments;
+          return c;
+        });
+        return { value: JSON.stringify(camelData) };
+      },
+
+      async set(key, value) {
+        const parsed = parseKey(key);
+        if (!parsed) return;
+
+        // Session: handled by Supabase Auth (no-op here, login sets it)
+        if (parsed.table === '__session__') return;
+
+        const items = JSON.parse(value);
+        if (!Array.isArray(items)) return;
+
+        // Convert camelCase → snake_case for each row
+        const snakeItems = items.map(item => {
+          const s = objToSnake(item);
+          // Preserve JSONB fields
+          if (item.rooms !== undefined) s.rooms = item.rooms;
+          if (item.steps !== undefined) s.steps = item.steps;
+          if (item.segments !== undefined) s.segments = item.segments;
+          return s;
+        });
+
+        // For partitioned data (procedures, combos, bookings per salon/month),
+        // delete existing rows first, then insert new ones
+        if (parsed.filters) {
+          let delQuery = sb.from(parsed.table);
+          if (parsed.filters.salon_id) delQuery = delQuery.eq('salon_id', parsed.filters.salon_id);
+          if (parsed.filters.ym) {
+            const range = ymToRange(parsed.filters.ym);
+            delQuery = delQuery.gte('date', range.from).lte('date', range.to);
+          }
+          await delQuery.delete();
+        } else if (parsed.table === 'salons') {
+          // Salons: upsert all
+        } else if (parsed.table === 'profiles') {
+          // Users: handled by UserStorage, not here
+          return;
+        } else if (parsed.table === 'activity_logs') {
+          // Logs: append only — find new entries and insert them
+          const { data: existing } = await sb.from('activity_logs').select('id');
+          const existingIds = new Set((existing || []).map(e => e.id));
+          const newItems = snakeItems.filter(i => !existingIds.has(i.id));
+          if (newItems.length > 0) {
+            const { error } = await sb.from('activity_logs').insert(newItems);
+            if (error) console.error('Supabase log insert error:', error);
+          }
+          return;
+        }
+
+        if (snakeItems.length === 0) return;
+
+        if (parsed.table === 'salons') {
+          const { error } = await sb.from('salons').upsert(snakeItems, { onConflict: 'id' });
+          if (error) console.error('Supabase salons upsert error:', error);
+        } else {
+          const { error } = await sb.from(parsed.table).insert(snakeItems);
+          if (error) console.error('Supabase insert error:', error);
+        }
+      },
+
+      async delete(key) {
+        const parsed = parseKey(key);
+        if (!parsed) return;
+        if (parsed.table === '__session__') {
+          await sb.auth.signOut();
+          return;
+        }
+        let query = sb.from(parsed.table);
+        if (parsed.filters) {
+          if (parsed.filters.salon_id) query = query.eq('salon_id', parsed.filters.salon_id);
+          if (parsed.filters.ym) {
+            const range = ymToRange(parsed.filters.ym);
+            query = query.gte('date', range.from).lte('date', range.to);
+          }
+          await query.delete();
+        }
+        // For top-level keys (salons, users, logs) — delete all is dangerous, skip
+      },
+
+      async list(prefix) {
+        // Only used for "spa-crm:bookings:" — dashboard loads all bookings
+        if (prefix === 'spa-crm:bookings:') {
+          const { data } = await sb.from('bookings')
+            .select('salon_id, date');
+          if (!data) return { keys: [] };
+          const keySet = new Set();
+          data.forEach(row => {
+            const ym = row.date.slice(0, 7);
+            keySet.add(`spa-crm:bookings:${row.salon_id}:${ym}`);
+          });
+          return { keys: Array.from(keySet) };
+        }
+        return { keys: [] };
+      }
+    };
+  </script>
+
+  <!-- Shim: convert vanilla lucide icons into React components -->
+  <script>
+    (function() {
+      // Vanilla lucide exposes icon nodes via lucide.icons
+      // Each icon is [name, [["tag", {attrs}], ...]]
+      // We wrap them as React components compatible with lucide-react API
+      function createReactIcon(iconNode) {
+        return function LucideIcon(props) {
+          var size = props.size || 24;
+          var color = props.color || 'currentColor';
+          var strokeWidth = props.strokeWidth || 2;
+          var fill = props.fill || 'none';
+          var className = props.className || '';
+          var style = props.style || {};
+          var onClick = props.onClick;
+
+          var children = iconNode.map(function(node, i) {
+            var tag = node[0];
+            var attrs = Object.assign({}, node[1], { key: i });
+            return React.createElement(tag, attrs);
+          });
+
+          return React.createElement('svg', {
+            xmlns: 'http://www.w3.org/2000/svg',
+            width: size,
+            height: size,
+            viewBox: '0 0 24 24',
+            fill: fill,
+            stroke: color,
+            strokeWidth: strokeWidth,
+            strokeLinecap: 'round',
+            strokeLinejoin: 'round',
+            className: className,
+            style: style,
+            onClick: onClick
+          }, children);
+        };
+      }
+
+      // Map of icon names used in app.jsx
+      var iconNames = [
+        'Gem', 'Settings', 'Calendar', 'BookOpen', 'LayoutDashboard',
+        'Loader2', 'Plus', 'Trash2', 'ChevronLeft', 'ChevronRight',
+        'ChevronUp', 'ChevronDown', 'Check', 'X', 'Moon', 'Phone', 'Search',
+        'Users', 'LogOut', 'Shield', 'Eye', 'EyeOff', 'ClipboardList', 'UserPlus', 'Lock'
+      ];
+
+      // lucide vanilla stores icon data in lucide.icons as { iconName: [nodes] }
+      // but the keys are kebab-case, e.g. "book-open", "chevron-left"
+      function toKebab(name) {
+        return name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+                    .replace('layout-dashboard', 'layout-dashboard');
+      }
+
+      var lucideReact = {};
+      iconNames.forEach(function(name) {
+        var kebab = toKebab(name);
+        var raw = lucide.icons && (lucide.icons[name] || lucide.icons[kebab]);
+        // lucide UMD icons are ["svg", {defaultAttrs}, [children...]] tuples
+        var iconData = raw && Array.isArray(raw) && raw.length === 3 && Array.isArray(raw[2]) ? raw[2] : raw;
+        if (iconData) {
+          lucideReact[name] = createReactIcon(iconData);
+        } else {
+          // Fallback: empty icon
+          console.warn('Lucide icon not found:', name, '(kebab:', kebab, ')');
+          lucideReact[name] = function(props) {
+            var size = props.size || 24;
+            return React.createElement('svg', {
+              width: size, height: size, viewBox: '0 0 24 24'
+            });
+          };
+        }
+      });
+
+      // Override global lucide with React components
+      window.lucide = lucideReact;
+    })();
+  </script>
+
+  <!-- Fetch app.jsx, transform, and mount -->
+  <script>
+    (async () => {
+      try {
+        const res = await fetch('app.jsx');
+        let code = await res.text();
+        // Remove ES module export
+        code = code.replace(/^export\s+default\s+\w+;?\s*$/m, '');
+        // Transform JSX via Babel
+        const transformed = Babel.transform(code, {
+          presets: ['react'],
+          filename: 'app.jsx'
+        }).code;
+        // Execute
+        const script = document.createElement('script');
+        script.textContent = transformed;
+        document.body.appendChild(script);
+        // Mount
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+      } catch (err) {
+        console.error('Failed to load app:', err);
+        document.getElementById('root').innerHTML =
+          '<div style="color:red;padding:40px;font-family:monospace">' +
+          '<h2>Error loading app</h2><pre>' + err.message + '</pre></div>';
+      }
+    })();
+  </script>
+</body>
+</html>
