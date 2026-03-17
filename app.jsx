@@ -5355,4 +5355,5 @@ function App() {
   );
 }
 
-// Entry point — App is used globally from index.html
+// Entry point — expose globally for index.html
+window.App = App;

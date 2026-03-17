@@ -298,13 +298,35 @@
     })();
   </script>
 
-  <!-- Load app.jsx via Babel Standalone (native JSX support) -->
-  <script type="text/babel" data-presets="react" data-type="script" src="app.jsx"></script>
+  <!-- Fetch app.jsx, transform with Babel, and mount -->
+  <script>
+    (async () => {
+      try {
+        const res = await fetch('app.jsx');
+        if (!res.ok) throw new Error('Failed to fetch app.jsx: ' + res.status);
+        let code = await res.text();
+        if (code.startsWith('<!')) throw new Error('app.jsx returned HTML instead of JS — check Netlify deploy');
 
-  <!-- Mount React app (runs after app.jsx is processed) -->
-  <script type="text/babel" data-presets="react" data-type="script">
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+        // Transform JSX via Babel
+        const transformed = Babel.transform(code, {
+          presets: ['react'],
+          sourceType: 'script',
+          filename: 'app.jsx'
+        }).code;
+
+        // Execute — use eval so errors are catchable
+        (0, eval)(transformed);
+
+        // Mount
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(window.App));
+      } catch (err) {
+        console.error('Failed to load app:', err);
+        document.getElementById('root').innerHTML =
+          '<div style="color:red;padding:40px;font-family:monospace">' +
+          '<h2>Error loading app</h2><pre>' + err.stack + '</pre></div>';
+      }
+    })();
   </script>
 </body>
 </html>
