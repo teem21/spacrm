@@ -5151,10 +5151,21 @@ function App() {
     })();
   }, [loadSalonData]);
 
-  const handleLogin = useCallback((user) => {
+  const handleLogin = useCallback(async (user) => {
     setCurrentUser({ id: user.id, name: user.name, login: user.login, role: user.role });
     if (user.role === "worker") setActiveTab("schedule");
-  }, []);
+    // Re-check salons after login (initial load may have been unauthenticated)
+    const savedSalons = await Storage.get(KEYS.salons);
+    if (savedSalons && savedSalons.length > 0) {
+      setSalons(savedSalons);
+      const firstId = savedSalons[0].id;
+      setActiveSalonId(firstId);
+      await loadSalonData(firstId);
+      setNeedsOnboarding(false);
+    } else {
+      setNeedsOnboarding(true);
+    }
+  }, [loadSalonData]);
 
   const handleLogout = useCallback(async () => {
     await UserStorage.clearCurrentUser();
