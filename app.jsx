@@ -66,31 +66,38 @@ const UserStorage = {
   },
 
   async createUser(login, password, name, role) {
-    // Create user via SQL function (bypasses email confirmation)
     const email = login + "@example.com";
-    const { data, error } = await sb.rpc('create_confirmed_user', {
-      p_email: email,
-      p_password: password,
-      p_name: name,
-      p_login: login,
-      p_role: role,
+    // Save current admin session before signUp (signUp creates a new session)
+    const { data: { session: adminSession } } = await sb.auth.getSession();
+    const { data, error } = await sb.auth.signUp({
+      email, password,
+      options: { data: { name, login, role } },
     });
     if (error) return { error: error.message };
-    return { user: { id: data, name, login, role } };
+    // Restore admin session
+    if (adminSession) {
+      await sb.auth.setSession({
+        access_token: adminSession.access_token,
+        refresh_token: adminSession.refresh_token,
+      });
+    }
+    const newId = data.user?.id;
+    // Ensure profile exists (trigger may handle this, but just in case)
+    if (newId) {
+      await sb.from("profiles").upsert({ id: newId, name, login, role }, { onConflict: "id" });
+    }
+    return { user: { id: newId, name, login, role } };
   },
 
   async deleteUser(userId) {
-    // Delete auth user (profile cascades via FK)
-    const { error } = await sb.rpc('delete_auth_user', { p_user_id: userId });
+    // Delete profile (auth.users entry remains but user can't access CRM without profile)
+    const { error } = await sb.from("profiles").delete().eq("id", userId);
     if (error) console.error("deleteUser error:", error);
   },
 
   async updatePassword(userId, newPassword) {
-    // Update password via SQL function
-    const { error } = await sb.rpc('update_user_password', {
-      p_user_id: userId,
-      p_new_password: newPassword,
-    });
+    // Updates the currently logged-in user's password via Supabase Auth
+    const { error } = await sb.auth.updateUser({ password: newPassword });
     if (error) return { error: error.message };
     return { ok: true };
   },
@@ -133,17 +140,17 @@ const UserStorage = {
   },
 
   async initDefaultAdmin() {
-    // Check if any profiles exist; if not, create default admin via SQL function
+    // Check if any profiles exist; if not, create default admin via signUp
     const { count } = await sb.from("profiles").select("*", { count: "exact", head: true });
     if (count === 0) {
-      const { error } = await sb.rpc('create_confirmed_user', {
-        p_email: 'admin@example.com',
-        p_password: 'admin123',
-        p_name: 'Администратор',
-        p_login: 'admin',
-        p_role: 'admin',
+      const { data, error } = await sb.auth.signUp({
+        email: 'admin@example.com',
+        password: 'admin123',
+        options: { data: { name: 'Администратор', login: 'admin', role: 'admin' } },
       });
       if (error) console.error("initDefaultAdmin error:", error);
+      // Sign out so user lands on login page
+      await sb.auth.signOut();
     }
   },
 
