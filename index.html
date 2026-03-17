@@ -298,35 +298,13 @@
     })();
   </script>
 
-  <!-- Fetch app.jsx, transform, and mount -->
-  <script>
-    (async () => {
-      try {
-        const res = await fetch('app.jsx');
-        let code = await res.text();
-        // Remove any ES module imports/exports (not supported in classic scripts)
-        code = code.replace(/^export\s+default\s+\w+;?\s*$/gm, '');
-        code = code.replace(/^import\s+.*$/gm, '');
-        // Transform JSX via Babel (sourceType 'script' = no module syntax)
-        const transformed = Babel.transform(code, {
-          presets: ['react'],
-          sourceType: 'script',
-          filename: 'app.jsx'
-        }).code;
-        // Execute
-        const script = document.createElement('script');
-        script.textContent = transformed;
-        document.body.appendChild(script);
-        // Mount
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(App));
-      } catch (err) {
-        console.error('Failed to load app:', err);
-        document.getElementById('root').innerHTML =
-          '<div style="color:red;padding:40px;font-family:monospace">' +
-          '<h2>Error loading app</h2><pre>' + err.message + '</pre></div>';
-      }
-    })();
+  <!-- Load app.jsx via Babel Standalone (native JSX support) -->
+  <script type="text/babel" data-presets="react" data-type="script" src="app.jsx"></script>
+
+  <!-- Mount React app (runs after app.jsx is processed) -->
+  <script type="text/babel" data-presets="react" data-type="script">
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
   </script>
 </body>
 </html>
