@@ -1,0 +1,11 @@
+{
+  "name": "spa-crm",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild app.jsx --outfile=app.js --loader:.jsx=jsx --minify --target=es2020"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.5"
+  }
+}

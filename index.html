@@ -12,15 +12,12 @@
 <body>
   <div id="root"></div>
 
-  <!-- React 18 (dev for error messages) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- React 18 (production) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
   <!-- Lucide vanilla (for icon SVG data) -->
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
-
-  <!-- Babel standalone for JSX -->
-  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
 
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -298,35 +295,11 @@
     })();
   </script>
 
-  <!-- Fetch app.jsx, transform with Babel, and mount -->
+  <!-- Pre-built app (JSX compiled at deploy time by esbuild) -->
+  <script src="app.js"></script>
   <script>
-    (async () => {
-      try {
-        const res = await fetch('app.jsx');
-        if (!res.ok) throw new Error('Failed to fetch app.jsx: ' + res.status);
-        let code = await res.text();
-        if (code.startsWith('<!')) throw new Error('app.jsx returned HTML instead of JS — check Netlify deploy');
-
-        // Transform JSX via Babel
-        const transformed = Babel.transform(code, {
-          presets: ['react'],
-          sourceType: 'script',
-          filename: 'app.jsx'
-        }).code;
-
-        // Execute — use eval so errors are catchable
-        (0, eval)(transformed);
-
-        // Mount
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(window.App));
-      } catch (err) {
-        console.error('Failed to load app:', err);
-        document.getElementById('root').innerHTML =
-          '<div style="color:red;padding:40px;font-family:monospace">' +
-          '<h2>Error loading app</h2><pre>' + err.stack + '</pre></div>';
-      }
-    })();
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(window.App));
   </script>
 </body>
 </html>
