@@ -3296,6 +3296,17 @@ const STATUS_CFG = {
   "no-show":           { label: "Неявка",             color: "#FBBF24" },
 };
 
+const OVERDUE_CFG = { label: "Требуется изменить статус", color: "#F97316" };
+
+function isBookingOverdue(b) {
+  if (b.status !== "booked") return false;
+  const now = new Date();
+  const endDate = parseLocal(b.date);
+  const [eh, em] = (b.totalEndTime || "23:59").split(":").map(Number);
+  endDate.setHours(eh, em, 0, 0);
+  return now > endDate;
+}
+
 function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDelete, onClose }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const panelRef = useRef(null);
@@ -3313,7 +3324,8 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
 
   const isCombo = booking.bookingType === "combo";
   const segments = booking.segments || [];
-  const statusCfg = STATUS_CFG[booking.status] || STATUS_CFG.booked;
+  const overdue = isBookingOverdue(booking);
+  const statusCfg = overdue ? OVERDUE_CFG : (STATUS_CFG[booking.status] || STATUS_CFG.booked);
 
   // For single procedure — find room name
   const roomSeg = segments.find(s => s.resourceType === "room" && s.roomId);
@@ -3769,7 +3781,8 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                 // Day KPI
                 const active = dayBkgs.filter(b => b.status !== "cancelled_refund" && b.status !== "cancelled_no_refund");
                 const paid = dayBkgs.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "cert_dep");
-                const booked = dayBkgs.filter(b => b.status === "booked").length;
+                const overdueCount = dayBkgs.filter(b => isBookingOverdue(b)).length;
+                const booked = dayBkgs.filter(b => b.status === "booked" && !isBookingOverdue(b)).length;
                 const completed = dayBkgs.filter(b => b.status === "completed").length;
                 const clients = active.reduce((s, b) => s + (b.clientCount || 1), 0);
                 const revenue = paid.reduce((s, b) => s + (b.totalPrice || 0), 0);
@@ -3830,6 +3843,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                             {active.length} {active.length === 1 ? "запись" : active.length < 5 ? "записи" : "записей"}
                           </span>
                           <span style={{ fontSize: 11, color: C.textSub }}>{clients} кл.</span>
+                          {overdueCount > 0 && <span style={{ fontSize: 11, color: "#F97316", fontWeight: 600 }}>● {overdueCount} треб. статус</span>}
                           {booked > 0 && <span style={{ fontSize: 11, color: "#D4A84B" }}>● {booked} ожид.</span>}
                           {completed > 0 && <span style={{ fontSize: 11, color: "#4ADE80" }}>● {completed} выполн.</span>}
                           {revenue > 0 && <span style={{ fontSize: 11, color: C.accent, fontWeight: 600 }}>{revenue.toLocaleString("ru-RU")} ₸</span>}
@@ -4297,7 +4311,8 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
           </div>
         ) : pageItems.map((b, i) => {
           const bg = i % 2 === 0 ? C.card : C.gridBg;
-          const sCfg = STATUS_CFG[b.status] || STATUS_CFG.booked;
+          const bOverdue = isBookingOverdue(b);
+          const sCfg = bOverdue ? OVERDUE_CFG : (STATUS_CFG[b.status] || STATUS_CFG.booked);
           return (
             <div key={b.id} style={{
               display: "flex", padding: "0 12px", height: 42, alignItems: "center",
@@ -4573,12 +4588,15 @@ function DashboardScreen({ salons }) {
     const keptDeposit = keptBks.reduce((a, b) => a + (b.totalPrice || 0), 0);
     const keptCount = keptBks.reduce((a, b) => a + (b.clientCount || 1), 0);
 
+    // Overdue bookings (past time, still "booked")
+    const overdueBookings = active.filter(b => isBookingOverdue(b)).length;
+
     // Payment method breakdown
     const pmBreakdown = {};
     for (const pm of PAYMENT_METHODS) pmBreakdown[pm.value] = 0;
     for (const b of active) pmBreakdown[b.paymentMethod || "cash"] = (pmBreakdown[b.paymentMethod || "cash"] || 0) + 1;
 
-    return { totalBookings, totalClients, revenue, avgCheck, roomPct, therPct, refunded, refundedCount, keptDeposit, keptCount, certDepCount, certDepOriginalPrice, pmBreakdown };
+    return { totalBookings, totalClients, revenue, avgCheck, roomPct, therPct, refunded, refundedCount, keptDeposit, keptCount, certDepCount, certDepOriginalPrice, pmBreakdown, overdueBookings };
   };
 
   const kpi = (() => {
@@ -4597,6 +4615,7 @@ function DashboardScreen({ salons }) {
       refundedCount: Math.round(perSalon.reduce((a, k) => a + k.refundedCount, 0) / n),
       keptDeposit:   Math.round(perSalon.reduce((a, k) => a + k.keptDeposit, 0) / n),
       keptCount:     Math.round(perSalon.reduce((a, k) => a + k.keptCount, 0) / n),
+      overdueBookings: perSalon.reduce((a, k) => a + k.overdueBookings, 0),
       certDepCount:  perSalon.reduce((a, k) => a + k.certDepCount, 0),
       certDepOriginalPrice: perSalon.reduce((a, k) => a + k.certDepOriginalPrice, 0),
       pmBreakdown:   (() => {
@@ -4734,6 +4753,15 @@ function DashboardScreen({ salons }) {
           <div style={{ fontSize: 11, color: C.textSub }}>Средний чек</div>
         </div>
       </div>
+      {kpi.overdueBookings > 0 && (
+        <div style={{ ...cardStyle, border: "1px solid #F9731644", backgroundColor: "#F9731611" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#F97316" }}>{kpi.overdueBookings}</div>
+            <div style={{ fontSize: 13, color: "#F97316", fontWeight: 600 }}>Требуется изменить статус</div>
+          </div>
+          <div style={{ fontSize: 11, color: C.textSub }}>Записи с прошедшим временем, но статус до сих пор «Забронировано»</div>
+        </div>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
         <div style={cardStyle}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
