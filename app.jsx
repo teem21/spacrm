@@ -5437,6 +5437,14 @@ function App() {
         });
         if (migrated) await Storage.set(KEYS.salons, savedSalons);
       }
+      // Migrate: add salon-3 "Чунжа" if only 2 salons exist
+      if (savedSalons && savedSalons.length === 2 && !savedSalons.find(s => s.id === "salon-3")) {
+        const s3 = { ...makeInitialSalonConfig("salon-3"), name: "Чунжа" };
+        savedSalons = [...savedSalons, s3];
+        await Storage.set(KEYS.salons, savedSalons);
+        await Storage.set(KEYS.procedures("salon-3"), makeDefaultProcedures("salon-3"));
+        await Storage.set(KEYS.combos("salon-3"), []);
+      }
       if (!savedSalons || savedSalons.length === 0) {
         setNeedsOnboarding(true);
       } else {
@@ -5463,6 +5471,14 @@ function App() {
         }
         return s;
       });
+      // Migrate: add salon-3 "Чунжа" if only 2 salons exist
+      if (savedSalons.length === 2 && !savedSalons.find(s => s.id === "salon-3")) {
+        const s3 = { ...makeInitialSalonConfig("salon-3"), name: "Чунжа" };
+        savedSalons = [...savedSalons, s3];
+        await Storage.set(KEYS.salons, savedSalons);
+        await Storage.set(KEYS.procedures("salon-3"), makeDefaultProcedures("salon-3"));
+        await Storage.set(KEYS.combos("salon-3"), []);
+      }
       setSalons(savedSalons);
       const firstId = savedSalons[0].id;
       setActiveSalonId(firstId);
