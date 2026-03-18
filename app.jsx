@@ -179,7 +179,7 @@ const UserStorage = {
  * @property {string} id                    - "salon-1" | "salon-2"
  * @property {string} name
  * @property {Room[]} rooms
- * @property {number} therapistCount
+ * @property {{id:string, name:string}[]} therapists
  * @property {boolean} hasSauna
  * @property {number} saunaCapacity
  * @property {boolean} hasPeeling
@@ -546,7 +546,7 @@ const makeInitialSalonConfig = (id) => ({
   id,
   name: "",
   rooms: [{ id: `${id}-room-1`, name: "Кабинка 1", beds: 2 }],
-  therapistCount: 6,
+  therapists: Array.from({ length: 6 }, (_, i) => ({ id: `${id}-ther-${i + 1}`, name: `Массажистка ${i + 1}` })),
   hasSauna: true,
   saunaCapacity: 4,
   saunaDuration: 60,
@@ -749,6 +749,64 @@ function RoomsEditor({ rooms, onChange }) {
   );
 }
 
+function TherapistsEditor({ therapists, onChange, salonId }) {
+  const updateTher = (idx, patch) => {
+    const next = therapists.map((t, i) => i === idx ? { ...t, ...patch } : t);
+    onChange(next);
+  };
+  const addTher = () => {
+    if (therapists.length >= 15) return;
+    const n = therapists.length + 1;
+    const sid = salonId || therapists[0]?.id.split("-ther-")[0] || "salon-1";
+    onChange([...therapists, { id: `${sid}-ther-${n}-${Date.now()}`, name: `Массажистка ${n}` }]);
+  };
+  const removeTher = (idx) => {
+    if (therapists.length <= 1) return;
+    onChange(therapists.filter((_, i) => i !== idx));
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {therapists.map((t, idx) => (
+        <div key={t.id} style={{
+          display: "flex", alignItems: "center", gap: 10,
+          backgroundColor: C.bg, borderRadius: 8, padding: "10px 12px",
+          border: `1px solid ${C.border}`,
+        }}>
+          <span style={{ color: C.textSub, fontSize: 13, minWidth: 24 }}>{idx + 1}</span>
+          <div style={{ flex: 1 }}>
+            <input
+              type="text" value={t.name}
+              onChange={e => updateTher(idx, { name: e.target.value })}
+              style={{ ...inputStyle(), height: 32, fontSize: 13 }}
+            />
+          </div>
+          {therapists.length > 1 && (
+            <button
+              onClick={() => removeTher(idx)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", padding: 4 }}
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
+        </div>
+      ))}
+      {therapists.length < 15 && (
+        <button
+          onClick={addTher}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            padding: "8px", borderRadius: 8, border: `1px dashed ${C.border}`,
+            background: "none", color: C.textSub, fontSize: 13, cursor: "pointer",
+          }}
+        >
+          <Plus size={14} /> Добавить массажистку
+        </button>
+      )}
+    </div>
+  );
+}
+
 function SaunaFields({ config, onChange }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -797,10 +855,14 @@ function SaunaFields({ config, onChange }) {
 function ScheduleFields({ config, onChange }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <NumberInput
-        label="Массажистки (кол-во)" value={config.therapistCount}
-        min={1} max={15} onChange={v => onChange({ therapistCount: v })}
-      />
+      <div>
+        <label style={labelStyle}>Массажистки</label>
+        <TherapistsEditor
+          therapists={config.therapists || []}
+          onChange={therapists => onChange({ therapists })}
+          salonId={config.id}
+        />
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <TimeInput label="Начало работы" value={config.workStart} onChange={v => onChange({ workStart: v })} />
         <TimeInput label="Конец работы"  value={config.workEnd}   onChange={v => onChange({ workEnd: v })} />
@@ -848,8 +910,10 @@ function OnboardingWizard({ onComplete }) {
       return "Кол-во кабинок должно быть от 1 до 6";
     if (step === 1 && s1.rooms.some(r => !r.name.trim()))
       return "Укажите название каждой кабинки";
-    if (step === 2 && (s1.therapistCount < 1 || s1.therapistCount > 15))
+    if (step === 2 && (!s1.therapists || s1.therapists.length < 1 || s1.therapists.length > 15))
       return "Кол-во мастеров: от 1 до 15";
+    if (step === 2 && s1.therapists && s1.therapists.some(t => !t.name.trim()))
+      return "Укажите имя каждой массажистки";
     if (step === 4 && !s2.name.trim()) return "Введите название второго салона";
     return "";
   };
@@ -1180,9 +1244,51 @@ function SalonSettingsCard({ salon, onChange }) {
         </div>
 
         {/* Массажистки */}
-        <Row label="Массажистки">
-          <InlineNumber value={salon.therapistCount} min={1} max={15} onChange={v => onChange({ therapistCount: v })} />
+        <Row label={`Массажистки (${(salon.therapists || []).length})`}>
+          <div />
         </Row>
+        <div style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+          {(salon.therapists || []).map((t, idx) => (
+            <div key={t.id} style={{
+              display: "flex", alignItems: "center", gap: 12,
+              backgroundColor: C.gridBg, borderRadius: 8, padding: "8px 12px",
+              border: `1px solid ${C.border}`,
+            }}>
+              <span style={{ color: C.textSub, fontSize: 12, minWidth: 16 }}>•</span>
+              <InlineText
+                value={t.name}
+                onChange={v => {
+                  const therapists = (salon.therapists || []).map((th, i) => i === idx ? { ...th, name: v } : th);
+                  onChange({ therapists });
+                }}
+                style={{ flex: 1, fontSize: 13 }}
+              />
+              {(salon.therapists || []).length > 1 && (
+                <button
+                  onClick={() => onChange({ therapists: salon.therapists.filter((_, i) => i !== idx) })}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", padding: 4 }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+          ))}
+          {(salon.therapists || []).length < 15 && (
+            <button
+              onClick={() => {
+                const n = (salon.therapists || []).length + 1;
+                onChange({ therapists: [...(salon.therapists || []), { id: `${salon.id}-ther-${n}-${Date.now()}`, name: `Массажистка ${n}` }] });
+              }}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                padding: "6px", borderRadius: 8, border: `1px dashed ${C.border}`,
+                background: "none", color: C.textSub, fontSize: 12, cursor: "pointer",
+              }}
+            >
+              <Plus size={13} /> Добавить
+            </button>
+          )}
+        </div>
 
         {/* Сауна */}
         <Row label="Вместимость сауны">
@@ -1375,7 +1481,7 @@ function SettingsScreen({ salons, onSalonsChange, onShowToast, onReset, onImport
       for (const s of salons) {
         if (!s.name.trim()) return;
         if (s.rooms.length < 1 || s.rooms.length > 6) return;
-        if (s.therapistCount < 1 || s.therapistCount > 15) return;
+        if (!s.therapists || s.therapists.length < 1 || s.therapists.length > 15) return;
         if (s.bufferMinutes < 5 || s.bufferMinutes > 60) return;
         if (s.workStart >= s.workEnd) return;
       }
@@ -2430,8 +2536,9 @@ function validateBooking(booking, existingBookings, salon) {
           if (os.startTime < slotE && os.endTime > slotS) existingLoad += (os.therapistCount || 0);
         }
       }
-      if (existingLoad + newLoad > salon.therapistCount) {
-        const free = Math.max(0, salon.therapistCount - existingLoad);
+      const totalTherapists = (salon.therapists || []).length || salon.therapistCount || 1;
+      if (existingLoad + newLoad > totalTherapists) {
+        const free = Math.max(0, totalTherapists - existingLoad);
         errors.push({ field: "therapists", message: `Недостаточно массажисток (нужно ${newLoad}, свободно ${free} в ${slotS})` });
         break;
       }
@@ -2791,11 +2898,16 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           </div>
         </div>
 
-        {/* Master name */}
+        {/* Master (therapist) */}
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>Мастер</label>
-          <input type="text" value={masterName} placeholder="Имя мастера"
-            onChange={e => setMasterName(e.target.value)} style={inputStyle()} />
+          <select value={masterName} onChange={e => setMasterName(e.target.value)}
+            style={{ ...inputStyle(), cursor: "pointer" }}>
+            <option value="" style={{ backgroundColor: C.card }}>— Не назначен —</option>
+            {(salon.therapists || []).map(t => (
+              <option key={t.id} value={t.name} style={{ backgroundColor: C.card }}>{t.name}</option>
+            ))}
+          </select>
         </div>
 
         {/* Client count */}
@@ -3677,7 +3789,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
 
                 // Therapist utilization for this day
                 let therBusy = 0;
-                const therTotal = ((salon.therapistCount || 1) + (salon.hasPeeling ? (salon.peelingMastersMax || 2) : 0)) * wMins;
+                const therTotal = (((salon.therapists || []).length || salon.therapistCount || 1) + (salon.hasPeeling ? (salon.peelingMastersMax || 2) : 0)) * wMins;
                 for (const b of active) {
                   for (const seg of (b.segments || [])) {
                     therBusy += (seg.therapistCount || 0) * (timeToMins(seg.endTime) - timeToMins(seg.startTime));
@@ -3750,7 +3862,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                             if (seg.startTime < sEndStr && seg.endTime > sStartStr) used += (seg.therapistCount || 0);
                           }
                         }
-                        return { used, total: salon.therapistCount };
+                        return { used, total: (salon.therapists || []).length || salon.therapistCount || 1 };
                       });
 
                       const getRowSegments = (row) => {
@@ -4440,7 +4552,7 @@ function DashboardScreen({ salons }) {
       if (daysCount === 0) continue; // no bookings for this salon — skip capacity
       const wMins = timeToMins(sal.workEnd) - timeToMins(sal.workStart);
       roomTotalMins += sal.rooms.length * wMins * daysCount;
-      therTotalMins += ((sal.therapistCount || 1) + (sal.hasPeeling ? (sal.peelingMastersMax || 2) : 0)) * wMins * daysCount;
+      therTotalMins += (((sal.therapists || []).length || sal.therapistCount || 1) + (sal.hasPeeling ? (sal.peelingMastersMax || 2) : 0)) * wMins * daysCount;
 
       for (const b of salBks) {
         for (const seg of (b.segments || [])) {
@@ -5250,7 +5362,20 @@ function App() {
         setCurrentUser(savedUser);
       }
 
-      const savedSalons = await Storage.get(KEYS.salons);
+      let savedSalons = await Storage.get(KEYS.salons);
+      // Migrate: generate therapists array from therapistCount if missing
+      if (savedSalons && savedSalons.length > 0) {
+        let migrated = false;
+        savedSalons = savedSalons.map(s => {
+          if (!s.therapists || s.therapists.length === 0) {
+            const count = s.therapistCount || 6;
+            migrated = true;
+            return { ...s, therapists: Array.from({ length: count }, (_, i) => ({ id: `${s.id}-ther-${i + 1}`, name: `Массажистка ${i + 1}` })) };
+          }
+          return s;
+        });
+        if (migrated) await Storage.set(KEYS.salons, savedSalons);
+      }
       if (!savedSalons || savedSalons.length === 0) {
         setNeedsOnboarding(true);
       } else {
@@ -5268,8 +5393,15 @@ function App() {
     setCurrentUser({ id: user.id, name: user.name, login: user.login, role: user.role });
     if (user.role === "worker") setActiveTab("schedule");
     // Re-check salons after login (initial load may have been unauthenticated)
-    const savedSalons = await Storage.get(KEYS.salons);
+    let savedSalons = await Storage.get(KEYS.salons);
     if (savedSalons && savedSalons.length > 0) {
+      savedSalons = savedSalons.map(s => {
+        if (!s.therapists || s.therapists.length === 0) {
+          const count = s.therapistCount || 6;
+          return { ...s, therapists: Array.from({ length: count }, (_, i) => ({ id: `${s.id}-ther-${i + 1}`, name: `Массажистка ${i + 1}` })) };
+        }
+        return s;
+      });
       setSalons(savedSalons);
       const firstId = savedSalons[0].id;
       setActiveSalonId(firstId);

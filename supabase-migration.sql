@@ -11,6 +11,7 @@ CREATE TABLE public.salons (
   name            TEXT NOT NULL,
   rooms           JSONB NOT NULL DEFAULT '[]',
   therapist_count INTEGER NOT NULL DEFAULT 0,
+  therapists      JSONB NOT NULL DEFAULT '[]',
   has_sauna       BOOLEAN NOT NULL DEFAULT FALSE,
   sauna_capacity  INTEGER NOT NULL DEFAULT 0,
   sauna_duration  INTEGER NOT NULL DEFAULT 60,

@@ -113,8 +113,9 @@
         // Convert snake_case → camelCase
         const camelData = data.map(row => {
           const c = objToCamel(row);
-          // Preserve JSONB fields as-is (rooms, steps, segments)
+          // Preserve JSONB fields as-is (rooms, therapists, steps, segments)
           if (row.rooms !== undefined) c.rooms = row.rooms;
+          if (row.therapists !== undefined) c.therapists = row.therapists;
           if (row.steps !== undefined) c.steps = row.steps;
           if (row.segments !== undefined) c.segments = row.segments;
           return c;
@@ -137,6 +138,7 @@
           const s = objToSnake(item);
           // Preserve JSONB fields
           if (item.rooms !== undefined) s.rooms = item.rooms;
+          if (item.therapists !== undefined) s.therapists = item.therapists;
           if (item.steps !== undefined) s.steps = item.steps;
           if (item.segments !== undefined) s.segments = item.segments;
           return s;
