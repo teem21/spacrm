@@ -78,6 +78,24 @@
     (function() {
     const sb = window.supabaseClient;
 
+    // Known columns per table — only these are sent to Supabase
+    const TABLE_COLS = {
+      salons: ['id','name','rooms','therapist_count','therapists','has_sauna','sauna_capacity','sauna_duration','has_peeling','peeling_max_per_hour','peeling_masters_max','peeling_time_per_person','work_start','work_end','day_off','buffer_minutes'],
+      procedures: ['id','salon_id','name','category','duration','price','therapists_required','is_active'],
+      combos: ['id','salon_id','name','steps','price','total_duration','is_active'],
+      bookings: ['id','salon_id','date','client_name','client_phone','client_count','booking_type','procedure_id','combo_id','segments','total_start_time','total_end_time','total_price','status','created_at','notes','master_name','payment_method'],
+      activity_logs: ['id','user_id','user_name','action','target_date','target_time','client_name','details','timestamp'],
+    };
+    function pickCols(table, obj) {
+      var cols = TABLE_COLS[table];
+      if (!cols) return obj;
+      var out = {};
+      for (var i = 0; i < cols.length; i++) {
+        if (obj[cols[i]] !== undefined) out[cols[i]] = obj[cols[i]];
+      }
+      return out;
+    }
+
     window.storage = {
       async get(key) {
         const parsed = parseKey(key);
@@ -144,27 +162,16 @@
           return s;
         });
 
-        // For partitioned data (procedures, combos, bookings per salon/month),
-        // delete existing rows first, then insert new ones
-        if (parsed.filters) {
-          let delQuery = sb.from(parsed.table).delete();
-          if (parsed.filters.salon_id) delQuery = delQuery.eq('salon_id', parsed.filters.salon_id);
-          if (parsed.filters.ym) {
-            const range = ymToRange(parsed.filters.ym);
-            delQuery = delQuery.gte('date', range.from).lte('date', range.to);
-          }
-          const { error: delErr } = await delQuery;
-          if (delErr) { console.error('Supabase delete error:', delErr); throw delErr; }
-        } else if (parsed.table === 'salons') {
-          // Salons: upsert all
-        } else if (parsed.table === 'profiles') {
-          // Users: handled by UserStorage, not here
+        // Filter to known columns only (prevents 400 from unknown fields)
+        const cleanItems = snakeItems.map(item => pickCols(parsed.table, item));
+
+        if (parsed.table === 'profiles') {
           return;
         } else if (parsed.table === 'activity_logs') {
           // Logs: append only — find new entries and insert them
           const { data: existing } = await sb.from('activity_logs').select('id');
           const existingIds = new Set((existing || []).map(e => e.id));
-          const newItems = snakeItems.filter(i => !existingIds.has(i.id));
+          const newItems = cleanItems.filter(i => !existingIds.has(i.id));
           if (newItems.length > 0) {
             const { error } = await sb.from('activity_logs').insert(newItems);
             if (error) console.error('Supabase log insert error:', error);
@@ -172,15 +179,40 @@
           return;
         }
 
-        if (snakeItems.length === 0) return;
-
-        if (parsed.table === 'salons') {
-          const { error } = await sb.from('salons').upsert(snakeItems, { onConflict: 'id' });
-          if (error) { console.error('Supabase salons upsert error:', error); throw error; }
-        } else {
-          const { error } = await sb.from(parsed.table).insert(snakeItems);
-          if (error) { console.error('Supabase insert error:', error); throw error; }
+        // For partitioned data (procedures, combos, bookings per salon/month),
+        // delete rows no longer in the list, then upsert current rows
+        if (parsed.filters) {
+          // Get existing IDs so we can delete removed rows
+          let selQuery = sb.from(parsed.table).select('id');
+          if (parsed.filters.salon_id) selQuery = selQuery.eq('salon_id', parsed.filters.salon_id);
+          if (parsed.filters.ym) {
+            const range = ymToRange(parsed.filters.ym);
+            selQuery = selQuery.gte('date', range.from).lte('date', range.to);
+          }
+          const { data: existing } = await selQuery;
+          const newIds = new Set(cleanItems.map(i => i.id));
+          const toDelete = (existing || []).filter(e => !newIds.has(e.id)).map(e => e.id);
+          if (toDelete.length > 0) {
+            const { error: delErr } = await sb.from(parsed.table).delete().in('id', toDelete);
+            if (delErr) { console.error('Supabase delete error:', delErr); throw delErr; }
+          }
         }
+
+        if (cleanItems.length === 0) return;
+
+        // Upsert for all tables (handles both new and existing rows)
+        var { error } = await sb.from(parsed.table).upsert(cleanItems, { onConflict: 'id' });
+        // If salons upsert fails (e.g. 'therapists' column missing), retry without it
+        if (error && parsed.table === 'salons') {
+          console.warn('Salons upsert failed, retrying without therapists column:', error.message);
+          var fallback = cleanItems.map(function(item) {
+            var o = {}; for (var k in item) { if (k !== 'therapists') o[k] = item[k]; } return o;
+          });
+          var r2 = await sb.from('salons').upsert(fallback, { onConflict: 'id' });
+          if (r2.error) { console.error('Supabase upsert error (retry):', r2.error); throw r2.error; }
+          error = null;
+        }
+        if (error) { console.error('Supabase upsert error:', error); throw error; }
       },
 
       async delete(key) {
