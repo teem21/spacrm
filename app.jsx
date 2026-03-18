@@ -2483,6 +2483,8 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const [peelingCount, setPeelingCount] = useState(1);
   const [withPeeling, setWithPeeling] = useState(false);
   const [notes, setNotes] = useState("");
+  const [masterName, setMasterName] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
   const [err, setErr] = useState("");
   const [saving, setSaving] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -2736,6 +2738,8 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       status: "booked",
       createdAt: new Date().toISOString(),
       notes: notes.trim(),
+      masterName: masterName.trim(),
+      paymentMethod,
     };
     const updated = [...existing, booking];
     await Storage.set(KEYS.bookings(salon.id, ym), updated);
@@ -2785,6 +2789,13 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
             <input type="text" value={clientPhone} placeholder="+7 700 123 45 67"
               onChange={e => setClientPhone(e.target.value)} style={inputStyle()} />
           </div>
+        </div>
+
+        {/* Master name */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Мастер</label>
+          <input type="text" value={masterName} placeholder="Имя мастера"
+            onChange={e => setMasterName(e.target.value)} style={inputStyle()} />
         </div>
 
         {/* Client count */}
@@ -3031,6 +3042,28 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           </div>
         </div>
 
+        {/* Payment method */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Способ оплаты</label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {PAYMENT_METHODS.map(pm => (
+              <button key={pm.value} type="button" onClick={() => setPaymentMethod(pm.value)} style={{
+                padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500,
+                border: paymentMethod === pm.value ? `1px solid ${C.accent}` : `1px solid ${C.border}`,
+                backgroundColor: paymentMethod === pm.value ? `${C.accent}22` : "transparent",
+                color: paymentMethod === pm.value ? C.accent : C.textSub,
+                cursor: "pointer",
+              }}>{pm.label}</button>
+            ))}
+          </div>
+          {paymentMethod === "cert_dep" && (
+            <div style={{ marginTop: 6, padding: "6px 10px", borderRadius: 6,
+              backgroundColor: "#FBBF2422", border: "1px solid #FBBF2444", fontSize: 12, color: "#FBBF24" }}>
+              СЕРТ / ДЕП — не учитывается в выручке
+            </div>
+          )}
+        </div>
+
         {/* Notes */}
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>Заметки</label>
@@ -3100,8 +3133,14 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
             <div style={{ fontSize: 13, color: C.textSub, marginBottom: 6 }}>
               {clientName.trim()} — {date}, {startTime || segResult?.totalStartTime}
             </div>
-            <div style={{ fontSize: 13, color: C.textSub, marginBottom: 20 }}>
-              {bookingType === "single" ? selectedProc?.name : selectedCombo?.name} — {totalPrice.toLocaleString("ru-RU")} ₸
+            {masterName.trim() && (
+              <div style={{ fontSize: 13, color: C.textMain, marginBottom: 6 }}>Мастер: {masterName.trim()}</div>
+            )}
+            <div style={{ fontSize: 13, color: C.textSub, marginBottom: 6 }}>
+              {bookingType === "single" ? selectedProc?.name : selectedCombo?.name} — {paymentMethod === "cert_dep" ? "СЕРТ / ДЕП (бесплатно)" : totalPrice.toLocaleString("ru-RU") + " ₸"}
+            </div>
+            <div style={{ fontSize: 12, color: C.textSub, marginBottom: 20 }}>
+              Оплата: {PAYMENT_LABEL[paymentMethod] || paymentMethod}
             </div>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button onClick={() => setShowConfirm(false)} style={{
@@ -3127,6 +3166,15 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
 }
 
 // ─── Booking Details Panel (STEP-09) ───────────────────────────────────────
+
+const PAYMENT_METHODS = [
+  { value: "cash",     label: "НАЛ" },
+  { value: "card",     label: "БЕЗНАЛ" },
+  { value: "qr",       label: "QR" },
+  { value: "transfer", label: "ПЕРЕВОДЫ" },
+  { value: "cert_dep", label: "СЕРТ / ДЕП" },
+];
+const PAYMENT_LABEL = Object.fromEntries(PAYMENT_METHODS.map(m => [m.value, m.label]));
 
 const STATUS_CFG = {
   booked:              { label: "Забронировано",      color: "#D4A84B" },
@@ -3192,6 +3240,11 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
           <Phone size={13} />
           {booking.clientPhone}
         </a>
+        {booking.masterName && (
+          <div style={{ marginTop: 8, fontSize: 13, color: C.accent, fontWeight: 600 }}>
+            Мастер: {booking.masterName}
+          </div>
+        )}
 
         {divider}
 
@@ -3241,9 +3294,16 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
 
         {divider}
 
-        {/* Price */}
-        <div style={{ fontSize: 18, fontWeight: 700, color: C.accent, marginBottom: 4 }}>
-          {(booking.totalPrice || 0).toLocaleString("ru-RU")} ₸
+        {/* Price + Payment method */}
+        <div style={{ fontSize: 18, fontWeight: 700, color: booking.paymentMethod === "cert_dep" ? C.textSub : C.accent, marginBottom: 4 }}>
+          {booking.paymentMethod === "cert_dep"
+            ? <><s>{(booking.totalPrice || 0).toLocaleString("ru-RU")} ₸</s> <span style={{ fontSize: 13, color: "#FBBF24" }}>СЕРТ / ДЕП</span></>
+            : <>{(booking.totalPrice || 0).toLocaleString("ru-RU")} ₸</>}
+        </div>
+        <div style={{ fontSize: 12, color: C.textSub, marginBottom: 4 }}>
+          Оплата: <span style={{ color: booking.paymentMethod === "cert_dep" ? "#FBBF24" : C.textMain, fontWeight: 500 }}>
+            {PAYMENT_LABEL[booking.paymentMethod] || booking.paymentMethod || "НАЛ"}
+          </span>
         </div>
 
         {divider}
@@ -3596,7 +3656,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
 
                 // Day KPI
                 const active = dayBkgs.filter(b => b.status !== "cancelled_refund" && b.status !== "cancelled_no_refund");
-                const paid = dayBkgs.filter(b => b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund");
+                const paid = dayBkgs.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "cert_dep");
                 const booked = dayBkgs.filter(b => b.status === "booked").length;
                 const completed = dayBkgs.filter(b => b.status === "completed").length;
                 const clients = active.reduce((s, b) => s + (b.clientCount || 1), 0);
@@ -3790,10 +3850,15 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                                             onMouseLeave={e => { e.currentTarget.style.filter = ""; e.currentTarget.style.boxShadow = ""; }}
                                             onClick={(e) => { e.stopPropagation(); setSelectedBookingId(seg.booking.id); }}
                                           >
-                                            <div style={{ fontSize: 11, fontWeight: 600, color: "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                                            {seg.booking.masterName && (
+                                              <div style={{ fontSize: 12, fontWeight: 700, color: "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", lineHeight: 1.1 }}>
+                                                {seg.booking.masterName}
+                                              </div>
+                                            )}
+                                            <div style={{ fontSize: 10, fontWeight: 600, color: seg.booking.masterName ? "rgba(255,255,255,0.85)" : "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
                                               {seg.booking.clientName}
                                             </div>
-                                            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.75)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.65)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                               {seg.procedureName}
                                             </div>
                                             {hasPeelingBadge && (
@@ -3966,10 +4031,12 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
     switch (sortCol) {
       case "date":     va = a.date; vb = b.date; break;
       case "name":     va = a.clientName?.toLowerCase() || ""; vb = b.clientName?.toLowerCase() || ""; break;
+      case "master":   va = a.masterName?.toLowerCase() || ""; vb = b.masterName?.toLowerCase() || ""; break;
       case "salon":    va = salonName(a); vb = salonName(b); break;
       case "service":  va = serviceName(a); vb = serviceName(b); break;
       case "duration": va = totalDuration(a); vb = totalDuration(b); break;
       case "price":    va = a.totalPrice || 0; vb = b.totalPrice || 0; break;
+      case "payment":  va = a.paymentMethod || ""; vb = b.paymentMethod || ""; break;
       case "status":   va = a.status; vb = b.status; break;
       default:         va = a.date; vb = b.date;
     }
@@ -4017,15 +4084,17 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
   const columns = [
     { id: "date",     label: "Дата",         w: 100 },
     { id: "name",     label: "Имя",          w: null },
+    { id: "master",   label: "Мастер",       w: 120 },
     { id: "phone",    label: "Телефон",      w: 140 },
     { id: "salon",    label: "Салон",         w: 100 },
     { id: "service",  label: "Услуга",       w: 140 },
     { id: "duration", label: "Длит.",        w: 70 },
     { id: "price",    label: "Цена",         w: 90 },
+    { id: "payment",  label: "Оплата",       w: 100 },
     { id: "status",   label: "Статус",       w: 150 },
   ];
 
-  const sortable = new Set(["date","name","salon","service","duration","price","status"]);
+  const sortable = new Set(["date","name","master","salon","service","duration","price","payment","status"]);
 
   const formatDateRu = (d) => {
     if (!d) return "—";
@@ -4128,11 +4197,17 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
             >
               <div style={{ flex: "0 0 100px", fontSize: 13, color: C.textMain }}>{formatDateRu(b.date)}</div>
               <div style={{ flex: 1, fontSize: 13, color: C.textMain, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{b.clientName}</div>
+              <div style={{ flex: "0 0 120px", fontSize: 12, color: C.accent, fontWeight: 500, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{b.masterName || "—"}</div>
               <div style={{ flex: "0 0 140px", fontSize: 12, color: C.textSub }}>{b.clientPhone}</div>
               <div style={{ flex: "0 0 100px", fontSize: 12, color: C.textSub }}>{salonName(b)}</div>
               <div style={{ flex: "0 0 140px", fontSize: 12, color: C.textMain, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{serviceName(b)}</div>
               <div style={{ flex: "0 0 70px", fontSize: 12, color: C.textSub }}>{totalDuration(b)} мин</div>
-              <div style={{ flex: "0 0 90px", fontSize: 13, color: C.accent, fontWeight: 600 }}>{(b.totalPrice || 0).toLocaleString("ru-RU")} ₸</div>
+              <div style={{ flex: "0 0 90px", fontSize: 13, color: b.paymentMethod === "cert_dep" ? C.textSub : C.accent, fontWeight: 600 }}>
+                {b.paymentMethod === "cert_dep" ? <s>{(b.totalPrice || 0).toLocaleString("ru-RU")} ₸</s> : <>{(b.totalPrice || 0).toLocaleString("ru-RU")} ₸</>}
+              </div>
+              <div style={{ flex: "0 0 100px", fontSize: 11, color: b.paymentMethod === "cert_dep" ? "#FBBF24" : C.textSub, fontWeight: 500 }}>
+                {PAYMENT_LABEL[b.paymentMethod] || "НАЛ"}
+              </div>
               <div style={{ flex: "0 0 150px" }}>
                 <select value={b.status}
                   onChange={e => handleStatusChange(b.id, b.salonId, b.date, e.target.value)}
@@ -4344,11 +4419,14 @@ function DashboardScreen({ salons }) {
   const computeKpi = (bookings, salonFilter) => {
     const bks = salonFilter ? bookings.filter(b => b.salonId === salonFilter) : bookings;
     const active = bks.filter(b => b.status !== "cancelled_refund" && b.status !== "cancelled_no_refund");
-    const paid = bks.filter(b => b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund");
+    const paid = bks.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "cert_dep");
+    const certDep = bks.filter(b => b.paymentMethod === "cert_dep" && b.status !== "cancelled_refund" && b.status !== "cancelled_no_refund");
     const totalBookings = active.length;
     const totalClients = active.reduce((a, b) => a + (b.clientCount || 1), 0);
     const revenue = paid.reduce((a, b) => a + (b.totalPrice || 0), 0);
     const avgCheck = paid.length > 0 ? Math.round(revenue / paid.length) : 0;
+    const certDepCount = certDep.length;
+    const certDepOriginalPrice = certDep.reduce((a, b) => a + (b.totalPrice || 0), 0);
 
     // Room & therapist utilization — compute per salon then aggregate (only active bookings)
     const targetSalons = salonFilter ? salons.filter(s => s.id === salonFilter) : salons;
@@ -4383,7 +4461,12 @@ function DashboardScreen({ salons }) {
     const keptDeposit = keptBks.reduce((a, b) => a + (b.totalPrice || 0), 0);
     const keptCount = keptBks.reduce((a, b) => a + (b.clientCount || 1), 0);
 
-    return { totalBookings, totalClients, revenue, avgCheck, roomPct, therPct, refunded, refundedCount, keptDeposit, keptCount };
+    // Payment method breakdown
+    const pmBreakdown = {};
+    for (const pm of PAYMENT_METHODS) pmBreakdown[pm.value] = 0;
+    for (const b of active) pmBreakdown[b.paymentMethod || "cash"] = (pmBreakdown[b.paymentMethod || "cash"] || 0) + 1;
+
+    return { totalBookings, totalClients, revenue, avgCheck, roomPct, therPct, refunded, refundedCount, keptDeposit, keptCount, certDepCount, certDepOriginalPrice, pmBreakdown };
   };
 
   const kpi = (() => {
@@ -4402,13 +4485,20 @@ function DashboardScreen({ salons }) {
       refundedCount: Math.round(perSalon.reduce((a, k) => a + k.refundedCount, 0) / n),
       keptDeposit:   Math.round(perSalon.reduce((a, k) => a + k.keptDeposit, 0) / n),
       keptCount:     Math.round(perSalon.reduce((a, k) => a + k.keptCount, 0) / n),
+      certDepCount:  perSalon.reduce((a, k) => a + k.certDepCount, 0),
+      certDepOriginalPrice: perSalon.reduce((a, k) => a + k.certDepOriginalPrice, 0),
+      pmBreakdown:   (() => {
+        const merged = {};
+        for (const pm of PAYMENT_METHODS) merged[pm.value] = perSalon.reduce((a, k) => a + (k.pmBreakdown[pm.value] || 0), 0);
+        return merged;
+      })(),
     };
   })();
 
   // Chart 1: Revenue by day
   const revenueByDay = (() => {
     const map = {};
-    filtered.filter(b => b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund").forEach(b => {
+    filtered.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "cert_dep").forEach(b => {
       const key = b.date.slice(5); // MM-DD
       map[key] = (map[key] || 0) + (b.totalPrice || 0);
     });
@@ -4548,6 +4638,28 @@ function DashboardScreen({ salons }) {
           <div style={{ fontSize: 11, color: C.textSub }}>Не вернули за бронь</div>
         </div>
       </div>
+      {/* СЕРТ/ДЕП + Payment method breakdown */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
+        <div style={cardStyle}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#FBBF24" }}>{kpi.certDepCount}</div>
+            <div style={{ fontSize: 13, color: C.textSub }}>{kpi.certDepOriginalPrice.toLocaleString("ru-RU")} ₸</div>
+          </div>
+          <div style={{ fontSize: 11, color: C.textSub }}>СЕРТ / ДЕП (не в выручке)</div>
+        </div>
+        <div style={{ ...cardStyle, flexDirection: "row", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+          {PAYMENT_METHODS.map(pm => {
+            const cnt = kpi.pmBreakdown?.[pm.value] || 0;
+            return (
+              <div key={pm.value} style={{ textAlign: "center", minWidth: 60 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: pm.value === "cert_dep" ? "#FBBF24" : C.textMain }}>{cnt}</div>
+                <div style={{ fontSize: 10, color: C.textSub }}>{pm.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
         <div style={{ ...cardStyle, flexDirection: "row", alignItems: "center", gap: 12 }}>
           <KpiRing pct={kpi.roomPct} color="#2D6A4F" />
@@ -4607,6 +4719,7 @@ function DashboardScreen({ salons }) {
                 { label: "Загр. мастеров", key: "therPct", fmt: v => v + "%" },
                 { label: "Вернули за бронь", key: "refunded", fmt: (v, row) => v.toLocaleString("ru-RU") + " ₸ (" + (row.refundedCount || 0) + " чел.)" },
                 { label: "Не вернули за бронь", key: "keptDeposit", fmt: (v, row) => v.toLocaleString("ru-RU") + " ₸ (" + (row.keptCount || 0) + " чел.)" },
+                { label: "СЕРТ / ДЕП", key: "certDepCount", fmt: (v, row) => v + " зап. (" + (row.certDepOriginalPrice || 0).toLocaleString("ru-RU") + " ₸)" },
               ].map(row => {
                 const vals = comparison.map(s => s[row.key]);
                 const best = Math.max(...vals);

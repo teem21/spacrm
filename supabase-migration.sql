@@ -71,7 +71,9 @@ CREATE TABLE public.bookings (
   total_price      INTEGER NOT NULL DEFAULT 0,
   status           TEXT NOT NULL DEFAULT 'booked',
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  notes            TEXT DEFAULT ''
+  notes            TEXT DEFAULT '',
+  master_name      TEXT DEFAULT '',
+  payment_method   TEXT DEFAULT 'cash'
 );
 CREATE INDEX idx_bookings_salon_date ON public.bookings(salon_id, date);
 
