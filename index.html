@@ -145,13 +145,14 @@
         // For partitioned data (procedures, combos, bookings per salon/month),
         // delete existing rows first, then insert new ones
         if (parsed.filters) {
-          let delQuery = sb.from(parsed.table);
+          let delQuery = sb.from(parsed.table).delete();
           if (parsed.filters.salon_id) delQuery = delQuery.eq('salon_id', parsed.filters.salon_id);
           if (parsed.filters.ym) {
             const range = ymToRange(parsed.filters.ym);
             delQuery = delQuery.gte('date', range.from).lte('date', range.to);
           }
-          await delQuery.delete();
+          const { error: delErr } = await delQuery;
+          if (delErr) console.error('Supabase delete error:', delErr);
         } else if (parsed.table === 'salons') {
           // Salons: upsert all
         } else if (parsed.table === 'profiles') {
@@ -187,14 +188,14 @@
           await sb.auth.signOut();
           return;
         }
-        let query = sb.from(parsed.table);
         if (parsed.filters) {
+          let query = sb.from(parsed.table).delete();
           if (parsed.filters.salon_id) query = query.eq('salon_id', parsed.filters.salon_id);
           if (parsed.filters.ym) {
             const range = ymToRange(parsed.filters.ym);
             query = query.gte('date', range.from).lte('date', range.to);
           }
-          await query.delete();
+          await query;
         }
         // For top-level keys (salons, users, logs) — delete all is dangerous, skip
       },
