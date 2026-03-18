@@ -894,15 +894,17 @@ function ProgressBar({ current, total }) {
 }
 
 function OnboardingWizard({ onComplete }) {
-  const TOTAL_STEPS = 5;
+  const TOTAL_STEPS = 6;
   const [step, setStep] = useState(0);
   const [s1, setS1] = useState(makeInitialSalonConfig("salon-1"));
   const [s2, setS2] = useState(makeInitialSalonConfig("salon-2"));
+  const [s3, setS3] = useState({ ...makeInitialSalonConfig("salon-3"), name: "Чунжа" });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   const patchS1 = (patch) => setS1(prev => ({ ...prev, ...patch }));
   const patchS2 = (patch) => setS2(prev => ({ ...prev, ...patch }));
+  const patchS3 = (patch) => setS3(prev => ({ ...prev, ...patch }));
 
   const validate = () => {
     if (step === 0 && !s1.name.trim()) return "Введите название салона";
@@ -915,6 +917,7 @@ function OnboardingWizard({ onComplete }) {
     if (step === 2 && s1.therapists && s1.therapists.some(t => !t.name.trim()))
       return "Укажите имя каждой массажистки";
     if (step === 4 && !s2.name.trim()) return "Введите название второго салона";
+    if (step === 5 && !s3.name.trim()) return "Введите название третьего салона";
     return "";
   };
 
@@ -931,7 +934,7 @@ function OnboardingWizard({ onComplete }) {
     const err = validate();
     if (err) { setError(err); return; }
     setSaving(true);
-    const salons = [s1, s2];
+    const salons = [s1, s2, s3];
     await Storage.set(KEYS.salons, salons);
     for (const salon of salons) {
       await Storage.set(KEYS.procedures(salon.id), makeDefaultProcedures(salon.id));
@@ -946,6 +949,7 @@ function OnboardingWizard({ onComplete }) {
     "Массажистки и часы салона 1",
     "Сауна и пиллинг салона 1",
     "Настройка салона 2",
+    "Настройка салона 3 — Чунжа",
   ];
 
   const renderStep = () => {
@@ -998,6 +1002,35 @@ function OnboardingWizard({ onComplete }) {
                 Сауна и пиллинг
               </p>
               <SaunaFields config={s2} onChange={patchS2} />
+            </div>
+          </div>
+        );
+      case 5:
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <TextInput
+              label="Название третьего салона"
+              value={s3.name}
+              placeholder="Чунжа"
+              onChange={v => patchS3({ name: v })}
+            />
+            <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
+              <p style={{ margin: "0 0 10px", color: C.textSub, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Кабинки
+              </p>
+              <RoomsEditor rooms={s3.rooms} onChange={rooms => patchS3({ rooms })} />
+            </div>
+            <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
+              <p style={{ margin: "0 0 10px", color: C.textSub, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Мастера и часы
+              </p>
+              <ScheduleFields config={s3} onChange={patchS3} />
+            </div>
+            <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
+              <p style={{ margin: "0 0 10px", color: C.textSub, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Сауна и пиллинг
+              </p>
+              <SaunaFields config={s3} onChange={patchS3} />
             </div>
           </div>
         );
@@ -4601,7 +4634,7 @@ function DashboardScreen({ salons }) {
 
   const kpi = (() => {
     if (dashSalon !== "all" || salons.length < 2) return computeKpi(filtered);
-    // "Оба" — average of two salons
+    // "Все" — average across all salons
     const perSalon = salons.map(s => computeKpi(filtered, s.id));
     const n = perSalon.length;
     return {
@@ -4724,7 +4757,7 @@ function DashboardScreen({ salons }) {
           <button key={s.id} onClick={() => setDashSalon(s.id)}
             style={pillBtn(dashSalon === s.id)}>{s.name}</button>
         ))}
-        <button onClick={() => setDashSalon("all")} style={pillBtn(dashSalon === "all")}>Оба</button>
+        <button onClick={() => setDashSalon("all")} style={pillBtn(dashSalon === "all")}>Все</button>
 
         <div style={{ flex: 1 }} />
 
