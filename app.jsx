@@ -1904,8 +1904,9 @@ function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowTo
   const [editing, setEditing] = useState(null); // null | "new" | proc.id
 
   const persist = async (updated) => {
-    await Storage.set(KEYS.procedures(activeSalonId), updated);
     onProceduresChange(updated);
+    const ok = await Storage.set(KEYS.procedures(activeSalonId), updated);
+    if (!ok) onShowToast("Ошибка сохранения процедур");
   };
 
   const handleAdd = async (form) => {
@@ -2331,8 +2332,9 @@ function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowTo
   const [editingCombo, setEditingCombo] = useState(null);
 
   const persist = async (updated) => {
-    await Storage.set(KEYS.combos(activeSalonId), updated);
     onCombosChange(updated);
+    const ok = await Storage.set(KEYS.combos(activeSalonId), updated);
+    if (!ok) onShowToast("Ошибка сохранения комбо");
   };
 
   const handleSave = async (form) => {
@@ -2448,7 +2450,8 @@ function ServicesScreen({ procedures, onProceduresChange, combos, onCombosChange
   const handleSalonPatch = async (patch) => {
     const updated = salons.map(s => s.id === activeSalonId ? { ...s, ...patch } : s);
     onSalonsChange(updated);
-    await Storage.set(KEYS.salons, updated);
+    const ok = await Storage.set(KEYS.salons, updated);
+    if (!ok) onShowToast("Ошибка сохранения настроек");
   };
 
   return (

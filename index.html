@@ -154,7 +154,7 @@
             delQuery = delQuery.gte('date', range.from).lte('date', range.to);
           }
           const { error: delErr } = await delQuery;
-          if (delErr) console.error('Supabase delete error:', delErr);
+          if (delErr) { console.error('Supabase delete error:', delErr); throw delErr; }
         } else if (parsed.table === 'salons') {
           // Salons: upsert all
         } else if (parsed.table === 'profiles') {
@@ -176,10 +176,10 @@
 
         if (parsed.table === 'salons') {
           const { error } = await sb.from('salons').upsert(snakeItems, { onConflict: 'id' });
-          if (error) console.error('Supabase salons upsert error:', error);
+          if (error) { console.error('Supabase salons upsert error:', error); throw error; }
         } else {
           const { error } = await sb.from(parsed.table).insert(snakeItems);
-          if (error) console.error('Supabase insert error:', error);
+          if (error) { console.error('Supabase insert error:', error); throw error; }
         }
       },
 
