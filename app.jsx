@@ -546,6 +546,7 @@ const makeInitialSalonConfig = (id) => ({
   id,
   name: "",
   rooms: [{ id: `${id}-room-1`, name: "Кабинка 1", beds: 2 }],
+  therapistCount: 6,
   therapists: Array.from({ length: 6 }, (_, i) => ({ id: `${id}-ther-${i + 1}`, name: `Массажистка ${i + 1}` })),
   hasSauna: true,
   saunaCapacity: 4,
@@ -5444,9 +5445,11 @@ function App() {
       if (savedSalons && savedSalons.length === 2 && !savedSalons.find(s => s.id === "salon-3")) {
         const s3 = { ...makeInitialSalonConfig("salon-3"), name: "Чунжа" };
         savedSalons = [...savedSalons, s3];
-        await Storage.set(KEYS.salons, savedSalons);
-        await Storage.set(KEYS.procedures("salon-3"), makeDefaultProcedures("salon-3"));
-        await Storage.set(KEYS.combos("salon-3"), []);
+        const ok = await Storage.set(KEYS.salons, savedSalons);
+        if (ok) {
+          await Storage.set(KEYS.procedures("salon-3"), makeDefaultProcedures("salon-3"));
+          await Storage.set(KEYS.combos("salon-3"), []);
+        }
       }
       if (!savedSalons || savedSalons.length === 0) {
         setNeedsOnboarding(true);
@@ -5478,9 +5481,11 @@ function App() {
       if (savedSalons.length === 2 && !savedSalons.find(s => s.id === "salon-3")) {
         const s3 = { ...makeInitialSalonConfig("salon-3"), name: "Чунжа" };
         savedSalons = [...savedSalons, s3];
-        await Storage.set(KEYS.salons, savedSalons);
-        await Storage.set(KEYS.procedures("salon-3"), makeDefaultProcedures("salon-3"));
-        await Storage.set(KEYS.combos("salon-3"), []);
+        const ok = await Storage.set(KEYS.salons, savedSalons);
+        if (ok) {
+          await Storage.set(KEYS.procedures("salon-3"), makeDefaultProcedures("salon-3"));
+          await Storage.set(KEYS.combos("salon-3"), []);
+        }
       }
       setSalons(savedSalons);
       const firstId = savedSalons[0].id;
