@@ -2606,16 +2606,22 @@ function validateBooking(booking, existingBookings, salon) {
   }
 
   // 8. Master (named therapist) conflict — prevent double-booking the same person
-  if (booking.masterName) {
+  const bookingMasters = booking.masterName ? booking.masterName.split(", ").filter(m => m) : [];
+  if (bookingMasters.length > 0) {
     const activeOthers = others.filter(ob => ob.status !== "cancelled_refund" && ob.status !== "cancelled_no_refund");
     for (const ob of activeOthers) {
-      if (!ob.masterName || ob.masterName !== booking.masterName) continue;
+      if (!ob.masterName) continue;
+      const obMasters = ob.masterName.split(", ").filter(m => m);
+      const common = bookingMasters.filter(m => obMasters.includes(m));
+      if (common.length === 0) continue;
       for (const seg of booking.segments) {
         if ((seg.therapistCount || 0) === 0) continue;
         for (const os of ob.segments) {
           if ((os.therapistCount || 0) === 0) continue;
           if (seg.startTime < os.endTime && seg.endTime > os.startTime) {
-            errors.push({ field: "master", message: `${booking.masterName} уже занят(а) с ${os.startTime} до ${os.endTime}` });
+            for (const name of common) {
+              errors.push({ field: "master", message: `${name} уже занят(а) с ${os.startTime} до ${os.endTime}` });
+            }
             break;
           }
         }
@@ -2647,7 +2653,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const [peelingCount, setPeelingCount] = useState(1);
   const [withPeeling, setWithPeeling] = useState(false);
   const [notes, setNotes] = useState("");
-  const [masterName, setMasterName] = useState("");
+  const [masters, setMasters] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [err, setErr] = useState("");
   const [saving, setSaving] = useState(false);
@@ -2757,6 +2763,31 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     return total;
   })();
 
+  // Number of massage master slots (excluding peeling masters)
+  const massageMasterCount = (() => {
+    if (bookingType === "single") {
+      if (!selectedProc || selectedProc.category === "sauna" || selectedProc.category === "peeling") return 0;
+      return clientCount * (selectedProc.therapistsRequired || 0);
+    }
+    if (!selectedCombo) return 0;
+    let max = 0;
+    for (const step of selectedCombo.steps) {
+      const proc = activeProcedures.find(p => p.id === step.procId);
+      if (!proc || proc.category === "sauna" || proc.category === "peeling") continue;
+      max = Math.max(max, clientCount * (proc.therapistsRequired || 1));
+    }
+    return max;
+  })();
+
+  // Resize masters array when count changes
+  useEffect(() => {
+    setMasters(prev => {
+      if (prev.length === massageMasterCount) return prev;
+      if (prev.length < massageMasterCount) return [...prev, ...Array(massageMasterCount - prev.length).fill("")];
+      return prev.slice(0, massageMasterCount);
+    });
+  }, [massageMasterCount]);
+
   // Price
   const peelingProc = activeProcedures.find(p => p.category === "peeling");
   const peelingExtra = (withPeeling && bookingType === "single" && selectedProc?.category === "sauna" && salon.hasPeeling)
@@ -2860,7 +2891,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     if (!segResult) return [];
     const tempBooking = {
       id: "__new__", date, clientCount,
-      masterName: masterName.trim(),
+      masterName: masters.filter(m => m).join(", "),
       segments: segResult.segments,
       totalStartTime: segResult.totalStartTime,
       totalEndTime: segResult.totalEndTime,
@@ -2903,7 +2934,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       status: "booked",
       createdAt: new Date().toISOString(),
       notes: notes.trim(),
-      masterName: masterName.trim(),
+      masterName: masters.filter(m => m).join(", "),
       paymentMethod,
     };
     const updated = [...existing, booking];
@@ -2956,17 +2987,29 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           </div>
         </div>
 
-        {/* Master (therapist) */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>Мастер</label>
-          <select value={masterName} onChange={e => setMasterName(e.target.value)}
-            style={{ ...inputStyle(), cursor: "pointer" }}>
-            <option value="" style={{ backgroundColor: C.card }}>— Не назначен —</option>
-            {(salon.therapists || []).map(t => (
-              <option key={t.id} value={t.name} style={{ backgroundColor: C.card }}>{t.name}</option>
+        {/* Master (therapist) selectors — one per required therapist */}
+        {massageMasterCount > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>{massageMasterCount > 1 ? "Мастера" : "Мастер"}</label>
+            {masters.map((m, idx) => (
+              <div key={idx} style={{ marginBottom: idx < masters.length - 1 ? 8 : 0 }}>
+                {massageMasterCount > 1 && (
+                  <div style={{ fontSize: 11, color: C.textSub, marginBottom: 2 }}>Мастер {idx + 1}</div>
+                )}
+                <select value={m} onChange={e => {
+                  const updated = [...masters];
+                  updated[idx] = e.target.value;
+                  setMasters(updated);
+                }} style={{ ...inputStyle(), cursor: "pointer" }}>
+                  <option value="" style={{ backgroundColor: C.card }}>— Не назначен —</option>
+                  {(salon.therapists || []).filter(t => !masters.includes(t.name) || t.name === m).map(t => (
+                    <option key={t.id} value={t.name} style={{ backgroundColor: C.card }}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
             ))}
-          </select>
-        </div>
+          </div>
+        )}
 
         {/* Client count */}
         <div style={{ marginBottom: 16 }}>
@@ -3303,8 +3346,10 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
             <div style={{ fontSize: 13, color: C.textSub, marginBottom: 6 }}>
               {clientName.trim()} — {date}, {startTime || segResult?.totalStartTime}
             </div>
-            {masterName.trim() && (
-              <div style={{ fontSize: 13, color: C.textMain, marginBottom: 6 }}>Мастер: {masterName.trim()}</div>
+            {masters.some(m => m) && (
+              <div style={{ fontSize: 13, color: C.textMain, marginBottom: 6 }}>
+                {masters.filter(m => m).length > 1 ? "Мастера" : "Мастер"}: {masters.filter(m => m).join(", ")}
+              </div>
             )}
             <div style={{ fontSize: 13, color: C.textSub, marginBottom: 6 }}>
               {bookingType === "single" ? selectedProc?.name : selectedCombo?.name} — {paymentMethod === "cert_dep" ? "СЕРТ / ДЕП (бесплатно)" : totalPrice.toLocaleString("ru-RU") + " ₸"}
