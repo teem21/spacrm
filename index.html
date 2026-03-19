@@ -251,6 +251,17 @@
       }
     };
     })();
+
+    // ── Telegram notification (calls Edge Function) ──
+    window.notifyTelegram = function(event, data) {
+      try {
+        var sb = window.supabaseClient;
+        if (!sb) return;
+        sb.functions.invoke('telegram-bot', {
+          body: { action: 'notify', event: event, data: data },
+        }).catch(function() {});
+      } catch (e) {}
+    };
   </script>
 
   <!-- Shim: convert vanilla lucide icons into React components -->

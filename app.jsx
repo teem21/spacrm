@@ -3706,6 +3706,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
         timestamp: new Date().toISOString(),
       });
     }
+    if (window.notifyTelegram) window.notifyTelegram("create", { ..._booking, salonName: salon?.name || "" });
     if (onShowToast) onShowToast("Запись создана");
   };
 
@@ -3724,6 +3725,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
         timestamp: new Date().toISOString(),
       });
     }
+    if (window.notifyTelegram && booking) window.notifyTelegram("status", { ...booking, salonName: salon?.name || "", oldStatus: booking.status, newStatus });
     if (onShowToast) onShowToast("Статус изменён");
   };
 
@@ -3752,6 +3754,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
         timestamp: new Date().toISOString(),
       });
     }
+    if (window.notifyTelegram && target) window.notifyTelegram("delete", { ...target, salonName: salon?.name || "" });
     if (onShowToast) onShowToast("Запись удалена");
   };
 
@@ -4300,6 +4303,8 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
         timestamp: new Date().toISOString(),
       });
     }
+    const salonObj = salons.find(s => s.id === salonId);
+    if (window.notifyTelegram && booking) window.notifyTelegram("status", { ...booking, salonName: salonObj?.name || "", oldStatus: booking.status, newStatus });
     if (onShowToast) onShowToast("Статус изменён");
   };
 

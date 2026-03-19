@@ -2,14 +2,39 @@ const https = require("https");
 const fs = require("fs");
 const path = require("path");
 
-// ─── Config ──────────────────────────────────────────────────────────────────
-const BOT_TOKEN = "8667376995:AAGrBa2kcOtjS23Bo_eq48_dTEavrphdFgo";
-const DATA_DIR = path.join(__dirname, "data");
-const CHAT_IDS_FILE = path.join(DATA_DIR, "_bot_chat_ids.json");
+// ─── Load .env ──────────────────────────────────────────────────────────────
+const ENV_FILE = path.join(__dirname, ".env");
+if (fs.existsSync(ENV_FILE)) {
+  fs.readFileSync(ENV_FILE, "utf-8").split("\n").forEach(line => {
+    const eq = line.indexOf("=");
+    if (eq > 0) {
+      const key = line.slice(0, eq).trim();
+      const val = line.slice(eq + 1).trim();
+      if (key && val) process.env[key] = val;
+    }
+  });
+}
+
+// ─── Config ─────────────────────────────────────────────────────────────────
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
+const SUPABASE_URL = process.env.SUPABASE_URL || "";
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const SEND_HOUR = 21;
 const SEND_MINUTE = 30;
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+if (!BOT_TOKEN) { console.error("ERROR: Missing TELEGRAM_BOT_TOKEN in .env"); process.exit(1); }
+if (!SUPABASE_URL) { console.error("ERROR: Missing SUPABASE_URL in .env"); process.exit(1); }
+if (!SUPABASE_KEY) { console.error("ERROR: Missing SUPABASE_SERVICE_ROLE_KEY in .env"); process.exit(1); }
+
+const STATUS_LABEL = {
+  booked: "Ожидает",
+  completed: "Завершено",
+  cancelled_refund: "Отменено (возврат)",
+  cancelled_no_refund: "Отменено (без возврата)",
+  "no-show": "Неявка",
+};
+
+// ─── Telegram API ───────────────────────────────────────────────────────────
 function tgApi(method, body) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
@@ -21,9 +46,7 @@ function tgApi(method, body) {
     }, (res) => {
       let raw = "";
       res.on("data", (c) => (raw += c));
-      res.on("end", () => {
-        try { resolve(JSON.parse(raw)); } catch { resolve(raw); }
-      });
+      res.on("end", () => { try { resolve(JSON.parse(raw)); } catch { resolve(raw); } });
     });
     req.on("error", reject);
     req.write(data);
@@ -31,100 +54,155 @@ function tgApi(method, body) {
   });
 }
 
-function loadChatIds() {
-  if (fs.existsSync(CHAT_IDS_FILE)) {
-    try { return JSON.parse(fs.readFileSync(CHAT_IDS_FILE, "utf-8")); }
-    catch { return []; }
-  }
-  return [];
+// ─── Supabase REST API ──────────────────────────────────────────────────────
+function supabaseGet(tablePath) {
+  return new Promise((resolve, reject) => {
+    const fullUrl = `${SUPABASE_URL}/rest/v1/${tablePath}`;
+    const parsed = new URL(fullUrl);
+    const req = https.request({
+      hostname: parsed.hostname,
+      port: 443,
+      path: parsed.pathname + parsed.search,
+      method: "GET",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+      },
+    }, (res) => {
+      let raw = "";
+      res.on("data", (c) => (raw += c));
+      res.on("end", () => { try { resolve(JSON.parse(raw)); } catch { resolve(null); } });
+    });
+    req.on("error", reject);
+    req.end();
+  });
 }
 
-function saveChatIds(ids) {
-  fs.writeFileSync(CHAT_IDS_FILE, JSON.stringify(ids), "utf-8");
+function supabasePost(table, data, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify(data);
+    const parsed = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+    const req = https.request({
+      hostname: parsed.hostname,
+      port: 443,
+      path: parsed.pathname,
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates",
+        ...headers,
+      },
+    }, (res) => {
+      let raw = "";
+      res.on("data", (c) => (raw += c));
+      res.on("end", () => { try { resolve(JSON.parse(raw)); } catch { resolve(raw); } });
+    });
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
 }
 
-function readStorageKey(key) {
-  const file = path.join(DATA_DIR, encodeURIComponent(key) + ".json");
-  if (fs.existsSync(file)) {
-    try { return JSON.parse(fs.readFileSync(file, "utf-8")); } catch { return null; }
-  }
-  return null;
+function supabaseDelete(tablePath) {
+  return new Promise((resolve, reject) => {
+    const fullUrl = `${SUPABASE_URL}/rest/v1/${tablePath}`;
+    const parsed = new URL(fullUrl);
+    const req = https.request({
+      hostname: parsed.hostname,
+      port: 443,
+      path: parsed.pathname + parsed.search,
+      method: "DELETE",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+    }, (res) => {
+      let raw = "";
+      res.on("data", (c) => (raw += c));
+      res.on("end", () => resolve(raw));
+    });
+    req.on("error", reject);
+    req.end();
+  });
 }
 
-function listStorageKeys(prefix) {
-  if (!fs.existsSync(DATA_DIR)) return [];
-  return fs.readdirSync(DATA_DIR)
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => decodeURIComponent(f.replace(/\.json$/, "")))
-    .filter((k) => k.startsWith(prefix));
+// ─── Helpers ────────────────────────────────────────────────────────────────
+function escMd(text) {
+  return String(text || "").replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
 }
 
-// ─── Build daily report ──────────────────────────────────────────────────────
-function buildDailyReport() {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  const dateStr = `${yyyy}-${mm}-${dd}`;
-  const ym = `${yyyy}-${mm}`;
+function fmtMoney(n) {
+  return n.toLocaleString("ru-RU");
+}
 
-  // Load salons
-  const salons = readStorageKey("spa-crm:salons") || [];
-  if (salons.length === 0) return null;
+function todayStr() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
+
+function tomorrowStr() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+// ─── Build daily report ─────────────────────────────────────────────────────
+async function buildDailyReport() {
+  const dateStr = todayStr();
+  const [yyyy, mm, dd] = dateStr.split("-");
+
+  const salons = await supabaseGet("salons?select=*") || [];
+  if (!Array.isArray(salons) || salons.length === 0) return null;
+
+  const bookings = await supabaseGet(`bookings?select=*&date=eq.${dateStr}`) || [];
 
   const lines = [];
-  lines.push(`📊 *Отчёт за ${dd}.${mm}.${yyyy}*`);
+  lines.push(`📊 *Отчёт за ${dd}\\.${mm}\\.${yyyy}*`);
   lines.push("");
 
-  let grandTotal = 0;
-  let grandBookings = 0;
-  let grandClients = 0;
-  let grandCompleted = 0;
-  let grandCancelled = 0;
-  let grandNoShow = 0;
-  let grandRevenue = 0;
-  let grandRefunded = 0;
+  let gTotal = 0, gClients = 0, gCompleted = 0;
+  let gCancelled = 0, gNoShow = 0, gRevenue = 0;
 
   for (const salon of salons) {
-    const bookingKey = `spa-crm:bookings:${salon.id}:${ym}`;
-    const allMonth = readStorageKey(bookingKey) || [];
-    const dayBookings = allMonth.filter((b) => b.date === dateStr);
+    const sb = bookings.filter((b) => b.salon_id === salon.id);
 
-    if (dayBookings.length === 0) {
+    if (sb.length === 0) {
       lines.push(`🏠 *${escMd(salon.name)}*: нет записей`);
       lines.push("");
       continue;
     }
 
-    const total = dayBookings.length;
-    const clients = dayBookings.reduce((s, b) => s + (b.clientCount || 1), 0);
-    const booked = dayBookings.filter((b) => b.status === "booked").length;
-    const completed = dayBookings.filter((b) => b.status === "completed").length;
-    const cancelledRefund = dayBookings.filter((b) => b.status === "cancelled_refund");
-    const cancelledNoRefund = dayBookings.filter((b) => b.status === "cancelled_no_refund");
-    const noShow = dayBookings.filter((b) => b.status === "no-show").length;
+    const clients = sb.reduce((s, b) => s + (b.client_count || 1), 0);
+    const booked = sb.filter((b) => b.status === "booked").length;
+    const completed = sb.filter((b) => b.status === "completed").length;
+    const cancelRefund = sb.filter((b) => b.status === "cancelled_refund");
+    const cancelNoRefund = sb.filter((b) => b.status === "cancelled_no_refund");
+    const noShow = sb.filter((b) => b.status === "no-show").length;
 
-    const paid = dayBookings.filter(
+    const paid = sb.filter(
       (b) => b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund"
     );
-    const revenue = paid.reduce((s, b) => s + (b.totalPrice || 0), 0);
-    const refunded = cancelledRefund.reduce((s, b) => s + (b.totalPrice || 0), 0);
-    const keptDeposit = cancelledNoRefund.reduce((s, b) => s + (b.totalPrice || 0), 0);
+    const revenue = paid.reduce((s, b) => s + (b.total_price || 0), 0);
+    const refunded = cancelRefund.reduce((s, b) => s + (b.total_price || 0), 0);
+    const keptDeposit = cancelNoRefund.reduce((s, b) => s + (b.total_price || 0), 0);
 
     lines.push(`🏠 *${escMd(salon.name)}*`);
-    lines.push(`├ Записей: ${total} (${clients} чел\\.)`);
+    lines.push(`├ Записей: ${sb.length} \\(${clients} чел\\.\\)`);
     lines.push(`├ ✅ Завершено: ${completed}`);
     lines.push(`├ 📋 Ожидают: ${booked}`);
-    lines.push(`├ ❌ Отмена \\(возврат\\): ${cancelledRefund.length} — ${formatMoney(refunded)} ₸`);
-    lines.push(`├ 💰 Отмена \\(без возврата\\): ${cancelledNoRefund.length} — ${formatMoney(keptDeposit)} ₸`);
+    lines.push(`├ ❌ Отмена \\(возврат\\): ${cancelRefund.length} — ${escMd(fmtMoney(refunded))} ₸`);
+    lines.push(`├ 💰 Отмена \\(без возврата\\): ${cancelNoRefund.length} — ${escMd(fmtMoney(keptDeposit))} ₸`);
     lines.push(`├ 🚫 Неявка: ${noShow}`);
-    lines.push(`└ 💵 Выручка: *${formatMoney(revenue)} ₸*`);
+    lines.push(`└ 💵 Выручка: *${escMd(fmtMoney(revenue))} ₸*`);
     lines.push("");
 
     // Top procedures
     const procCounts = {};
-    dayBookings.forEach((b) => {
-      const name = b.segments?.[0]?.procedureName || "Другое";
+    sb.forEach((b) => {
+      const name = (b.segments || [])[0]?.procedureName || "Другое";
       procCounts[name] = (procCounts[name] || 0) + 1;
     });
     const topProcs = Object.entries(procCounts)
@@ -138,52 +216,100 @@ function buildDailyReport() {
       lines.push("");
     }
 
-    // Time slots breakdown
+    // Peak hour
     const hourMap = {};
-    dayBookings.forEach((b) => {
-      const h = b.totalStartTime?.slice(0, 2) || "??";
+    sb.forEach((b) => {
+      const h = b.total_start_time?.slice(0, 2) || "??";
       hourMap[h] = (hourMap[h] || 0) + 1;
     });
     const busyHours = Object.entries(hourMap).sort(([, a], [, b]) => b - a);
     if (busyHours.length > 0) {
-      const peakHour = busyHours[0];
-      lines.push(`⏰ Пиковый час: ${peakHour[0]}:00 \\(${peakHour[1]} записей\\)`);
+      lines.push(`⏰ Пиковый час: ${busyHours[0][0]}:00 \\(${busyHours[0][1]} записей\\)`);
       lines.push("");
     }
 
-    grandTotal += total;
-    grandClients += clients;
-    grandCompleted += completed;
-    grandCancelled += cancelledRefund.length + cancelledNoRefund.length;
-    grandNoShow += noShow;
-    grandRevenue += revenue;
-    grandRefunded += refunded;
+    gTotal += sb.length;
+    gClients += clients;
+    gCompleted += completed;
+    gCancelled += cancelRefund.length + cancelNoRefund.length;
+    gNoShow += noShow;
+    gRevenue += revenue;
   }
 
-  // Grand total if multiple salons
   if (salons.length > 1) {
     lines.push("━━━━━━━━━━━━━━━━━━━━");
-    lines.push(`📈 *Итого по всем салонам:*`);
-    lines.push(`├ Записей: ${grandTotal} (${grandClients} чел\\.)`);
-    lines.push(`├ ✅ Завершено: ${grandCompleted}`);
-    lines.push(`├ ❌ Отменено: ${grandCancelled}`);
-    lines.push(`├ 🚫 Неявка: ${grandNoShow}`);
-    lines.push(`└ 💵 Общая выручка: *${formatMoney(grandRevenue)} ₸*`);
+    lines.push("📈 *Итого по всем салонам:*");
+    lines.push(`├ Записей: ${gTotal} \\(${gClients} чел\\.\\)`);
+    lines.push(`├ ✅ Завершено: ${gCompleted}`);
+    lines.push(`├ ❌ Отменено: ${gCancelled}`);
+    lines.push(`├ 🚫 Неявка: ${gNoShow}`);
+    lines.push(`└ 💵 Общая выручка: *${escMd(fmtMoney(gRevenue))} ₸*`);
   }
 
   return lines.join("\n");
 }
 
-function escMd(text) {
-  // Escape MarkdownV2 special characters
-  return text.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
+// ─── Build schedule for a date ──────────────────────────────────────────────
+async function buildSchedule(dateStr) {
+  const [yyyy, mm, dd] = dateStr.split("-");
+
+  const salons = await supabaseGet("salons?select=*") || [];
+  if (!Array.isArray(salons) || salons.length === 0) return null;
+
+  const bookings = await supabaseGet(
+    `bookings?select=*&date=eq.${dateStr}&status=not.in.(cancelled_refund,cancelled_no_refund)&order=total_start_time.asc`
+  ) || [];
+
+  const lines = [];
+  lines.push(`📅 *Расписание на ${dd}\\.${mm}\\.${yyyy}*`);
+  lines.push("");
+
+  let totalCount = 0;
+  let totalRevenue = 0;
+
+  for (const salon of salons) {
+    const sb = Array.isArray(bookings) ? bookings.filter((b) => b.salon_id === salon.id) : [];
+    lines.push(`🏠 *${escMd(salon.name)}*`);
+
+    if (sb.length === 0) {
+      lines.push("  _Нет записей_");
+      lines.push("");
+      continue;
+    }
+
+    for (const b of sb) {
+      const proc = (b.segments || [])[0]?.procedureName || "—";
+      const master = b.master_name || "—";
+      const status = b.status !== "booked" ? ` \\[${escMd(STATUS_LABEL[b.status] || b.status)}\\]` : "";
+      lines.push(
+        `  ${escMd(b.total_start_time)}–${escMd(b.total_end_time)} │ ${escMd(b.client_name)} │ ${escMd(proc)} │ ${escMd(master)} │ ${escMd(fmtMoney(b.total_price || 0))} ₸${status}`
+      );
+    }
+    lines.push("");
+
+    totalCount += sb.length;
+    totalRevenue += sb.reduce((s, b) => s + (b.total_price || 0), 0);
+  }
+
+  lines.push(`📊 Итого: ${totalCount} записей, ${escMd(fmtMoney(totalRevenue))} ₸`);
+  return lines.join("\n");
 }
 
-function formatMoney(n) {
-  return n.toLocaleString("ru-RU").replace(/\s/g, " ");
+// ─── Subscribers (Supabase) ─────────────────────────────────────────────────
+async function getSubscribers() {
+  const data = await supabaseGet("telegram_subscribers?select=chat_id");
+  return Array.isArray(data) ? data.map((r) => r.chat_id) : [];
 }
 
-// ─── Polling for /start command ──────────────────────────────────────────────
+async function addSubscriber(chatId) {
+  await supabasePost("telegram_subscribers", { chat_id: chatId });
+}
+
+async function removeSubscriber(chatId) {
+  await supabaseDelete(`telegram_subscribers?chat_id=eq.${chatId}`);
+}
+
+// ─── Polling ────────────────────────────────────────────────────────────────
 let lastUpdateId = 0;
 
 async function pollUpdates() {
@@ -196,37 +322,59 @@ async function pollUpdates() {
         if (!msg) continue;
 
         const chatId = msg.chat.id;
-        const text = msg.text || "";
+        const text = (msg.text || "").trim();
 
         if (text === "/start") {
-          const ids = loadChatIds();
-          if (!ids.includes(chatId)) {
-            ids.push(chatId);
-            saveChatIds(ids);
-            console.log(`New chat registered: ${chatId}`);
-          }
+          await addSubscriber(chatId);
+          console.log(`Subscriber added: ${chatId}`);
           await tgApi("sendMessage", {
             chat_id: chatId,
-            text: "✅ Вы подписаны на ежедневные отчёты CRM\\!\n\nОтчёт будет приходить каждый день в 21:30\\.\n\nКоманды:\n/report — получить отчёт за сегодня\n/stop — отписаться",
+            parse_mode: "MarkdownV2",
+            text: [
+              "✅ Вы подписаны на уведомления CRM\\!",
+              "",
+              "*Команды:*",
+              "/today — расписание на сегодня",
+              "/tomorrow — расписание на завтра",
+              "/report — отчёт за сегодня",
+              "/stop — отписаться",
+            ].join("\n"),
+          });
+        }
+
+        if (text === "/stop") {
+          await removeSubscriber(chatId);
+          console.log(`Subscriber removed: ${chatId}`);
+          await tgApi("sendMessage", {
+            chat_id: chatId,
+            text: "🔕 Вы отписаны\\. Отправьте /start чтобы подписаться снова\\.",
             parse_mode: "MarkdownV2",
           });
         }
 
         if (text === "/report") {
-          const report = buildDailyReport();
-          if (report) {
-            await tgApi("sendMessage", { chat_id: chatId, text: report, parse_mode: "MarkdownV2" });
-          } else {
-            await tgApi("sendMessage", { chat_id: chatId, text: "Нет данных для отчёта\\. Салоны не настроены\\.", parse_mode: "MarkdownV2" });
-          }
-        }
-
-        if (text === "/stop") {
-          const ids = loadChatIds().filter((id) => id !== chatId);
-          saveChatIds(ids);
+          const report = await buildDailyReport();
           await tgApi("sendMessage", {
             chat_id: chatId,
-            text: "🔕 Вы отписаны от отчётов\\. Отправьте /start чтобы подписаться снова\\.",
+            text: report || "Нет данных для отчёта\\.",
+            parse_mode: "MarkdownV2",
+          });
+        }
+
+        if (text === "/today") {
+          const schedule = await buildSchedule(todayStr());
+          await tgApi("sendMessage", {
+            chat_id: chatId,
+            text: schedule || "Нет данных\\.",
+            parse_mode: "MarkdownV2",
+          });
+        }
+
+        if (text === "/tomorrow") {
+          const schedule = await buildSchedule(tomorrowStr());
+          await tgApi("sendMessage", {
+            chat_id: chatId,
+            text: schedule || "Нет данных\\.",
             parse_mode: "MarkdownV2",
           });
         }
@@ -237,7 +385,7 @@ async function pollUpdates() {
   }
 }
 
-// ─── Scheduled daily send at 21:30 ──────────────────────────────────────────
+// ─── Scheduled daily send ───────────────────────────────────────────────────
 let lastSentDate = "";
 
 function checkSchedule() {
@@ -253,17 +401,11 @@ function checkSchedule() {
 }
 
 async function sendDailyReport() {
-  const report = buildDailyReport();
-  if (!report) {
-    console.log("No report data — skipping");
-    return;
-  }
+  const report = await buildDailyReport();
+  if (!report) { console.log("No report data — skipping"); return; }
 
-  const chatIds = loadChatIds();
-  if (chatIds.length === 0) {
-    console.log("No subscribers — skipping");
-    return;
-  }
+  const chatIds = await getSubscribers();
+  if (chatIds.length === 0) { console.log("No subscribers — skipping"); return; }
 
   console.log(`Sending daily report to ${chatIds.length} subscriber(s)...`);
   for (const chatId of chatIds) {
@@ -276,16 +418,11 @@ async function sendDailyReport() {
   }
 }
 
-// ─── Main ────────────────────────────────────────────────────────────────────
-console.log("🤖 CRM Telegram Bot started");
-console.log(`   Daily report scheduled at ${SEND_HOUR}:${String(SEND_MINUTE).padStart(2, "0")}`);
-console.log("   Send /start to the bot to subscribe\n");
+// ─── Main ───────────────────────────────────────────────────────────────────
+console.log("🤖 CRM Telegram Bot started (Supabase mode)");
+console.log(`   Daily report at ${SEND_HOUR}:${String(SEND_MINUTE).padStart(2, "0")}`);
+console.log("   Commands: /start, /stop, /report, /today, /tomorrow\n");
 
-// Poll for messages every 2 seconds
 setInterval(pollUpdates, 2000);
-
-// Check schedule every 30 seconds
 setInterval(checkSchedule, 30000);
-
-// Initial poll
 pollUpdates();
