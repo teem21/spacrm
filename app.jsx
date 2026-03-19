@@ -2605,6 +2605,26 @@ function validateBooking(booking, existingBookings, salon) {
     }
   }
 
+  // 8. Master (named therapist) conflict — prevent double-booking the same person
+  if (booking.masterName) {
+    const activeOthers = others.filter(ob => ob.status !== "cancelled_refund" && ob.status !== "cancelled_no_refund");
+    for (const ob of activeOthers) {
+      if (!ob.masterName || ob.masterName !== booking.masterName) continue;
+      for (const seg of booking.segments) {
+        if ((seg.therapistCount || 0) === 0) continue;
+        for (const os of ob.segments) {
+          if ((os.therapistCount || 0) === 0) continue;
+          if (seg.startTime < os.endTime && seg.endTime > os.startTime) {
+            errors.push({ field: "master", message: `${booking.masterName} уже занят(а) с ${os.startTime} до ${os.endTime}` });
+            break;
+          }
+        }
+        if (errors.some(e => e.field === "master")) break;
+      }
+      if (errors.some(e => e.field === "master")) break;
+    }
+  }
+
   return { valid: errors.length === 0, errors };
 }
 
@@ -2840,6 +2860,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     if (!segResult) return [];
     const tempBooking = {
       id: "__new__", date, clientCount,
+      masterName: masterName.trim(),
       segments: segResult.segments,
       totalStartTime: segResult.totalStartTime,
       totalEndTime: segResult.totalEndTime,
@@ -3155,13 +3176,13 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           </div>
         )}
 
-        {/* Sauna / Therapist validation warnings */}
-        {(fieldErrors("sauna").length > 0 || fieldErrors("therapists").length > 0) && (
+        {/* Sauna / Therapist / Master validation warnings */}
+        {(fieldErrors("sauna").length > 0 || fieldErrors("therapists").length > 0 || fieldErrors("master").length > 0) && (
           <div style={{
             padding: "8px 12px", borderRadius: 6, marginBottom: 16,
             backgroundColor: "#EF444422", border: "1px solid #EF4444",
           }}>
-            {[...fieldErrors("sauna"), ...fieldErrors("therapists")].map((e, i) => (
+            {[...fieldErrors("sauna"), ...fieldErrors("therapists"), ...fieldErrors("master")].map((e, i) => (
               <div key={i} style={{ color: "#F87171", fontSize: 12, marginTop: i > 0 ? 4 : 0 }}>{e.message}</div>
             ))}
           </div>
