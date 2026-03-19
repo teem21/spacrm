@@ -295,18 +295,54 @@ async function buildSchedule(dateStr) {
   return lines.join("\n");
 }
 
-// ─── Subscribers (Supabase) ─────────────────────────────────────────────────
-async function getSubscribers() {
-  const data = await supabaseGet("telegram_subscribers?select=chat_id");
+// ─── Subscribers & Auth (Supabase) ──────────────────────────────────────────
+async function getAuthenticatedSubscribers() {
+  const data = await supabaseGet("telegram_subscribers?select=chat_id&is_authenticated=eq.true");
   return Array.isArray(data) ? data.map((r) => r.chat_id) : [];
 }
 
-async function addSubscriber(chatId) {
-  await supabasePost("telegram_subscribers", { chat_id: chatId });
+async function isAuthenticated(chatId) {
+  const data = await supabaseGet(`telegram_subscribers?select=is_authenticated&chat_id=eq.${chatId}`);
+  return Array.isArray(data) && data.length > 0 && data[0].is_authenticated === true;
 }
 
-async function removeSubscriber(chatId) {
-  await supabaseDelete(`telegram_subscribers?chat_id=eq.${chatId}`);
+async function loginUser(chatId, login, password) {
+  // Authenticate via Supabase Auth REST API
+  const authBody = JSON.stringify({ email: login + "@example.com", password });
+  return new Promise((resolve) => {
+    const parsed = new URL(`${SUPABASE_URL}/auth/v1/token?grant_type=password`);
+    const req = https.request({
+      hostname: parsed.hostname, port: 443,
+      path: parsed.pathname + parsed.search,
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY,
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(authBody),
+      },
+    }, (res) => {
+      let raw = "";
+      res.on("data", (c) => (raw += c));
+      res.on("end", async () => {
+        try {
+          const result = JSON.parse(raw);
+          if (!result.user) { resolve(null); return; }
+          // Get profile name
+          const profiles = await supabaseGet(`profiles?select=name,role&id=eq.${result.user.id}`);
+          const profile = Array.isArray(profiles) && profiles[0];
+          if (!profile) { resolve(null); return; }
+          // Mark as authenticated
+          await supabasePost("telegram_subscribers", {
+            chat_id: chatId, is_authenticated: true, user_name: profile.name,
+          });
+          resolve(profile.name);
+        } catch { resolve(null); }
+      });
+    });
+    req.on("error", () => resolve(null));
+    req.write(authBody);
+    req.end();
+  });
 }
 
 // ─── Polling ────────────────────────────────────────────────────────────────
@@ -324,59 +360,105 @@ async function pollUpdates() {
         const chatId = msg.chat.id;
         const text = (msg.text || "").trim();
 
+        // /start — register and show login prompt
         if (text === "/start") {
-          await addSubscriber(chatId);
-          console.log(`Subscriber added: ${chatId}`);
+          await supabasePost("telegram_subscribers", { chat_id: chatId, is_authenticated: false, user_name: "" });
+          console.log(`New chat: ${chatId}`);
           await tgApi("sendMessage", {
             chat_id: chatId,
             parse_mode: "MarkdownV2",
             text: [
-              "✅ Вы подписаны на уведомления CRM\\!",
+              "👋 Добро пожаловать в SPA CRM Bot\\!",
               "",
-              "*Команды:*",
-              "/today — расписание на сегодня",
-              "/tomorrow — расписание на завтра",
-              "/report — отчёт за сегодня",
-              "/stop — отписаться",
+              "Для доступа войдите в систему:",
+              "`/login ваш_логин ваш_пароль`",
+              "",
+              "Пример: `/login admin 123456`",
             ].join("\n"),
           });
+          continue;
+        }
+
+        // /login <login> <password>
+        if (text.startsWith("/login")) {
+          const parts = text.split(/\s+/);
+          if (parts.length < 3) {
+            await tgApi("sendMessage", { chat_id: chatId, text: "Использование: `/login логин пароль`", parse_mode: "MarkdownV2" });
+            continue;
+          }
+          // Try to delete password message
+          try { await tgApi("deleteMessage", { chat_id: chatId, message_id: msg.message_id }); } catch (_) {}
+
+          const userName = await loginUser(chatId, parts[1], parts.slice(2).join(" "));
+          if (userName) {
+            console.log(`Login OK: ${chatId} → ${userName}`);
+            await tgApi("sendMessage", {
+              chat_id: chatId,
+              parse_mode: "MarkdownV2",
+              text: [
+                `✅ Добро пожаловать, *${escMd(userName)}*\\!`,
+                "",
+                "*Команды:*",
+                "/today — расписание на сегодня",
+                "/tomorrow — расписание на завтра",
+                "/report — отчёт за сегодня",
+                "/logout — выйти",
+              ].join("\n"),
+            });
+          } else {
+            await tgApi("sendMessage", {
+              chat_id: chatId,
+              text: "❌ Неверный логин или пароль\\.",
+              parse_mode: "MarkdownV2",
+            });
+          }
+          continue;
+        }
+
+        // All other commands require auth
+        const authed = await isAuthenticated(chatId);
+        if (!authed) {
+          await tgApi("sendMessage", {
+            chat_id: chatId,
+            text: "🔒 Сначала войдите: `/login логин пароль`",
+            parse_mode: "MarkdownV2",
+          });
+          continue;
+        }
+
+        if (text === "/logout") {
+          await supabasePost("telegram_subscribers", { chat_id: chatId, is_authenticated: false, user_name: "" });
+          await tgApi("sendMessage", {
+            chat_id: chatId,
+            text: "🔓 Вы вышли\\. Для входа: `/login логин пароль`",
+            parse_mode: "MarkdownV2",
+          });
+          continue;
         }
 
         if (text === "/stop") {
-          await removeSubscriber(chatId);
-          console.log(`Subscriber removed: ${chatId}`);
+          await supabaseDelete(`telegram_subscribers?chat_id=eq.${chatId}`);
           await tgApi("sendMessage", {
             chat_id: chatId,
-            text: "🔕 Вы отписаны\\. Отправьте /start чтобы подписаться снова\\.",
+            text: "🔕 Вы отписаны\\. Отправьте /start чтобы начать снова\\.",
             parse_mode: "MarkdownV2",
           });
+          continue;
         }
 
         if (text === "/report") {
           const report = await buildDailyReport();
-          await tgApi("sendMessage", {
-            chat_id: chatId,
-            text: report || "Нет данных для отчёта\\.",
-            parse_mode: "MarkdownV2",
-          });
+          await tgApi("sendMessage", { chat_id: chatId, text: report || "Нет данных\\.", parse_mode: "MarkdownV2" });
         }
 
         if (text === "/today") {
           const schedule = await buildSchedule(todayStr());
-          await tgApi("sendMessage", {
-            chat_id: chatId,
-            text: schedule || "Нет данных\\.",
-            parse_mode: "MarkdownV2",
-          });
+          await tgApi("sendMessage", { chat_id: chatId, text: schedule || "Нет данных\\.", parse_mode: "MarkdownV2" });
         }
 
         if (text === "/tomorrow") {
           const schedule = await buildSchedule(tomorrowStr());
-          await tgApi("sendMessage", {
-            chat_id: chatId,
-            text: schedule || "Нет данных\\.",
-            parse_mode: "MarkdownV2",
-          });
+          await tgApi("sendMessage", { chat_id: chatId, text: schedule || "Нет данных\\.", parse_mode: "MarkdownV2" });
         }
       }
     }
@@ -404,7 +486,7 @@ async function sendDailyReport() {
   const report = await buildDailyReport();
   if (!report) { console.log("No report data — skipping"); return; }
 
-  const chatIds = await getSubscribers();
+  const chatIds = await getAuthenticatedSubscribers();
   if (chatIds.length === 0) { console.log("No subscribers — skipping"); return; }
 
   console.log(`Sending daily report to ${chatIds.length} subscriber(s)...`);

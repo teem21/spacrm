@@ -237,9 +237,45 @@ function formatDeleteBooking(data: any): string {
   return lines.join("\n");
 }
 
-// ── Send to all subscribers ──
+// ── Auth helper: check if chat is authenticated ──
+async function isAuthenticated(chatId: number): Promise<boolean> {
+  const { data } = await supabase
+    .from("telegram_subscribers")
+    .select("is_authenticated")
+    .eq("chat_id", chatId)
+    .single();
+  return data?.is_authenticated === true;
+}
+
+// ── Login via Supabase Auth ──
+async function loginUser(chatId: number, login: string, password: string): Promise<string | null> {
+  const email = login + "@example.com";
+  const authClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const { data, error } = await authClient.auth.signInWithPassword({ email, password });
+  if (error || !data.user) return null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("name, role")
+    .eq("id", data.user.id)
+    .single();
+
+  if (!profile) return null;
+
+  await supabase.from("telegram_subscribers").upsert(
+    { chat_id: chatId, is_authenticated: true, user_name: profile.name },
+    { onConflict: "chat_id" }
+  );
+
+  return profile.name;
+}
+
+// ── Send to all authenticated subscribers ──
 async function broadcast(text: string): Promise<{ sent: number }> {
-  const { data: subs } = await supabase.from("telegram_subscribers").select("chat_id");
+  const { data: subs } = await supabase
+    .from("telegram_subscribers")
+    .select("chat_id")
+    .eq("is_authenticated", true);
   if (!subs || subs.length === 0) return { sent: 0 };
 
   let sent = 0;
@@ -273,24 +309,96 @@ async function handleWebhook(update: any) {
   const chatId = msg.chat.id;
   const text = (msg.text || "").trim();
 
+  // /start — register (unauthenticated) and show help
   if (text === "/start") {
-    await supabase.from("telegram_subscribers").upsert({ chat_id: chatId }, { onConflict: "chat_id" });
+    await supabase.from("telegram_subscribers").upsert(
+      { chat_id: chatId, is_authenticated: false, user_name: "" },
+      { onConflict: "chat_id", ignoreDuplicates: true }
+    );
     await tg("sendMessage", {
       chat_id: chatId,
       parse_mode: "MarkdownV2",
       text: [
-        "✅ Вы подписаны на уведомления CRM\\!",
+        "👋 Добро пожаловать в SPA CRM Bot\\!",
         "",
-        "*Команды:*",
-        "/today — расписание на сегодня",
-        "/tomorrow — расписание на завтра",
-        "/report — отчёт за сегодня",
-        "/stop — отписаться",
+        "Для доступа войдите в систему:",
+        "`/login ваш_логин ваш_пароль`",
+        "",
+        "Пример: `/login admin 123456`",
       ].join("\n"),
     });
     return;
   }
 
+  // /login <login> <password>
+  if (text.startsWith("/login")) {
+    const parts = text.split(/\s+/);
+    if (parts.length < 3) {
+      await tg("sendMessage", {
+        chat_id: chatId,
+        text: "Использование: `/login логин пароль`",
+        parse_mode: "MarkdownV2",
+      });
+      return;
+    }
+    const login = parts[1];
+    const password = parts.slice(2).join(" ");
+
+    // Delete the message with password for security
+    try {
+      await tg("deleteMessage", { chat_id: chatId, message_id: msg.message_id });
+    } catch (_) { /* may fail in private chats without admin rights */ }
+
+    const userName = await loginUser(chatId, login, password);
+    if (userName) {
+      await tg("sendMessage", {
+        chat_id: chatId,
+        parse_mode: "MarkdownV2",
+        text: [
+          `✅ Добро пожаловать, *${esc(userName)}*\\!`,
+          "",
+          "*Команды:*",
+          "/today — расписание на сегодня",
+          "/tomorrow — расписание на завтра",
+          "/report — отчёт за сегодня",
+          "/logout — выйти",
+        ].join("\n"),
+      });
+    } else {
+      await tg("sendMessage", {
+        chat_id: chatId,
+        text: "❌ Неверный логин или пароль\\. Попробуйте ещё раз\\.",
+        parse_mode: "MarkdownV2",
+      });
+    }
+    return;
+  }
+
+  // All other commands require authentication
+  const authed = await isAuthenticated(chatId);
+  if (!authed) {
+    await tg("sendMessage", {
+      chat_id: chatId,
+      text: "🔒 Сначала войдите: `/login логин пароль`",
+      parse_mode: "MarkdownV2",
+    });
+    return;
+  }
+
+  // /logout
+  if (text === "/logout") {
+    await supabase.from("telegram_subscribers")
+      .update({ is_authenticated: false, user_name: "" })
+      .eq("chat_id", chatId);
+    await tg("sendMessage", {
+      chat_id: chatId,
+      text: "🔓 Вы вышли из системы\\. Для входа: `/login логин пароль`",
+      parse_mode: "MarkdownV2",
+    });
+    return;
+  }
+
+  // /stop
   if (text === "/stop") {
     await supabase.from("telegram_subscribers").delete().eq("chat_id", chatId);
     await tg("sendMessage", {
@@ -301,6 +409,7 @@ async function handleWebhook(update: any) {
     return;
   }
 
+  // /report
   if (text === "/report") {
     const report = await buildDailyReport();
     await tg("sendMessage", {
@@ -311,6 +420,7 @@ async function handleWebhook(update: any) {
     return;
   }
 
+  // /today
   if (text === "/today") {
     const today = new Date().toISOString().slice(0, 10);
     const schedule = await buildSchedule(today);
@@ -322,6 +432,7 @@ async function handleWebhook(update: any) {
     return;
   }
 
+  // /tomorrow
   if (text === "/tomorrow") {
     const tmr = new Date();
     tmr.setDate(tmr.getDate() + 1);
