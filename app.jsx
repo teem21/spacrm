@@ -3,7 +3,7 @@
 // Stack: React (hooks), Tailwind CSS, Lucide-react
 
 const { useState, useEffect, useCallback, useRef, useMemo } = React;
-const { Gem, Settings, Calendar, BookOpen, LayoutDashboard, Loader2, Plus, Trash2, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, X, Moon, Phone, Search, Users, LogOut, Shield, Eye, EyeOff, ClipboardList, UserPlus, Lock, Menu } = lucide;
+const { Gem, Settings, Calendar, BookOpen, LayoutDashboard, Loader2, Plus, Trash2, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, X, Moon, Phone, Search, Users, LogOut, Shield, Eye, EyeOff, ClipboardList, UserPlus, Lock, Menu, ArrowUp, ArrowDown, Database, Download, Upload } = lucide;
 
 // ─── Mobile Detection Hook ──────────────────────────────────────────────────
 function useIsMobile(breakpoint = 768) {
