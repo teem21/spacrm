@@ -5652,7 +5652,11 @@ function App() {
       {/* Header with user info */}
       <header style={{
         position: "fixed", top: 0, left: 0, right: 0, height: 56, zIndex: 50,
-        backgroundColor: C.header, borderBottom: `1px solid ${C.border}`,
+        backgroundColor: isMobile ? "#FFFFFF" : C.header,
+        backdropFilter: isMobile ? "none" : "blur(16px)",
+        WebkitBackdropFilter: isMobile ? "none" : "blur(16px)",
+        borderBottom: `1px solid ${C.border}`,
+        boxShadow: isMobile ? "0 2px 8px rgba(0,0,0,0.08)" : "none",
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: isMobile ? "0 12px" : "0 24px",
       }}>
