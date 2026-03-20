@@ -296,42 +296,53 @@ const currentYearMonth = () => {
 // ─── Colors / Design Tokens ───────────────────────────────────────────────────
 
 const C = {
-  bg:        "#FAF6F0",
-  card:      "#1C1C1E",
-  gridBg:    "#F0EBE3",
-  border:    "#E0D8CE",
-  textMain:  "#FFFFFF",
-  textSub:   "#9A9A9E",
-  accent:    "#E8A830",
-  accentHov: "#F0BC50",
-  header:    "#1C1C1E",
-  // Light-surface variants (for elements on the cream background)
-  cardLight: "#FFFFFF",
-  borderLight: "#E8E0D6",
-  textDark:  "#1C1C1E",
-  textDarkSub: "#6B6B6F",
+  bg:        "var(--bg-color)",
+  card:      "var(--surface-container)",
+  gridBg:    "var(--surface-container-low)",
+  border:    "rgba(0,0,0,0.05)",
+  textMain:  "var(--text-main)",
+  textSub:   "var(--text-sub)",
+  accent:    "var(--accent-color)",
+  accentHov: "#fdc003ee",
+  header:    "rgba(255, 255, 255, 0.7)",
+  radius:    32,
 };
 
 // ─── UI Components ────────────────────────────────────────────────────────────
 
 function Header({ salons, activeSalonId, onSalonChange }) {
   return (
-    <header style={{
-      position: "fixed", top: 0, left: 0, right: 0, height: 56, zIndex: 50,
-      backgroundColor: C.header, borderBottom: `1px solid ${C.border}`,
+    <header className="glass" style={{
+      position: "fixed", top: 0, left: 0, right: 0, height: 72, zIndex: 100,
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0 24px",
+      padding: "0 32px",
+      borderBottom: "none",
     }}>
       {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Gem size={22} color={C.accent} />
-        <span style={{ color: C.textMain, fontWeight: 600, fontSize: 16, letterSpacing: "0.5px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 12, backgroundColor: C.accent,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: `0 8px 16px ${C.accent}44`
+        }}>
+          <Gem size={22} color="#1b1c15" />
+        </div>
+        <span style={{ 
+          color: C.textMain, 
+          fontWeight: 800, 
+          fontSize: 18, 
+          fontFamily: "'Poppins', sans-serif",
+          letterSpacing: "-0.02em" 
+        }}>
           SPA CRM
         </span>
       </div>
 
       {/* Salon switcher */}
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ 
+        display: "flex", gap: 8, padding: 6, borderRadius: 20,
+        backgroundColor: "rgba(0,0,0,0.03)"
+      }}>
         {salons.map((salon) => {
           const isActive = salon.id === activeSalonId;
           return (
@@ -339,16 +350,16 @@ function Header({ salons, activeSalonId, onSalonChange }) {
               key={salon.id}
               onClick={() => onSalonChange(salon.id)}
               style={{
-                padding: isActive ? "8px 24px" : "6px 16px",
-                borderRadius: 8,
-                border: isActive ? `2px solid ${C.accent}` : `1px solid ${C.accent}55`,
-                backgroundColor: isActive ? C.accent : "transparent",
-                color: isActive ? C.bg : C.accent,
+                padding: "8px 20px",
+                borderRadius: 14,
+                border: "none",
+                backgroundColor: isActive ? "#fff" : "transparent",
+                color: isActive ? C.textMain : C.textSub,
                 fontWeight: isActive ? 700 : 500,
-                fontSize: isActive ? 15 : 13,
+                fontSize: 14,
                 cursor: "pointer",
-                transition: "all 150ms",
-                boxShadow: isActive ? `0 0 12px ${C.accent}44` : "none",
+                transition: "all 200ms",
+                boxShadow: isActive ? "0 4px 12px rgba(0,0,0,0.05)" : "none",
               }}
             >
               {salon.name}
@@ -358,9 +369,12 @@ function Header({ salons, activeSalonId, onSalonChange }) {
       </div>
 
       {/* Date */}
-      <span style={{ color: C.textSub, fontSize: 13 }}>
-        {formatDate()}
-      </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.textSub }}>
+        <Calendar size={16} />
+        <span style={{ fontSize: 13, fontWeight: 500 }}>
+          {formatDate()}
+        </span>
+      </div>
     </header>
   );
 }
@@ -376,34 +390,38 @@ const TABS = [
 function TabBar({ activeTab, onTabChange }) {
   return (
     <nav style={{
-      position: "fixed", top: 56, left: 0, right: 0, height: 44, zIndex: 49,
-      backgroundColor: C.header, borderBottom: `1px solid ${C.border}`,
-      display: "flex", alignItems: "center",
-      padding: "0 24px", gap: 0,
+      position: "fixed", top: 72, left: 0, right: 0, height: 56, zIndex: 99,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "0 32px",
     }}>
-      {TABS.map(({ id, label, icon: Icon }) => {
-        const isActive = activeTab === id;
-        return (
-          <button
-            key={id}
-            onClick={() => onTabChange(id)}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "0 16px", height: "100%",
-              background: "none", border: "none",
-              borderBottom: isActive ? `2px solid ${C.accent}` : "2px solid transparent",
-              color: isActive ? C.accent : C.textSub,
-              fontSize: 14, fontWeight: isActive ? 600 : 400,
-              cursor: "pointer",
-              transition: "all 150ms",
-              letterSpacing: "0.3px",
-            }}
-          >
-            <Icon size={15} />
-            {label && <span>{label}</span>}
-          </button>
-        );
-      })}
+      <div className="glass" style={{ 
+        display: "flex", gap: 4, padding: 4, borderRadius: 28,
+        boxShadow: "0 8px 32px rgba(0,0,0,0.03)"
+      }}>
+        {TABS.map(({ id, label, icon: Icon }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => onTabChange(id)}
+              style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "0 20px", height: 44,
+                borderRadius: 22,
+                background: isActive ? C.accent : "transparent",
+                border: "none",
+                color: isActive ? "#1b1c15" : C.textSub,
+                fontSize: 14, fontWeight: isActive ? 700 : 500,
+                cursor: "pointer",
+                transition: "all 200ms",
+              }}
+            >
+              <Icon size={18} />
+              {label && <span>{label}</span>}
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }
@@ -412,13 +430,30 @@ function LoadingScreen() {
   return (
     <div style={{
       display: "flex", flexDirection: "column", alignItems: "center",
-      justifyContent: "center", height: "100vh", gap: 16,
-      color: C.textSub, backgroundColor: C.bg,
-      backgroundImage: "radial-gradient(circle at 50% 40%, rgba(255,255,255,0.04) 0%, transparent 70%)",
+      justifyContent: "center", height: "100vh", gap: 24,
+      backgroundColor: "var(--bg-color)",
     }}>
-      <Loader2 size={32} color={C.accent} style={{ animation: "spin 1s linear infinite" }} />
-      <span style={{ fontSize: 14 }}>Загрузка данных…</span>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{
+        width: 64, height: 64, borderRadius: 20, backgroundColor: C.accent,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: `0 12px 24px ${C.accent}44`,
+        animation: "pulse 2s infinite"
+      }}>
+        <Gem size={32} color="#1b1c15" />
+      </div>
+      <span style={{ 
+        fontSize: 14, fontWeight: 500, color: C.textSub, 
+        fontFamily: "'Inter', sans-serif", letterSpacing: "0.05em" 
+      }}>
+        ЗАГРУЗКА...
+      </span>
+      <style>{`
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.1); opacity: 0.8; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -453,103 +488,118 @@ function LoginScreen({ onLogin }) {
   };
 
   const tabStyle = (active) => ({
-    flex: 1, padding: "10px 0", borderRadius: 14, border: "none",
-    fontSize: 13, fontWeight: active ? 700 : 400, cursor: "pointer",
-    backgroundColor: active ? C.accent : "transparent",
-    color: active ? "#1C1C1E" : C.textSub,
+    flex: 1, padding: "12px 0", borderRadius: 12, border: "none",
+    fontSize: 13, fontWeight: active ? 700 : 500, cursor: "pointer",
+    backgroundColor: active ? "#fff" : "transparent",
+    color: active ? C.textMain : C.textSub,
     transition: "all 200ms",
-    boxShadow: active ? `0 2px 8px ${C.accent}44` : "none",
+    boxShadow: active ? "0 4px 12px rgba(0,0,0,0.05)" : "none",
   });
 
   return (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "center",
-      height: "100vh", backgroundColor: C.bg,
-      backgroundImage: "radial-gradient(ellipse at 50% 30%, rgba(232,168,48,0.12) 0%, transparent 60%)",
-      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+      height: "100vh", backgroundColor: "var(--bg-color)",
+      fontFamily: "'Inter', sans-serif",
     }}>
       <form onSubmit={handleSubmit} style={{
-        width: isMobile ? "100%" : 420, maxWidth: 420, padding: isMobile ? 28 : 44, borderRadius: 32,
-        backgroundColor: C.card,
-        boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05) inset",
+        width: isMobile ? "90%" : 420, maxWidth: 420, 
+        padding: isMobile ? 32 : 48, 
+        borderRadius: 32,
+        backgroundColor: "var(--surface-container)", 
+        border: "1px solid rgba(0,0,0,0.03)",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.05)",
         margin: isMobile ? "0 16px" : 0,
       }}>
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: `${C.accent}22`, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-            <Gem size={28} color={C.accent} />
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: 16, backgroundColor: C.accent,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 20px", boxShadow: `0 8px 16px ${C.accent}44`
+          }}>
+            <Gem size={28} color="#1b1c15" />
           </div>
-          <h1 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 800, color: C.textMain, letterSpacing: "-0.5px" }}>SPA CRM</h1>
-          <p style={{ fontSize: 14, color: C.textSub, margin: 0, fontWeight: 300 }}>Войдите в систему</p>
+          <h1 style={{ 
+            margin: "0 0 8px", fontSize: 28, fontWeight: 800, 
+            color: C.textMain, fontFamily: "'Poppins', sans-serif",
+            letterSpacing: "-0.03em"
+          }}>
+            SPA CRM
+          </h1>
+          <p style={{ fontSize: 14, color: C.textSub, margin: 0, fontWeight: 500 }}>
+            Добро пожаловать в систему
+          </p>
         </div>
 
         {/* Role tab switcher */}
         <div style={{
-          display: "flex", gap: 4, padding: 4, borderRadius: 18, marginBottom: 28,
-          backgroundColor: C.gridBg,
+          display: "flex", gap: 4, padding: 6, borderRadius: 18, marginBottom: 32,
+          backgroundColor: "rgba(0,0,0,0.03)",
         }}>
           <button type="button" onClick={() => { setRoleTab("admin"); setError(""); }} style={tabStyle(roleTab === "admin")}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <Shield size={14} /> Администратор
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <Shield size={16} /> Админ
             </span>
           </button>
           <button type="button" onClick={() => { setRoleTab("worker"); setError(""); }} style={tabStyle(roleTab === "worker")}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <Users size={14} /> Работник
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <Users size={16} /> Работник
             </span>
           </button>
         </div>
 
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 6, fontWeight: 500 }}>Логин</label>
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: "block", fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 600 }}>Логин</label>
           <input
             type="text" value={login} onChange={e => setLogin(e.target.value)}
             autoFocus placeholder={roleTab === "admin" ? "admin" : "worker1"}
             style={{
-              width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 14,
-              border: `1px solid ${C.border}`, backgroundColor: C.gridBg,
-              color: C.textDark, outline: "none",
+              width: "100%", padding: "14px 16px", borderRadius: 16, fontSize: 14,
+              border: "1px solid rgba(0,0,0,0.05)", backgroundColor: "rgba(255,255,255,0.5)",
+              color: C.textMain, outline: "none", transition: "all 200ms",
+              boxShadow: "inset 0 2px 4px rgba(0,0,0,0.01)"
             }}
           />
         </div>
 
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 6, fontWeight: 500 }}>Пароль</label>
+        <div style={{ marginBottom: 32 }}>
+          <label style={{ display: "block", fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 600 }}>Пароль</label>
           <div style={{ position: "relative" }}>
             <input
               type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
               placeholder="••••••"
               style={{
-                width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, fontSize: 14,
-                border: `1px solid ${C.border}`, backgroundColor: C.gridBg,
-                color: C.textDark, outline: "none",
+                width: "100%", padding: "14px 44px 14px 16px", borderRadius: 16, fontSize: 14,
+                border: "1px solid rgba(0,0,0,0.05)", backgroundColor: "rgba(255,255,255,0.5)",
+                color: C.textMain, outline: "none", transition: "all 200ms",
+                boxShadow: "inset 0 2px 4px rgba(0,0,0,0.01)"
               }}
             />
             <button type="button" onClick={() => setShowPassword(!showPassword)} style={{
-              position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+              position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
               background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
             }}>
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
         </div>
 
         {error && (
           <div style={{
-            padding: "8px 12px", borderRadius: 8, marginBottom: 16,
-            backgroundColor: "#EF444422", border: "1px solid #EF444444",
-            color: "#F87171", fontSize: 13,
+            padding: "12px 16px", borderRadius: 16, marginBottom: 24,
+            backgroundColor: "#FEE2E2", border: "1px solid #FCA5A5",
+            color: "#B91C1C", fontSize: 13, fontWeight: 500
           }}>{error}</div>
         )}
 
         <button type="submit" disabled={loading} style={{
-          width: "100%", padding: "13px 0", borderRadius: 999, border: "none",
-          backgroundColor: C.accent, color: "#1C1C1E", fontSize: 15, fontWeight: 700,
+          width: "100%", padding: "14px 0", borderRadius: 16, border: "none",
+          backgroundColor: C.accent, color: "#1b1c15", fontSize: 15, fontWeight: 700,
           cursor: loading ? "wait" : "pointer", opacity: loading ? 0.7 : 1,
-          boxShadow: `0 4px 16px ${C.accent}55`,
-          transition: "all 200ms",
-          letterSpacing: "0.3px",
+          boxShadow: `0 12px 24px ${C.accent}33`,
+          transition: "all 200ms"
         }}>
-          {loading ? "Вход…" : "Войти"}
+          {loading ? "Вход…" : "Войти в систему"}
         </button>
       </form>
     </div>
@@ -591,37 +641,48 @@ const makeInitialSalonConfig = (id) => ({
 const inputStyle = (focused = false) => ({
   width: "100%",
   boxSizing: "border-box",
-  height: 44,
-  padding: "10px 16px",
-  borderRadius: 14,
-  backgroundColor: C.gridBg,
-  border: `1px solid ${focused ? C.accent : C.border}`,
-  boxShadow: focused ? `0 0 0 3px ${C.accent}33` : "none",
-  color: C.textDark,
+  height: 48,
+  padding: "0 20px",
+  borderRadius: 24,
+  backgroundColor: focused ? "#fff" : "rgba(255,255,255,0.7)",
+  border: `1px solid ${focused ? C.accent : "rgba(0,0,0,0.08)"}`,
+  boxShadow: focused ? `0 8px 24px ${C.accent}22` : "none",
+  color: C.textMain,
   fontSize: 14,
+  fontWeight: 600,
   outline: "none",
-  transition: "border-color 200ms, box-shadow 200ms",
+  transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
 });
 
-const labelStyle = { display: "block", color: C.textSub, fontSize: 12, marginBottom: 8, fontWeight: 500, letterSpacing: "0.3px" };
+const labelStyle = { 
+  display: "block", 
+  color: C.textSub, 
+  fontSize: 13, 
+  marginBottom: 10, 
+  fontWeight: 700,
+  fontFamily: "'Inter', sans-serif",
+  letterSpacing: "0.01em",
+  textTransform: "uppercase",
+  opacity: 0.8
+};
 
 function Toggle({ checked, onChange }) {
   return (
     <div
       onClick={() => onChange(!checked)}
       style={{
-        width: 48, height: 26, borderRadius: 13, cursor: "pointer",
-        backgroundColor: checked ? C.accent : C.border,
-        position: "relative", transition: "background 200ms", flexShrink: 0,
-        boxShadow: checked ? `0 0 12px ${C.accent}44` : "none",
+        width: 52, height: 28, borderRadius: 14, cursor: "pointer",
+        backgroundColor: checked ? C.accent : "rgba(0,0,0,0.1)",
+        position: "relative", transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+        flexShrink: 0,
       }}
     >
       <div style={{
-        position: "absolute", top: 3, left: checked ? 25 : 3,
+        position: "absolute", top: 4, left: checked ? 28 : 4,
         width: 20, height: 20, borderRadius: "50%",
         backgroundColor: "#fff",
-        transition: "left 200ms",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+        transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
       }} />
     </div>
   );
@@ -914,7 +975,7 @@ function ProgressBar({ current, total }) {
     <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
       {Array.from({ length: total }).map((_, i) => (
         <div key={i} style={{
-          flex: 1, height: 6, borderRadius: 3,
+          flex: 1, height: 4, borderRadius: 2,
           backgroundColor: i < current ? C.accent : C.border,
           transition: "background 200ms",
         }} />
@@ -1078,7 +1139,7 @@ function OnboardingWizard({ onComplete }) {
     }}>
       <div style={{
         width: "100%", maxWidth: 480,
-        backgroundColor: C.card, borderRadius: 32, padding: 36,
+        backgroundColor: C.card, borderRadius: 12, padding: 32,
       }}>
         {/* Progress bar */}
         <ProgressBar current={step + 1} total={TOTAL_STEPS} />
@@ -1135,8 +1196,8 @@ function OnboardingWizard({ onComplete }) {
               onClick={next}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
-                padding: "10px 24px", borderRadius: 999,
-                backgroundColor: C.accent, color: "#1C1C1E",
+                padding: "10px 24px", borderRadius: 8,
+                backgroundColor: C.accent, color: C.bg,
                 fontWeight: 600, fontSize: 14, border: "none", cursor: "pointer",
               }}
             >
@@ -1148,9 +1209,9 @@ function OnboardingWizard({ onComplete }) {
               disabled={saving}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
-                padding: "10px 24px", borderRadius: 999,
+                padding: "10px 24px", borderRadius: 8,
                 backgroundColor: saving ? C.border : C.accent,
-                color: saving ? C.textSub : "#1C1C1E",
+                color: saving ? C.textSub : C.bg,
                 fontWeight: 600, fontSize: 14, border: "none",
                 cursor: saving ? "not-allowed" : "pointer",
               }}
@@ -1198,8 +1259,8 @@ function Toast({ message, onDone }) {
       position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
       zIndex: 200, display: "flex", alignItems: "center", gap: 8,
       backgroundColor: C.card, border: `1px solid ${C.accent}`,
-      borderRadius: 999, padding: "10px 18px",
-      boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+      borderRadius: 8, padding: "10px 18px",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
       animation: "slideUp 200ms ease-out",
     }}>
       <Check size={15} color={C.accent} />
@@ -1251,151 +1312,167 @@ function SalonSettingsCard({ salon, onChange }) {
   };
 
   return (
-    <div style={{
-      backgroundColor: C.card, borderRadius: 24, padding: 28,
-      boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+    <div className="glass" style={{
+      borderRadius: 32, padding: 32,
+      boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
+      display: "flex", flexDirection: "column", gap: 24,
     }}>
-      <h3 style={{ margin: "0 0 20px", fontSize: 15, fontWeight: 600, color: C.textMain }}>
-        {salon.name || `Салон ${salon.id.replace("salon-", "")}`}
-      </h3>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 8, height: 24, borderRadius: 4, backgroundColor: C.accent }} />
+        <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: C.textMain, fontFamily: "'Poppins', sans-serif" }}>
+          {salon.name || `Салон ${salon.id.replace("salon-", "")}`}
+        </h3>
+      </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Название */}
         <Row label="Название">
           <InlineText value={salon.name} onChange={v => onChange({ name: v })} />
         </Row>
 
-        {/* Кол-во кабинок */}
-        <Row label="Кабинок">
-          <InlineNumber value={roomCount} min={1} max={6} onChange={handleRoomCountChange} />
-        </Row>
-
-        {/* Список кабинок */}
-        <div style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-          {salon.rooms.map((room, idx) => (
-            <div key={room.id} style={{
-              display: "flex", alignItems: "center", gap: 12,
-              backgroundColor: C.gridBg, borderRadius: 8, padding: "8px 12px",
-              border: `1px solid ${C.border}`,
-            }}>
-              <span style={{ color: C.textSub, fontSize: 12, minWidth: 16 }}>•</span>
-              <InlineText
-                value={room.name}
-                onChange={v => updateRoom(idx, { name: v })}
-                style={{ flex: 1, fontSize: 13 }}
-              />
-              <span style={{ color: C.textSub, fontSize: 12 }}>—</span>
-              <div style={{ display: "flex", gap: 4 }}>
-                {[1, 2].map(b => (
-                  <button
-                    key={b}
-                    onClick={() => updateRoom(idx, { beds: b })}
-                    style={{
-                      padding: "3px 10px", borderRadius: 5, fontSize: 12,
-                      border: `1px solid ${room.beds === b ? C.accent : C.border}`,
-                      backgroundColor: room.beds === b ? C.accent : "transparent",
-                      color: room.beds === b ? C.bg : C.textSub,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {b} кр.
-                  </button>
-                ))}
-              </div>
+        {/* Кабинки */}
+        <Row label="Управление кабинками">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: C.textSub }}>Количество:</span>
+              <InlineNumber value={roomCount} min={1} max={6} onChange={handleRoomCountChange} />
             </div>
-          ))}
-        </div>
-
-        {/* Массажистки */}
-        <Row label={`Массажистки (${(salon.therapists || []).length})`}>
-          <div />
-        </Row>
-        <div style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-          {(salon.therapists || []).map((t, idx) => (
-            <div key={t.id} style={{
-              display: "flex", alignItems: "center", gap: 12,
-              backgroundColor: C.gridBg, borderRadius: 8, padding: "8px 12px",
-              border: `1px solid ${C.border}`,
-            }}>
-              <span style={{ color: C.textSub, fontSize: 12, minWidth: 16 }}>•</span>
-              <InlineText
-                value={t.name}
-                onChange={v => {
-                  const therapists = (salon.therapists || []).map((th, i) => i === idx ? { ...th, name: v } : th);
-                  onChange({ therapists });
-                }}
-                style={{ flex: 1, fontSize: 13 }}
-              />
-              {(salon.therapists || []).length > 1 && (
-                <button
-                  onClick={() => onChange({ therapists: salon.therapists.filter((_, i) => i !== idx) })}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", padding: 4 }}
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
+            
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+              {salon.rooms.map((room, idx) => (
+                <div key={room.id} style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  backgroundColor: "rgba(0,0,0,0.02)", borderRadius: 16, padding: "12px 16px",
+                  border: "1px solid rgba(0,0,0,0.03)",
+                }}>
+                  <InlineText
+                    value={room.name}
+                    onChange={v => updateRoom(idx, { name: v })}
+                    style={{ flex: 1, fontSize: 13, height: 36, borderRadius: 12, padding: "0 12px" }}
+                  />
+                  <div style={{ display: "flex", gap: 4, backgroundColor: "rgba(0,0,0,0.03)", padding: 4, borderRadius: 12 }}>
+                    {[1, 2].map(b => (
+                      <button
+                        key={b}
+                        onClick={() => updateRoom(idx, { beds: b })}
+                        style={{
+                          padding: "6px 12px", borderRadius: 8, fontSize: 11,
+                          border: "none",
+                          backgroundColor: room.beds === b ? "#fff" : "transparent",
+                          color: room.beds === b ? C.textMain : C.textSub,
+                          fontWeight: room.beds === b ? 700 : 500,
+                          cursor: "pointer",
+                          transition: "all 200ms",
+                          boxShadow: room.beds === b ? "0 2px 8px rgba(0,0,0,0.05)" : "none",
+                        }}
+                      >
+                        {b} кр.
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-          {(salon.therapists || []).length < 15 && (
-            <button
-              onClick={() => {
-                const n = (salon.therapists || []).length + 1;
-                onChange({ therapists: [...(salon.therapists || []), { id: `${salon.id}-ther-${n}-${Date.now()}`, name: `Массажистка ${n}` }] });
-              }}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                padding: "6px", borderRadius: 8, border: `1px dashed ${C.border}`,
-                background: "none", color: C.textSub, fontSize: 12, cursor: "pointer",
-              }}
-            >
-              <Plus size={13} /> Добавить
-            </button>
-          )}
-        </div>
-
-        {/* Сауна */}
-        <Row label="Вместимость сауны">
-          <InlineNumber value={salon.saunaCapacity || 4} min={1} max={20} onChange={v => onChange({ saunaCapacity: v })} />
-        </Row>
-
-        {/* Мастера по пиллингу */}
-        <Row label="Мастера пиллинга">
-          <InlineNumber value={salon.peelingMastersMax || 2} min={1} max={10} onChange={v => onChange({ peelingMastersMax: v })} />
-        </Row>
-
-        {/* Рабочие часы */}
-        <Row label="Часы работы">
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <InlineSelect
-              value={salon.workStart}
-              options={TIME_OPTIONS}
-              onChange={v => onChange({ workStart: v })}
-            />
-            <span style={{ color: C.textSub }}>—</span>
-            <InlineSelect
-              value={salon.workEnd}
-              options={TIME_OPTIONS.filter(o => o.value > salon.workStart)}
-              onChange={v => onChange({ workEnd: v })}
-            />
           </div>
         </Row>
 
-        {/* Выходной */}
-        <Row label="Выходной день">
-          <InlineSelect
-            value={salon.dayOff}
-            options={DAYS_OF_WEEK}
-            onChange={v => onChange({ dayOff: v })}
-          />
+        {/* Массажистки */}
+        <Row label="Персонал">
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8 }}>
+              {(salon.therapists || []).map((t, idx) => (
+                <div key={t.id} style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  backgroundColor: "rgba(0,0,0,0.02)", borderRadius: 16, padding: "8px 12px",
+                  border: "1px solid rgba(0,0,0,0.03)",
+                }}>
+                  <InlineText
+                    value={t.name}
+                    onChange={v => {
+                      const therapists = (salon.therapists || []).map((th, i) => i === idx ? { ...th, name: v } : th);
+                      onChange({ therapists });
+                    }}
+                    style={{ flex: 1, fontSize: 13, height: 32, borderRadius: 10, padding: "0 10px" }}
+                  />
+                  {(salon.therapists || []).length > 1 && (
+                    <button
+                      onClick={() => onChange({ therapists: salon.therapists.filter((_, i) => i !== idx) })}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", padding: 4, display: "flex", alignItems: "center" }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {(salon.therapists || []).length < 15 && (
+                <button
+                  onClick={() => {
+                    const n = (salon.therapists || []).length + 1;
+                    onChange({ therapists: [...(salon.therapists || []), { id: `${salon.id}-ther-${n}-${Date.now()}`, name: `Массажистка ${n}` }] });
+                  }}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    padding: "8px", borderRadius: 16, border: `1px dashed rgba(0,0,0,0.1)`,
+                    background: "none", color: C.textSub, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    transition: "all 200ms",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = C.accent}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(0,0,0,0.1)"}
+                >
+                  <Plus size={14} /> Добавить специалиста
+                </button>
+              )}
+            </div>
+          </div>
         </Row>
 
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+          {/* Сауна и Пиллинг */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <Row label="Сауна (чел)">
+              <InlineNumber value={salon.saunaCapacity || 4} min={1} max={20} onChange={v => onChange({ saunaCapacity: v })} />
+            </Row>
+            <Row label="Пиллинг (макс)">
+              <InlineNumber value={salon.peelingMastersMax || 2} min={1} max={10} onChange={v => onChange({ peelingMastersMax: v })} />
+            </Row>
+          </div>
+
+          {/* Время и Выходные */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <Row label="Расписание">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <InlineSelect
+                  value={salon.workStart}
+                  options={TIME_OPTIONS}
+                  onChange={v => onChange({ workStart: v })}
+                />
+                <span style={{ color: C.textSub, fontWeight: 700 }}>—</span>
+                <InlineSelect
+                  value={salon.workEnd}
+                  options={TIME_OPTIONS.filter(o => o.value > salon.workStart)}
+                  onChange={v => onChange({ workEnd: v })}
+                />
+              </div>
+            </Row>
+            <Row label="Выходной">
+              <InlineSelect
+                value={salon.dayOff}
+                options={DAYS_OF_WEEK}
+                onChange={v => onChange({ dayOff: v })}
+              />
+            </Row>
+          </div>
+        </div>
+
         {/* Буфер */}
-        <Row label="Буфер">
-          <InlineSelect
-            value={salon.bufferMinutes}
-            options={BUFFER_OPTIONS}
-            onChange={v => onChange({ bufferMinutes: Number(v) })}
-          />
+        <Row label="Буфер между записями">
+          <div style={{ width: 140 }}>
+            <InlineSelect
+              value={salon.bufferMinutes}
+              options={BUFFER_OPTIONS}
+              onChange={v => onChange({ bufferMinutes: Number(v) })}
+            />
+          </div>
         </Row>
       </div>
     </div>
@@ -1470,10 +1547,10 @@ function PasswordChangeBlock({ currentUser, onShowToast }) {
   const [newPwd2, setNewPwd2] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const inputStyle = {
-    width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 14,
-    border: `1px solid ${C.border}`, backgroundColor: C.gridBg,
-    color: C.textDark, outline: "none",
+  const innerInputStyle = {
+    width: "100%", padding: "14px 20px", borderRadius: 20, fontSize: 14,
+    border: "1px solid rgba(0,0,0,0.05)", backgroundColor: "rgba(255,255,255,0.6)",
+    color: C.textMain, outline: "none", transition: "all 200ms", fontWeight: 600
   };
 
   const handleChange = async () => {
@@ -1481,7 +1558,6 @@ function PasswordChangeBlock({ currentUser, onShowToast }) {
     if (newPwd !== newPwd2) { onShowToast("Пароли не совпадают"); return; }
     if (newPwd.length < 6) { onShowToast("Минимум 6 символов"); return; }
     setSaving(true);
-    // Re-authenticate with current password first to verify it
     const check = await sb.auth.signInWithPassword({
       email: currentUser.login + "@example.com",
       password: curPwd,
@@ -1503,27 +1579,38 @@ function PasswordChangeBlock({ currentUser, onShowToast }) {
   };
 
   return (
-    <div style={{ backgroundColor: C.card, borderRadius: 24, padding: 24, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
-      <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 600, color: C.textMain }}>Безопасность</h3>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+    <div className="glass" style={{ borderRadius: 32, padding: 32, boxShadow: "0 10px 40px rgba(0,0,0,0.03)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+        <Shield size={20} color={C.accent} />
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: C.textMain, fontFamily: "'Poppins', sans-serif" }}>
+          Безопасность аккаунта
+        </h3>
+      </div>
+      
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 4 }}>Текущий пароль</label>
-          <input type="password" value={curPwd} onChange={e => setCurPwd(e.target.value)} style={inputStyle} />
+          <label style={labelStyle}>Текущий пароль</label>
+          <input type="password" value={curPwd} onChange={e => setCurPwd(e.target.value)} style={innerInputStyle} placeholder="••••••••" />
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 4 }}>Новый пароль</label>
-          <input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)} style={inputStyle} />
+          <label style={labelStyle}>Новый пароль</label>
+          <input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)} style={innerInputStyle} placeholder="••••••••" />
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 4 }}>Повтор нового пароля</label>
-          <input type="password" value={newPwd2} onChange={e => setNewPwd2(e.target.value)} style={inputStyle} />
+          <label style={labelStyle}>Повтор пароля</label>
+          <input type="password" value={newPwd2} onChange={e => setNewPwd2(e.target.value)} style={innerInputStyle} placeholder="••••••••" />
         </div>
       </div>
+
       <button onClick={handleChange} disabled={saving} style={{
-        padding: "8px 20px", borderRadius: 999, border: "none",
-        backgroundColor: C.accent, color: "#1C1C1E", fontSize: 13, fontWeight: 600,
+        padding: "14px 32px", borderRadius: 24, border: "none",
+        backgroundColor: C.accent, color: "#1b1c15", fontSize: 14, fontWeight: 700,
         cursor: saving ? "wait" : "pointer", opacity: saving ? 0.7 : 1,
-      }}>{saving ? "Сохранение…" : "Сменить пароль"}</button>
+        boxShadow: `0 8px 24px ${C.accent}44`,
+        transition: "all 200ms",
+      }}>
+        {saving ? "Сохранение…" : "Обновить пароль"}
+      </button>
     </div>
   );
 }
@@ -1534,7 +1621,7 @@ function SettingsScreen({ salons, onSalonsChange, onShowToast, onReset, onImport
   const [confirmModal, setConfirmModal] = useState(null); // { type, message, onConfirm }
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [resetStep, setResetStep] = useState(0); // 0=none, 1=first confirm, 2=second confirm
+  const [resetStep, setResetStep] = useState(0); 
 
   // Debounced auto-save
   useEffect(() => {
@@ -1549,8 +1636,8 @@ function SettingsScreen({ salons, onSalonsChange, onShowToast, onReset, onImport
         if (s.workStart >= s.workEnd) return;
       }
       await Storage.set(KEYS.salons, salons);
-      onShowToast("Сохранено");
-    }, 500);
+      onShowToast("Настройки сохранены");
+    }, 1000);
     return () => clearTimeout(timer);
   }, [salons, onShowToast]);
 
@@ -1558,262 +1645,177 @@ function SettingsScreen({ salons, onSalonsChange, onShowToast, onReset, onImport
     onSalonsChange(salons.map(s => s.id === salonId ? { ...s, ...patch } : s));
   };
 
-  // ── Export ──
   const handleExport = async () => {
     setExporting(true);
     try {
-      const salonsData = await Storage.get(KEYS.salons);
-      const procedures = {};
-      const combos = {};
-      for (const s of (salonsData || [])) {
-        procedures[s.id] = await Storage.get(KEYS.procedures(s.id)) || [];
-        combos[s.id] = await Storage.get(KEYS.combos(s.id)) || [];
-      }
-      const bookingKeys = await Storage.list("spa-crm:bookings:");
-      const bookingsData = {};
-      for (const key of bookingKeys) {
-        const suffix = key.replace("spa-crm:bookings:", "");
-        const val = await Storage.get(key);
-        if (val) bookingsData[suffix] = val;
-      }
-      const exportObj = {
-        version: "v4",
-        exportDate: new Date().toISOString(),
-        salons: salonsData,
-        procedures,
-        combos,
-        bookings: bookingsData,
-      };
+      const exportObj = { version: "v4", exportDate: new Date().toISOString(), salons };
       const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      const today = new Date().toISOString().slice(0, 10);
-      a.download = `spa-crm-backup-${today}.json`;
+      a.download = `spa-crm-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      onShowToast("Данные экспортированы");
-    } catch (e) {
-      onShowToast("Ошибка экспорта");
+      onShowToast("Экспорт завершен");
     } finally {
       setExporting(false);
     }
   };
 
-  // ── Import ──
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    e.target.value = "";
     setImporting(true);
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      // Validate structure
-      if (!data.salons || !data.procedures || !data.combos) {
-        onShowToast("Невалидный файл: отсутствуют обязательные данные");
-        setImporting(false);
+      if (!data.salons || !data.version) {
+        onShowToast("Невалидный файл");
         return;
       }
-      if (!data.version) {
-        onShowToast("Невалидный файл: отсутствует версия");
-        setImporting(false);
-        return;
-      }
-      // Show confirmation
       setConfirmModal({
         title: "Импорт данных",
-        message: "Импорт перезапишет ВСЕ текущие данные. Продолжить?",
-        confirmLabel: "Да, импортировать",
+        message: "Это действие заменит все текущие настройки. Продолжить?",
+        confirmLabel: "Импортировать",
         onConfirm: async () => {
           setConfirmModal(null);
-          try {
-            // Delete all existing keys
-            const existingKeys = await Storage.list("spa-crm:");
-            for (const key of existingKeys) {
-              await Storage.delete(key);
-            }
-            // Write salons
-            await Storage.set(KEYS.salons, data.salons);
-            // Write procedures
-            for (const [salonId, procs] of Object.entries(data.procedures || {})) {
-              await Storage.set(KEYS.procedures(salonId), procs);
-            }
-            // Write combos
-            for (const [salonId, cmbs] of Object.entries(data.combos || {})) {
-              await Storage.set(KEYS.combos(salonId), cmbs);
-            }
-            // Write bookings
-            for (const [suffix, bkgs] of Object.entries(data.bookings || {})) {
-              await Storage.set(`spa-crm:bookings:${suffix}`, bkgs);
-            }
-            onShowToast("Данные импортированы");
-            onImportComplete(data.salons);
-          } catch {
-            onShowToast("Ошибка при записи данных");
-          }
-          setImporting(false);
+          await Storage.set(KEYS.salons, data.salons);
+          onImportComplete(data.salons);
+          onShowToast("Данные обновлены");
         },
-        onCancel: () => { setConfirmModal(null); setImporting(false); },
+        onCancel: () => setConfirmModal(null),
       });
     } catch {
-      onShowToast("Ошибка чтения файла");
+      onShowToast("Ошибка чтения");
+    } finally {
       setImporting(false);
+      e.target.value = "";
     }
-  };
-
-  // ── Reset ──
-  const handleReset = () => {
-    if (resetStep === 0) {
-      setConfirmModal({
-        title: "Сброс данных",
-        message: "Вы уверены? Это удалит ВСЕ данные.",
-        confirmLabel: "Да",
-        confirmDanger: true,
-        onConfirm: () => { setConfirmModal(null); setResetStep(1); },
-        onCancel: () => { setConfirmModal(null); setResetStep(0); },
-      });
-    }
-  };
-
-  const onResetRef = useRef(onReset);
-  onResetRef.current = onReset;
-
-  useEffect(() => {
-    if (resetStep === 1) {
-      setConfirmModal({
-        title: "Последнее предупреждение",
-        message: "Это действие необратимо. Последний шанс.",
-        confirmLabel: "Удалить всё",
-        confirmDanger: true,
-        onConfirm: async () => {
-          setConfirmModal(null);
-          setResetStep(0);
-          const allKeys = await Storage.list("spa-crm:");
-          for (const key of allKeys) {
-            await Storage.delete(key);
-          }
-          onShowToast("Все данные удалены");
-          onResetRef.current();
-        },
-        onCancel: () => { setConfirmModal(null); setResetStep(0); },
-      });
-    }
-  }, [resetStep, onShowToast]);
-
-  const btnBase = {
-    padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600,
-    cursor: "pointer", border: "none", display: "inline-flex", alignItems: "center", gap: 8,
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 720 }}>
-      <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: C.textDark, letterSpacing: "-0.3px" }}>Настройки салонов</h2>
+    <div style={{ padding: "40px 0", display: "flex", flexDirection: "column", gap: 32, maxWidth: 1000, margin: "0 auto" }}>
+      <header style={{ marginBottom: 10 }}>
+        <h2 style={{ 
+          margin: "0 0 12px", fontSize: 32, fontWeight: 800, 
+          color: C.textMain, fontFamily: "'Poppins', sans-serif",
+          letterSpacing: "-0.03em"
+        }}>
+          Настройки системы
+        </h2>
+        <p style={{ color: C.textSub, fontSize: 16, fontWeight: 500 }}>
+          Управление салонами, персоналом и безопасностью
+        </p>
+      </header>
 
-      {salons.map(salon => (
-        <SalonSettingsCard
-          key={salon.id}
-          salon={salon}
-          onChange={patch => updateSalon(salon.id, patch)}
-        />
-      ))}
-
-      {/* Password change */}
-      {currentUser && (
-        <PasswordChangeBlock currentUser={currentUser} onShowToast={onShowToast} />
-      )}
-
-      {/* Data management — STEP-12 */}
-      <div style={{
-        backgroundColor: C.card, borderRadius: 24, padding: 24,
-        boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-      }}>
-        <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 600, color: C.textMain }}>Данные</h3>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-          {/* Export */}
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            style={{
-              ...btnBase,
-              backgroundColor: "transparent",
-              border: `1px solid ${C.gold}`,
-              color: C.gold,
-              opacity: exporting ? 0.5 : 1,
-            }}
-          >
-            📥 {exporting ? "Экспорт..." : "Экспорт JSON"}
-          </button>
-          {/* Import */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing}
-            style={{
-              ...btnBase,
-              backgroundColor: "transparent",
-              border: `1px solid ${C.border}`,
-              color: C.textMain,
-              opacity: importing ? 0.5 : 1,
-            }}
-          >
-            📤 {importing ? "Импорт..." : "Импорт JSON"}
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            style={{ display: "none" }}
-            onChange={handleFileChange}
+      {/* Grid of salon settings */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 32 }}>
+        {salons.map(salon => (
+          <SalonSettingsCard
+            key={salon.id}
+            salon={salon}
+            onChange={patch => updateSalon(salon.id, patch)}
           />
-          {/* Reset — visually separated */}
-          <button
-            onClick={handleReset}
-            style={{
-              ...btnBase,
-              backgroundColor: "transparent",
-              border: "1px solid #F87171",
-              color: "#F87171",
-              marginLeft: "auto",
-            }}
-          >
-            🗑 Сброс
-          </button>
+        ))}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: 32 }}>
+        {/* Security */}
+        {currentUser && (
+          <PasswordChangeBlock currentUser={currentUser} onShowToast={onShowToast} />
+        )}
+
+        {/* Data Management */}
+        <div className="glass" style={{ borderRadius: 32, padding: 32, boxShadow: "0 10px 40px rgba(0,0,0,0.03)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+            <Database size={20} color={C.accent} />
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: C.textMain, fontFamily: "'Poppins', sans-serif" }}>
+              Управление данными
+            </h3>
+          </div>
+          
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <button onClick={handleExport} disabled={exporting} style={{
+              flex: 1, padding: "14px", borderRadius: 20, border: "none",
+              backgroundColor: "rgba(0,0,0,0.03)", color: C.textMain,
+              fontSize: 14, fontWeight: 700, cursor: "pointer",
+              transition: "all 200ms", display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+            }} onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.06)"} onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.03)"}>
+              <Download size={18} /> {exporting ? "Экспорт..." : "Экспорт данных"}
+            </button>
+            <button onClick={() => fileInputRef.current?.click()} disabled={importing} style={{
+              flex: 1, padding: "14px", borderRadius: 20, border: "none",
+              backgroundColor: "rgba(0,0,0,0.03)", color: C.textMain,
+              fontSize: 14, fontWeight: 700, cursor: "pointer",
+              transition: "all 200ms", display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+            }} onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.06)"} onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.03)"}>
+              <Upload size={18} /> {importing ? "Импорт..." : "Импорт настроек"}
+            </button>
+            <input ref={fileInputRef} type="file" accept=".json" style={{ display: "none" }} onChange={handleFileChange} />
+          </div>
+
+          <div style={{ marginTop: 24, padding: 16, borderRadius: 20, backgroundColor: "#FEE2E255", border: "1px solid #FEE2E2" }}>
+            <p style={{ margin: "0 0 12px", color: "#B91C1C", fontSize: 13, fontWeight: 600 }}>Опасная зона</p>
+            <button onClick={() => {
+              setConfirmModal({
+                title: "Сброс данных",
+                message: "Вы уверены? Это действие удалит все настройки и бронирования.",
+                confirmLabel: "Удалить всё",
+                confirmDanger: true,
+                onConfirm: async () => {
+                  setConfirmModal(null);
+                  const allKeys = await Storage.list("spa-crm:");
+                  for (const key of allKeys) await Storage.delete(key);
+                  onShowToast("Все данные удалены");
+                  onReset();
+                },
+                onCancel: () => setConfirmModal(null)
+              });
+            }} style={{
+              width: "100%", padding: "12px", borderRadius: 16, border: "none",
+              backgroundColor: "#EF4444", color: "#fff",
+              fontSize: 13, fontWeight: 700, cursor: "pointer"
+            }}>
+              Сбросить всю систему
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Confirmation Modal */}
       {confirmModal && (
         <div style={{
-          position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.6)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400,
-        }} onClick={() => confirmModal.onCancel()}>
-          <div style={{
-            backgroundColor: C.card, borderRadius: 24, padding: 24,
-            width: 400, maxWidth: "90vw",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+          position: "fixed", inset: 0, backgroundColor: "rgba(25,25,20,0.4)", backdropFilter: "blur(8px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+          padding: 20
+        }} onClick={confirmModal.onCancel}>
+          <div className="glass" style={{
+            borderRadius: 32, padding: 40, width: 440, maxWidth: "100%",
+            boxShadow: "0 20px 80px rgba(0,0,0,0.1)",
           }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: C.textMain }}>
+            <h3 style={{ margin: "0 0 12px", fontSize: 24, fontWeight: 800, color: C.textMain, fontFamily: "'Poppins', sans-serif" }}>
               {confirmModal.title}
             </h3>
-            <p style={{ margin: "0 0 24px", color: C.textSub, fontSize: 14, lineHeight: 1.5 }}>
+            <p style={{ margin: "0 0 32px", color: C.textSub, fontSize: 15, fontWeight: 500, lineHeight: 1.6 }}>
               {confirmModal.message}
             </p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-              <button
-                onClick={confirmModal.onCancel}
-                style={{
-                  ...btnBase, backgroundColor: "transparent",
-                  border: `1px solid ${C.border}`, color: C.textSub,
-                }}
-              >Отмена</button>
-              <button
-                onClick={confirmModal.onConfirm}
-                style={{
-                  ...btnBase,
-                  backgroundColor: confirmModal.confirmDanger ? "#F87171" : C.gold,
-                  color: confirmModal.confirmDanger ? "#fff" : "#1A1A2E",
-                }}
-              >{confirmModal.confirmLabel}</button>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button onClick={confirmModal.onConfirm} style={{
+                flex: 1, padding: "16px", borderRadius: 24, border: "none",
+                backgroundColor: confirmModal.confirmDanger ? "#EF4444" : C.accent,
+                color: confirmModal.confirmDanger ? "#fff" : "#1b1c15",
+                fontSize: 14, fontWeight: 800, cursor: "pointer",
+                boxShadow: `0 8px 24px ${confirmModal.confirmDanger ? "#EF4444" : C.accent}44`
+              }}>
+                {confirmModal.confirmLabel || "Продолжить"}
+              </button>
+              <button onClick={confirmModal.onCancel} style={{
+                padding: "16px 24px", borderRadius: 24, border: "1px solid rgba(0,0,0,0.05)",
+                backgroundColor: "#fff", color: C.textSub,
+                fontSize: 14, fontWeight: 700, cursor: "pointer"
+              }}>
+                Отмена
+              </button>
             </div>
           </div>
         </div>
@@ -1833,17 +1835,20 @@ const CATEGORY_OPTIONS = [
 
 function SubTabBar({ tabs, active, onChange }) {
   return (
-    <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
+    <div className="glass" style={{ 
+      display: "inline-flex", gap: 4, padding: 6, borderRadius: 24, marginBottom: 32,
+      boxShadow: "0 4px 12px rgba(0,0,0,0.02)"
+    }}>
       {tabs.map(t => {
         const isActive = t.id === active;
         return (
           <button key={t.id} onClick={() => onChange(t.id)} style={{
-            padding: "5px 14px", borderRadius: 999, fontSize: 13,
-            border: `1px solid ${C.accent}`,
+            padding: "10px 24px", borderRadius: 18, fontSize: 13,
+            border: "none",
             backgroundColor: isActive ? C.accent : "transparent",
-            color: isActive ? C.bg : C.accent,
-            cursor: "pointer", fontWeight: isActive ? 600 : 400,
-            transition: "all 150ms",
+            color: isActive ? "#1b1c15" : C.textSub,
+            cursor: "pointer", fontWeight: isActive ? 700 : 500,
+            transition: "all 200ms",
           }}>
             {t.label}
           </button>
@@ -1855,7 +1860,6 @@ function SubTabBar({ tabs, active, onChange }) {
 
 const EMPTY_PROC = { name: "", category: "massage", duration: 60, therapistsRequired: 1, price: 5000 };
 
-// Renders as a <tr> — must be placed inside <tbody>
 function ProcedureFormRow({ initial, onSave, onCancel }) {
   const [form, setForm] = useState(initial || EMPTY_PROC);
   const [err, setErr] = useState("");
@@ -1868,23 +1872,23 @@ function ProcedureFormRow({ initial, onSave, onCancel }) {
     onSave(form);
   };
 
-  const inCell = { padding: "12px 8px", verticalAlign: "bottom" };
+  const inCell = { padding: "16px 8px", verticalAlign: "middle" };
 
   return (
     <>
-      <tr style={{ backgroundColor: "#1D2A3A" }}>
-        <td style={inCell}>
+      <tr className="glass" style={{ backgroundColor: "rgba(253, 192, 3, 0.05)" }}>
+        <td style={{ ...inCell, paddingLeft: 24 }}>
           <label style={labelStyle}>Название</label>
           <input type="text" value={form.name} placeholder="Тайский массаж 1ч"
             onChange={e => patch({ name: e.target.value })}
-            style={{ ...inputStyle(), height: 36 }} />
+            style={{ ...inputStyle(), height: 40, borderRadius: 12 }} />
         </td>
         <td style={inCell}>
           <label style={labelStyle}>Категория</label>
           <select value={form.category} onChange={e => patch({ category: e.target.value })}
-            style={{ ...inputStyle(), height: 36, cursor: "pointer" }}>
+            style={{ ...inputStyle(), height: 40, borderRadius: 12, cursor: "pointer" }}>
             {CATEGORY_OPTIONS.map(o => (
-              <option key={o.value} value={o.value} style={{ backgroundColor: C.card }}>{o.label}</option>
+              <option key={o.value} value={o.value} style={{ backgroundColor: "#fff" }}>{o.label}</option>
             ))}
           </select>
         </td>
@@ -1892,38 +1896,39 @@ function ProcedureFormRow({ initial, onSave, onCancel }) {
           <label style={labelStyle}>Длит. (мин)</label>
           <input type="number" value={form.duration} min={5} max={480}
             onChange={e => patch({ duration: parseInt(e.target.value, 10) || 0 })}
-            style={{ ...inputStyle(), height: 36 }} />
+            style={{ ...inputStyle(), height: 40, borderRadius: 12 }} />
         </td>
         <td style={inCell}>
           <label style={labelStyle}>Мастеров</label>
           <input type="number" value={form.therapistsRequired} min={0} max={4}
             onChange={e => patch({ therapistsRequired: parseInt(e.target.value, 10) || 0 })}
-            style={{ ...inputStyle(), height: 36 }} />
+            style={{ ...inputStyle(), height: 40, borderRadius: 12 }} />
         </td>
         <td style={inCell}>
           <label style={labelStyle}>Цена (₸)</label>
           <input type="number" value={form.price} min={0}
             onChange={e => patch({ price: parseInt(e.target.value, 10) || 0 })}
-            style={{ ...inputStyle(), height: 36 }} />
+            style={{ ...inputStyle(), height: 40, borderRadius: 12 }} />
         </td>
-        <td style={{ ...inCell, verticalAlign: "bottom" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: 18 }}>
+        <td style={{ ...inCell, paddingRight: 24, textAlign: "right" }}>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button onClick={handleSave} style={{
-              padding: "6px 12px", borderRadius: 6, border: "none",
-              backgroundColor: C.accent, color: C.bg,
-              fontWeight: 600, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
+              padding: "10px 20px", borderRadius: 12, border: "none",
+              backgroundColor: C.accent, color: "#1b1c15",
+              fontWeight: 700, fontSize: 13, cursor: "pointer",
+              boxShadow: `0 4px 12px ${C.accent}44`
             }}>Сохранить</button>
             <button onClick={onCancel} style={{
-              padding: "6px 12px", borderRadius: 6,
-              border: `1px solid ${C.border}`, backgroundColor: "transparent",
-              color: C.textSub, fontSize: 12, cursor: "pointer",
+              padding: "10px 20px", borderRadius: 12,
+              border: "1px solid rgba(0,0,0,0.05)", backgroundColor: "#fff",
+              color: C.textSub, fontSize: 13, fontWeight: 600, cursor: "pointer",
             }}>Отмена</button>
           </div>
         </td>
       </tr>
       {err && (
-        <tr style={{ backgroundColor: "#1D2A3A" }}>
-          <td colSpan={6} style={{ padding: "0 12px 10px", color: "#F87171", fontSize: 12 }}>{err}</td>
+        <tr>
+          <td colSpan={6} style={{ padding: "0 24px 16px", color: "#EF4444", fontSize: 12, fontWeight: 600 }}>{err}</td>
         </tr>
       )}
     </>
@@ -1931,12 +1936,11 @@ function ProcedureFormRow({ initial, onSave, onCancel }) {
 }
 
 function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowToast }) {
-  const [editing, setEditing] = useState(null); // null | "new" | proc.id
+  const [editing, setEditing] = useState(null); 
 
   const persist = async (updated) => {
     onProceduresChange(updated);
-    const ok = await Storage.set(KEYS.procedures(activeSalonId), updated);
-    if (!ok) onShowToast("Ошибка сохранения процедур");
+    await Storage.set(KEYS.procedures(activeSalonId), updated);
   };
 
   const handleAdd = async (form) => {
@@ -1948,7 +1952,7 @@ function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowTo
   const handleEdit = async (id, form) => {
     await persist(procedures.map(p => p.id === id ? { ...p, ...form } : p));
     setEditing(null);
-    onShowToast("Сохранено");
+    onShowToast("Обновлено");
   };
 
   const handleToggle = (id) => {
@@ -1956,41 +1960,40 @@ function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowTo
   };
 
   const thStyle = {
-    padding: "10px 14px", textAlign: "left",
-    color: C.textSub, fontSize: 11, fontWeight: 600,
-    textTransform: "uppercase", letterSpacing: "0.5px",
-    borderBottom: `1px solid ${C.border}`,
-    backgroundColor: C.card,
+    padding: "16px 20px", textAlign: "left",
+    color: C.textSub, fontSize: 11, fontWeight: 800,
+    textTransform: "uppercase", letterSpacing: "0.1em",
+    borderBottom: "1px solid rgba(0,0,0,0.05)",
+    backgroundColor: "rgba(0,0,0,0.02)",
   };
 
   return (
-    <div>
-      {/* Add button */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button
           onClick={() => setEditing(editing === "new" ? null : "new")}
           style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "8px 16px", borderRadius: 8,
-            border: `1px solid ${C.accent}`, backgroundColor: "transparent",
-            color: C.accent, fontSize: 13, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "12px 24px", borderRadius: 24,
+            border: "none", backgroundColor: C.accent,
+            color: "#1b1c15", fontSize: 13, fontWeight: 700, cursor: "pointer",
+            boxShadow: `0 8px 20px ${C.accent}44`
           }}
         >
-          <Plus size={14} /> Добавить процедуру
+          <Plus size={16} /> Добавить процедуру
         </button>
       </div>
 
-      {/* Table */}
-      <div style={{ borderRadius: 16, overflow: "hidden", border: `1px solid ${C.border}` }}>
+      <div className="glass" style={{ borderRadius: 24, overflow: "hidden", boxShadow: "0 10px 40px rgba(0,0,0,0.02)" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={thStyle}>Название</th>
-              <th style={{ ...thStyle, width: 110 }}>Категория</th>
-              <th style={{ ...thStyle, width: 100 }}>Длит.</th>
-              <th style={{ ...thStyle, width: 90 }}>Мастеров</th>
-              <th style={{ ...thStyle, width: 120 }}>Цена</th>
-              <th style={{ ...thStyle, width: 80, textAlign: "center" }}>Активна</th>
+              <th style={{ ...thStyle, paddingLeft: 32 }}>Название</th>
+              <th style={{ ...thStyle, width: 140 }}>Категория</th>
+              <th style={{ ...thStyle, width: 110 }}>Длит.</th>
+              <th style={{ ...thStyle, width: 100 }}>Мастеров</th>
+              <th style={{ ...thStyle, width: 130 }}>Цена</th>
+              <th style={{ ...thStyle, width: 100, textAlign: "center", paddingRight: 32 }}>Активна</th>
             </tr>
           </thead>
           <tbody>
@@ -1998,13 +2001,12 @@ function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowTo
               <ProcedureFormRow onSave={handleAdd} onCancel={() => setEditing(null)} />
             )}
             {procedures.map((proc, idx) => {
-              const rowBg = idx % 2 === 0 ? C.cardLight : C.gridBg;
-              const td = (center = false) => ({
-                padding: "10px 14px",
-                color: proc.isActive ? C.textDark : C.textDarkSub,
-                fontSize: 13, verticalAlign: "middle",
-                borderBottom: `1px solid ${C.border}`,
-                textAlign: center ? "center" : "left",
+              const td = (center = false, right = false) => ({
+                padding: "16px 20px",
+                color: proc.isActive ? C.textMain : C.textSub,
+                fontSize: 14, fontWeight: 500, verticalAlign: "middle",
+                borderBottom: "1px solid rgba(0,0,0,0.03)",
+                textAlign: center ? "center" : (right ? "right" : "left"),
               });
               if (editing === proc.id) {
                 return (
@@ -2020,32 +2022,40 @@ function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowTo
                 <tr
                   key={proc.id}
                   onClick={() => setEditing(proc.id)}
-                  style={{ backgroundColor: rowBg, cursor: "pointer", transition: "background 100ms", opacity: proc.isActive ? 1 : 0.6 }}
-                  onMouseEnter={e => e.currentTarget.style.backgroundColor = "#1D2A3A"}
-                  onMouseLeave={e => e.currentTarget.style.backgroundColor = rowBg}
+                  style={{ cursor: "pointer", transition: "all 200ms", opacity: proc.isActive ? 1 : 0.6 }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.02)"}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = "transparent"}
                 >
-                  <td style={td()}>{proc.name}</td>
+                  <td style={{ ...td(), paddingLeft: 32, fontWeight: 600 }}>{proc.name}</td>
                   <td style={td()}>
-                    <span title={CATEGORY_LABEL[proc.category]}>{CATEGORY_ICONS[proc.category]} {CATEGORY_LABEL[proc.category]}</span>
+                    <span style={{ 
+                      padding: "4px 10px", borderRadius: 10, 
+                      backgroundColor: proc.category === "massage" ? "rgba(253, 192, 3, 0.1)" : "rgba(0,0,0,0.05)",
+                      fontSize: 12, fontWeight: 700 
+                    }}>
+                      {CATEGORY_ICONS[proc.category]} {CATEGORY_LABEL[proc.category]}
+                    </span>
                   </td>
                   <td style={td()}>{proc.duration} мин</td>
-                  <td style={td()}>{proc.therapistsRequired}</td>
+                  <td style={td(true)}>{proc.therapistsRequired}</td>
                   <td style={td()}>{proc.price.toLocaleString("ru-RU")} ₸</td>
-                  <td style={td(true)} onClick={e => { e.stopPropagation(); handleToggle(proc.id); }}>
-                    <Toggle checked={proc.isActive} onChange={() => handleToggle(proc.id)} />
+                  <td style={{ ...td(true), paddingRight: 32 }} onClick={e => { e.stopPropagation(); handleToggle(proc.id); }}>
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      <Toggle checked={proc.isActive} onChange={() => handleToggle(proc.id)} />
+                    </div>
                   </td>
                 </tr>
               );
             })}
-            {procedures.length === 0 && editing !== "new" && (
-              <tr>
-                <td colSpan={6} style={{ padding: 24, textAlign: "center", color: C.textSub, fontSize: 13 }}>
-                  Нет процедур. Нажмите «Добавить процедуру».
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
+        {procedures.length === 0 && editing !== "new" && (
+          <div style={{ padding: 64, textAlign: "center", color: C.textSub }}>
+            <p style={{ margin: 0, fontSize: 40 }}>✨</p>
+            <p style={{ margin: "16px 0 0", fontSize: 16, fontWeight: 600 }}>Нет процедур</p>
+            <p style={{ margin: "4px 0 0", fontSize: 14 }}>Добавьте свою первую услугу</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2070,7 +2080,7 @@ function SaunaPeelingTab({ salon, onSalonChange, onShowToast }) {
   return (
     <div style={{ maxWidth: 560, display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Сауна */}
-      <div style={{ backgroundColor: C.card, borderRadius: 24, padding: 24, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
+      <div style={{ backgroundColor: C.card, borderRadius: 12, padding: 24, border: `1px solid ${C.border}` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: salon.hasSauna ? 20 : 0 }}>
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: C.textMain }}>Сауна</h3>
           <Toggle checked={salon.hasSauna} onChange={v => handleChange({ hasSauna: v })} />
@@ -2095,8 +2105,8 @@ function SaunaPeelingTab({ salon, onSalonChange, onShowToast }) {
 
       {/* Пиллинг */}
       <div style={{
-        backgroundColor: C.card, borderRadius: 24, padding: 24,
-        boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+        backgroundColor: C.card, borderRadius: 12, padding: 24,
+        border: `1px solid ${C.border}`,
         opacity: salon.hasSauna ? 1 : 0.5,
         pointerEvents: salon.hasSauna ? "auto" : "none",
       }}>
@@ -2127,7 +2137,7 @@ function SaunaPeelingTab({ salon, onSalonChange, onShowToast }) {
             </div>
             <div style={{
               backgroundColor: C.gridBg, borderRadius: 8, padding: "10px 14px",
-              border: `1px solid ${C.border}`, color: C.textDarkSub, fontSize: 12,
+              border: `1px solid ${C.border}`, color: C.textSub, fontSize: 12,
             }}>
               💡 Макс. людей за сеанс: ({salon.saunaDuration} ÷ {salon.peelingTimePerPerson}) × {salon.peelingMastersMax} мастера
               = <strong style={{ color: C.accent }}>{maxPeeling} чел.</strong>
@@ -2220,9 +2230,9 @@ function ComboModal({ combo, procedures, onSave, onClose }) {
     }}>
       <div style={{
         width: "100%", maxWidth: 520,
-        backgroundColor: C.card, borderRadius: 28, padding: 28,
+        backgroundColor: C.card, borderRadius: 12, padding: 28,
         maxHeight: "90vh", overflowY: "auto",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+        boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
       }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
@@ -2347,10 +2357,167 @@ function ComboModal({ combo, procedures, onSave, onClose }) {
             color: C.textSub, fontSize: 13, cursor: "pointer",
           }}>Отмена</button>
           <button onClick={handleSave} style={{
-            padding: "8px 20px", borderRadius: 999,
+            padding: "8px 20px", borderRadius: 8,
             border: "none", backgroundColor: C.accent,
-            color: "#1C1C1E", fontSize: 13, fontWeight: 600, cursor: "pointer",
+            color: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer",
           }}>Сохранить</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ComboModal({ initial, procedures, onSave, onCancel }) {
+  const [name, setName] = useState(initial?.name || "");
+  const [selected, setSelected] = useState(initial?.items || []);
+  const [step, setStep] = useState(1); // 1: Name & Procs, 2: Price/Meta
+
+  const totalPrice = selected.reduce((sum, item) => {
+    const p = procedures.find(x => x.id === item.procedureId);
+    return sum + (p ? p.price : 0);
+  }, 0);
+
+  const toggleProc = (proc) => {
+    if (selected.find(s => s.procedureId === proc.id)) {
+      setSelected(selected.filter(s => s.procedureId !== proc.id));
+    } else {
+      setSelected([...selected, { procedureId: proc.id, offsetMinutes: 0 }]);
+    }
+  };
+
+  const updateOffset = (procId, off) => {
+    setSelected(selected.map(s => s.procedureId === procId ? { ...s, offsetMinutes: off } : s));
+  };
+
+  const handleSave = () => {
+    if (!name.trim()) return;
+    if (selected.length < 2) return;
+    onSave({ name, items: selected, price: totalPrice });
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, backgroundColor: "rgba(25,25,20,0.4)", backdropFilter: "blur(12px)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20
+    }} onClick={onCancel}>
+      <div className="glass" style={{
+        borderRadius: 32, width: 640, maxWidth: "100%", maxHeight: "90vh",
+        display: "flex", flexDirection: "column", boxShadow: "0 20px 80px rgba(0,0,0,0.1)",
+      }} onClick={e => e.stopPropagation()}>
+        
+        {/* Header */}
+        <div style={{ padding: "32px 32px 24px", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: C.textMain, fontFamily: "'Poppins', sans-serif" }}>
+              {initial ? "Редактировать комбо" : "Новое комбо-предложение"}
+            </h2>
+            <button onClick={onCancel} style={{ background: "none", border: "none", cursor: "pointer", color: C.textSub }}>
+              <X size={24} />
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ height: 4, flex: 1, borderRadius: 2, backgroundColor: step >= 1 ? C.accent : "rgba(0,0,0,0.05)" }} />
+            <div style={{ height: 4, flex: 1, borderRadius: 2, backgroundColor: step >= 2 ? C.accent : "rgba(0,0,0,0.05)" }} />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ padding: 32, overflowY: "auto", flex: 1 }}>
+          {step === 1 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              <div>
+                <label style={labelStyle}>Название предложения</label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)}
+                  placeholder="Например: Релакс для двоих" style={{ ...inputStyle(), borderRadius: 16, height: 48 }} />
+              </div>
+              
+              <div>
+                <label style={labelStyle}>Выберите услуги (мин. 2)</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  {procedures.filter(p => p.isActive).map(p => {
+                    const isSel = selected.find(s => s.procedureId === p.id);
+                    return (
+                      <button key={p.id} onClick={() => toggleProc(p)} style={{
+                        padding: "16px", borderRadius: 16, border: isSel ? `2px solid ${C.accent}` : "1px solid rgba(0,0,0,0.05)",
+                        backgroundColor: isSel ? "rgba(253, 192, 3, 0.05)" : "#fff",
+                        textAlign: "left", cursor: "pointer", transition: "all 200ms",
+                        display: "flex", alignItems: "center", gap: 12
+                      }}>
+                        <div style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: isSel ? C.accent : "rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {isSel && <Check size={14} color="#1b1c15" />}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: C.textMain }}>{p.name}</div>
+                          <div style={{ fontSize: 11, color: C.textSub, fontWeight: 600 }}>{p.price.toLocaleString()} ₸</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              <div style={{ padding: 20, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.02)" }}>
+                <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: C.textSub }}>Настройка пауз</h4>
+                {selected.map((item, idx) => {
+                  const p = procedures.find(x => x.id === item.procedureId);
+                  if (!p) return null;
+                  return (
+                    <div key={item.procedureId} style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: idx === selected.length - 1 ? 0 : 16 }}>
+                      <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: C.textMain }}>{p.name}</div>
+                      {idx > 0 && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 12, color: C.textSub, fontWeight: 600 }}>Пауза (мин):</span>
+                          <input type="number" value={item.offsetMinutes} onChange={e => updateOffset(item.procedureId, parseInt(e.target.value, 10) || 0)}
+                            style={{ ...inputStyle(), width: 70, height: 36, borderRadius: 8, padding: "0 8px", textAlign: "center" }} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="glass" style={{ padding: 24, borderRadius: 24, backgroundColor: "rgba(253, 192, 3, 0.05)", border: `1px solid ${C.accent}33` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: C.textMain }}>Итоговая стоимость</span>
+                  <span style={{ fontSize: 24, fontWeight: 900, color: C.accent }}>{totalPrice.toLocaleString()} ₸</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: 32, display: "flex", gap: 12, borderTop: "1px solid rgba(0,0,0,0.05)" }}>
+          <button onClick={onCancel} style={{
+            padding: "16px 24px", borderRadius: 24, border: "1px solid rgba(0,0,0,0.05)",
+            backgroundColor: "#fff", color: C.textSub, fontSize: 14, fontWeight: 700, cursor: "pointer"
+          }}>Отмена</button>
+          
+          <div style={{ flex: 1 }} />
+          
+          {step === 1 ? (
+            <button onClick={() => setStep(2)} disabled={selected.length < 2 || !name.trim()} style={{
+              padding: "16px 40px", borderRadius: 24, border: "none",
+              backgroundColor: C.accent, color: "#1b1c15", fontSize: 14, fontWeight: 800,
+              cursor: (selected.length < 2 || !name.trim()) ? "not-allowed" : "pointer",
+              opacity: (selected.length < 2 || !name.trim()) ? 0.5 : 1,
+              boxShadow: `0 8px 24px ${C.accent}44`
+            }}>Далее</button>
+          ) : (
+            <>
+              <button onClick={() => setStep(1)} style={{
+                padding: "16px 24px", borderRadius: 24, border: "1px solid rgba(0,0,0,0.05)",
+                backgroundColor: "#fff", color: C.textMain, fontSize: 14, fontWeight: 700, cursor: "pointer"
+              }}>Назад</button>
+              <button onClick={handleSave} style={{
+                padding: "16px 40px", borderRadius: 24, border: "none",
+                backgroundColor: C.accent, color: "#1b1c15", fontSize: 14, fontWeight: 800,
+                cursor: "pointer", boxShadow: `0 8px 24px ${C.accent}44`
+              }}>Сохранить комбо</button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -2363,14 +2530,13 @@ function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowTo
 
   const persist = async (updated) => {
     onCombosChange(updated);
-    const ok = await Storage.set(KEYS.combos(activeSalonId), updated);
-    if (!ok) onShowToast("Ошибка сохранения комбо");
+    await Storage.set(KEYS.combos(activeSalonId), updated);
   };
 
   const handleSave = async (form) => {
     if (editingCombo) {
       await persist(combos.map(c => c.id === editingCombo.id ? { ...editingCombo, ...form } : c));
-      onShowToast("Сохранено");
+      onShowToast("Обновлено");
     } else {
       await persist([...combos, { id: makeId(), salonId: activeSalonId, ...form, isActive: true }]);
       onShowToast("Комбо добавлено");
@@ -2384,83 +2550,95 @@ function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowTo
   };
 
   const thStyle = {
-    padding: "10px 14px", textAlign: "left",
-    color: C.textSub, fontSize: 11, fontWeight: 600,
-    textTransform: "uppercase", letterSpacing: "0.5px",
-    borderBottom: `1px solid ${C.border}`,
-    backgroundColor: C.card,
+    padding: "16px 20px", textAlign: "left",
+    color: C.textSub, fontSize: 11, fontWeight: 800,
+    textTransform: "uppercase", letterSpacing: "0.1em",
+    borderBottom: "1px solid rgba(0,0,0,0.05)",
+    backgroundColor: "rgba(0,0,0,0.02)",
   };
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button onClick={() => { setEditingCombo(null); setModalOpen(true); }} style={{
-          display: "flex", alignItems: "center", gap: 6,
-          padding: "8px 16px", borderRadius: 8,
-          border: `1px solid ${C.accent}`, backgroundColor: "transparent",
-          color: C.accent, fontSize: 13, cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 8,
+          padding: "12px 24px", borderRadius: 24,
+          border: "none", backgroundColor: C.accent,
+          color: "#1b1c15", fontSize: 13, fontWeight: 700, cursor: "pointer",
+          boxShadow: `0 8px 20px ${C.accent}44`
         }}>
-          <Plus size={14} /> Создать комбо
+          <Plus size={16} /> Создать комбо
         </button>
       </div>
 
-      <div style={{ borderRadius: 16, overflow: "hidden", border: `1px solid ${C.border}` }}>
+      <div className="glass" style={{ borderRadius: 24, overflow: "hidden", boxShadow: "0 10px 40px rgba(0,0,0,0.02)" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={thStyle}>Название</th>
+              <th style={{ ...thStyle, paddingLeft: 32 }}>Название</th>
               <th style={thStyle}>Состав</th>
-              <th style={{ ...thStyle, width: 110 }}>Общее время</th>
-              <th style={{ ...thStyle, width: 120 }}>Цена</th>
-              <th style={{ ...thStyle, width: 80, textAlign: "center" }}>Активен</th>
+              <th style={{ ...thStyle, width: 150 }}>Цена</th>
+              <th style={{ ...thStyle, width: 100, textAlign: "center", paddingRight: 32 }}>Активен</th>
             </tr>
           </thead>
           <tbody>
             {combos.map((combo, idx) => {
-              const rowBg = idx % 2 === 0 ? C.cardLight : C.gridBg;
               const td = (center = false) => ({
-                padding: "10px 14px",
-                color: combo.isActive ? C.textDark : C.textDarkSub,
-                fontSize: 13, verticalAlign: "middle",
-                borderBottom: `1px solid ${C.border}`,
+                padding: "16px 20px",
+                color: combo.isActive ? C.textMain : C.textSub,
+                fontSize: 14, fontWeight: 500, verticalAlign: "middle",
+                borderBottom: "1px solid rgba(0,0,0,0.03)",
                 textAlign: center ? "center" : "left",
               });
               return (
                 <tr key={combo.id}
                   onClick={() => { setEditingCombo(combo); setModalOpen(true); }}
-                  style={{ backgroundColor: rowBg, cursor: "pointer", transition: "background 100ms", opacity: combo.isActive ? 1 : 0.6 }}
-                  onMouseEnter={e => e.currentTarget.style.backgroundColor = "#1D2A3A"}
-                  onMouseLeave={e => e.currentTarget.style.backgroundColor = rowBg}
+                  style={{ cursor: "pointer", transition: "all 200ms", opacity: combo.isActive ? 1 : 0.6 }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.02)"}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = "transparent"}
                 >
-                  <td style={td()}>{combo.name}</td>
-                  <td style={{ ...td(), fontSize: 12, color: C.textSub }}>
-                    {combo.steps.map(s => s.name).join(" → ")}
+                  <td style={{ ...td(), paddingLeft: 32, fontWeight: 600 }}>{combo.name}</td>
+                  <td style={td()}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {(combo.items || []).map((step, sidx) => {
+                        const p = procedures.find(x => x.id === step.procedureId);
+                        return (
+                          <React.Fragment key={step.procedureId}>
+                            <span style={{ padding: "4px 8px", borderRadius: 6, backgroundColor: "rgba(0,0,0,0.05)", fontSize: 11, fontWeight: 700 }}>
+                              {p ? p.name : "???"}
+                            </span>
+                            {sidx < combo.items.length - 1 && <span style={{ color: C.accent }}>→</span>}
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
                   </td>
-                  <td style={td()}>{combo.totalDuration} мин</td>
                   <td style={td()}>{combo.price.toLocaleString("ru-RU")} ₸</td>
-                  <td style={td(true)} onClick={e => { e.stopPropagation(); handleToggle(combo.id); }}>
-                    <Toggle checked={combo.isActive} onChange={() => handleToggle(combo.id)} />
+                  <td style={{ ...td(true), paddingRight: 32 }} onClick={e => { e.stopPropagation(); handleToggle(combo.id); }}>
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      <Toggle checked={combo.isActive} onChange={() => handleToggle(combo.id)} />
+                    </div>
                   </td>
                 </tr>
               );
             })}
-            {combos.length === 0 && (
-              <tr>
-                <td colSpan={5} style={{ padding: 24, textAlign: "center", color: C.textSub, fontSize: 13 }}>
-                  Нет комбо-пакетов. Нажмите «Создать комбо».
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
+        {combos.length === 0 && (
+          <div style={{ padding: 64, textAlign: "center", color: C.textSub }}>
+            <p style={{ margin: 0, fontSize: 40 }}>📦</p>
+            <p style={{ margin: "16px 0 0", fontSize: 16, fontWeight: 600 }}>Нет комбо-пакетов</p>
+            <p style={{ margin: "4px 0 0", fontSize: 14 }}>Создайте выгодное предложение</p>
+          </div>
+        )}
       </div>
 
       {modalOpen && (
         <ComboModal
-          combo={editingCombo}
+          initial={editingCombo}
           procedures={procedures}
           onSave={handleSave}
-          onClose={() => { setModalOpen(false); setEditingCombo(null); }}
+          onCancel={() => { setModalOpen(false); setEditingCombo(null); }}
         />
       )}
     </div>
@@ -2981,25 +3159,35 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     }}>
       <div style={{
         width: "100%", maxWidth: 520,
-        backgroundColor: C.card, borderRadius: 28, padding: 28,
+        backgroundColor: C.card, borderRadius: 12, padding: 28,
         maxHeight: "90vh", overflowY: "auto",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+        boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
       }}>
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: C.textMain }}>Новая запись</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: C.textSub }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+          <h3 style={{ 
+            margin: 0, 
+            fontSize: 24, 
+            fontWeight: 800, 
+            color: C.textMain,
+            fontFamily: "'Poppins', sans-serif",
+            letterSpacing: "-0.02em"
+          }}>Новая запись</h3>
+          <button onClick={onClose} style={{ 
+            background: "rgba(0,0,0,0.05)", border: "none", cursor: "pointer", color: C.textSub,
+            width: 32, height: 32, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center"
+          }}>
             <X size={18} />
           </button>
         </div>
         {/* Salon indicator */}
         <div style={{
-          display: "flex", alignItems: "center", gap: 8,
-          padding: "10px 14px", borderRadius: 8, marginBottom: 20,
-          backgroundColor: `${C.accent}15`, border: `1px solid ${C.accent}44`,
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "12px 20px", borderRadius: 20, marginBottom: 32,
+          backgroundColor: `${C.accent}15`, border: `1px solid ${C.accent}33`,
         }}>
-          <Gem size={16} color={C.accent} />
-          <span style={{ color: C.accent, fontWeight: 600, fontSize: 14 }}>{salon.name}</span>
+          <Gem size={18} color={C.accent} />
+          <span style={{ color: "#927000", fontWeight: 700, fontSize: 15, fontFamily: "'Inter', sans-serif" }}>{salon.name}</span>
         </div>
 
         {/* Client info */}
@@ -3222,7 +3410,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
             <label style={labelStyle}>Кабинка</label>
             {clientCount >= 3 && roomAllocation ? (
               <div style={{ padding: "8px 12px", borderRadius: 8, backgroundColor: C.gridBg,
-                border: `1px solid ${C.border}`, color: C.textDark, fontSize: 13 }}>
+                border: `1px solid ${C.border}`, color: C.textMain, fontSize: 13 }}>
                 {roomAllocation.map((a, i) => (
                   <span key={i}>{i > 0 && " + "}{a.room.name} ({a.count} чел.)</span>
                 ))}
@@ -3267,17 +3455,17 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           display: "flex", gap: 24, flexWrap: "wrap",
         }}>
           <div>
-            <div style={{ color: C.textDarkSub, fontSize: 11, marginBottom: 2 }}>Длительность</div>
-            <div style={{ color: C.textDark, fontSize: 13, fontWeight: 500 }}>
+            <div style={{ color: C.textSub, fontSize: 11, marginBottom: 2 }}>Длительность</div>
+            <div style={{ color: C.textMain, fontSize: 13, fontWeight: 500 }}>
               {effectiveDuration} мин + {salon.bufferMinutes} мин буфер
             </div>
           </div>
           <div>
-            <div style={{ color: C.textDarkSub, fontSize: 11, marginBottom: 2 }}>Мастеров</div>
-            <div style={{ color: C.textDark, fontSize: 13, fontWeight: 500 }}>{therapistCount}</div>
+            <div style={{ color: C.textSub, fontSize: 11, marginBottom: 2 }}>Мастеров</div>
+            <div style={{ color: C.textMain, fontSize: 13, fontWeight: 500 }}>{therapistCount}</div>
           </div>
           <div>
-            <div style={{ color: C.textDarkSub, fontSize: 11, marginBottom: 2 }}>Цена</div>
+            <div style={{ color: C.textSub, fontSize: 11, marginBottom: 2 }}>Цена</div>
             <div style={{ color: C.accent, fontSize: 14, fontWeight: 600 }}>
               {totalPrice.toLocaleString("ru-RU")} ₸
             </div>
@@ -3326,26 +3514,26 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
         )}
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 32 }}>
           <button onClick={onClose} style={{
-            padding: "8px 20px", borderRadius: 8,
-            border: `1px solid ${C.border}`, backgroundColor: "transparent",
-            color: C.textSub, fontSize: 13, cursor: "pointer",
+            padding: "12px 24px", borderRadius: 20,
+            border: "none", backgroundColor: "rgba(0,0,0,0.05)",
+            color: C.textSub, fontSize: 14, fontWeight: 600, cursor: "pointer",
+            transition: "all 200ms"
           }}>Отмена</button>
           <button onClick={handleSave} disabled={saving || hasValidationErrors} style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "8px 20px", borderRadius: 8,
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "12px 32px", borderRadius: 24,
             border: "none",
-            backgroundColor: (saving || hasValidationErrors) ? C.border : C.accent,
-            color: (saving || hasValidationErrors) ? C.textSub : C.bg,
-            fontSize: 13, fontWeight: 600,
+            backgroundColor: (saving || hasValidationErrors) ? "#E5E7EB" : C.accent,
+            color: (saving || hasValidationErrors) ? "#9CA3AF" : "#1b1c15",
+            fontSize: 14, fontWeight: 700,
             cursor: (saving || hasValidationErrors) ? "not-allowed" : "pointer",
-            opacity: hasValidationErrors ? 0.6 : 1,
+            boxShadow: (saving || hasValidationErrors) ? "none" : `0 8px 24px ${C.accent}44`,
+            transition: "all 200ms"
           }}>
-            {saving
-              ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
-              : <Check size={14} />}
-            {saving ? "Сохранение…" : "Записать"}
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} 
+            Создать запись
           </button>
         </div>
       </div>
@@ -3354,51 +3542,55 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       {showConfirm && (
         <div style={{
           position: "fixed", inset: 0, zIndex: 400,
-          backgroundColor: "rgba(0,0,0,0.7)",
+          backgroundColor: "rgba(0,0,0,0.5)",
+          backdropFilter: "blur(16px)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          <div style={{
-            width: "100%", maxWidth: 400, backgroundColor: C.card, borderRadius: 24, padding: 28,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.3)", margin: "0 16px",
+          <div className="glass" style={{
+            width: "100%", maxWidth: 400, backgroundColor: "rgba(255,255,255,0.8)", borderRadius: 32, padding: 32,
+            boxShadow: "0 20px 50px rgba(0,0,0,0.2)", margin: "0 16px",
+            border: "1px solid rgba(255,255,255,0.4)"
           }}>
-            <h4 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 600, color: C.textMain }}>
+            <h4 style={{ 
+              margin: "0 0 20px", 
+              fontSize: 20, 
+              fontWeight: 800, 
+              color: C.textMain,
+              fontFamily: "'Poppins', sans-serif" 
+            }}>
               Подтвердите запись
             </h4>
             <div style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "12px 16px", borderRadius: 8, marginBottom: 16,
-              backgroundColor: `${C.accent}15`, border: `1px solid ${C.accent}44`,
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "16px 20px", borderRadius: 20, marginBottom: 24,
+              backgroundColor: `${C.accent}15`, border: `1px solid ${C.accent}33`,
             }}>
-              <Gem size={20} color={C.accent} />
-              <span style={{ color: C.accent, fontWeight: 700, fontSize: 16 }}>{salon.name}</span>
+              <Gem size={22} color={C.accent} />
+              <span style={{ color: "#927000", fontWeight: 700, fontSize: 17 }}>{salon.name}</span>
             </div>
-            <div style={{ fontSize: 13, color: C.textSub, marginBottom: 6 }}>
-              {clientName.trim()} — {date}, {startTime || segResult?.totalStartTime}
+            <div style={{ fontSize: 14, color: C.textMain, fontWeight: 600, marginBottom: 8 }}>
+              {clientName.trim()}
             </div>
-            {masters.some(m => m) && (
-              <div style={{ fontSize: 13, color: C.textMain, marginBottom: 6 }}>
-                {masters.filter(m => m).length > 1 ? "Мастера" : "Мастер"}: {masters.filter(m => m).join(", ")}
-              </div>
-            )}
-            <div style={{ fontSize: 13, color: C.textSub, marginBottom: 6 }}>
-              {bookingType === "single" ? selectedProc?.name : selectedCombo?.name} — {paymentMethod === "cert_dep" ? "СЕРТ / ДЕП (бесплатно)" : totalPrice.toLocaleString("ru-RU") + " ₸"}
+            <div style={{ fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 500 }}>
+              {date} в {startTime || segResult?.totalStartTime}
             </div>
-            <div style={{ fontSize: 12, color: C.textSub, marginBottom: 20 }}>
-              Оплата: {PAYMENT_LABEL[paymentMethod] || paymentMethod}
+            <div style={{ fontSize: 13, color: C.textSub, marginBottom: 24, fontWeight: 500 }}>
+              {bookingType === "single" ? selectedProc?.name : selectedCombo?.name} • {totalPrice.toLocaleString("ru-RU")} ₸
             </div>
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
               <button onClick={() => setShowConfirm(false)} style={{
-                padding: "8px 20px", borderRadius: 8,
-                border: `1px solid ${C.border}`, backgroundColor: "transparent",
-                color: C.textSub, fontSize: 13, cursor: "pointer",
+                padding: "10px 20px", borderRadius: 20,
+                border: "none", backgroundColor: "rgba(0,0,0,0.05)",
+                color: C.textSub, fontSize: 14, fontWeight: 600, cursor: "pointer",
               }}>Отмена</button>
               <button onClick={handleConfirmedSave} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "8px 24px", borderRadius: 999, border: "none",
-                backgroundColor: C.accent, color: "#1C1C1E",
-                fontSize: 13, fontWeight: 600, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "10px 24px", borderRadius: 20, border: "none",
+                backgroundColor: C.accent, color: "#1b1c15",
+                fontSize: 14, fontWeight: 700, cursor: "pointer",
+                boxShadow: `0 8px 16px ${C.accent}44`
               }}>
-                <Check size={14} />
+                <Check size={16} />
                 Подтвердить
               </button>
             </div>
@@ -3466,38 +3658,52 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
   const divider = <div style={{ height: 1, backgroundColor: C.border, margin: "16px 0" }} />;
 
   return (
-    <div ref={panelRef} style={{
-      position: "fixed", top: 0, right: 0, bottom: 0, width: window.innerWidth < 768 ? "100%" : 360, zIndex: 300,
-      backgroundColor: C.card, borderLeft: "none",
+    <div ref={panelRef} className="glass" style={{
+      position: "fixed", top: 0, right: 0, bottom: 0, 
+      width: window.innerWidth < 768 ? "100%" : 400, zIndex: 300,
+      backgroundColor: "rgba(255, 255, 255, 0.8)", 
+      borderLeft: "1px solid rgba(255,255,255,0.4)",
       display: "flex", flexDirection: "column",
-      boxShadow: "-8px 0 32px rgba(0,0,0,0.3)",
-      animation: "slideInRight 250ms ease-out",
+      boxShadow: "-20px 0 50px rgba(0,0,0,0.1)",
+      animation: "slideInRight 300ms cubic-bezier(0.4, 0, 0.2, 1)",
       overflowY: "auto",
+      borderRadius: window.innerWidth < 768 ? 0 : "40px 0 0 40px",
     }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 0" }}>
-        <span style={{ color: C.textSub, fontSize: 12, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "32px 32px 0" }}>
+        <span style={{ 
+          color: C.textSub, 
+          fontSize: 12, 
+          fontWeight: 800, 
+          textTransform: "uppercase", 
+          letterSpacing: "0.1em",
+          fontFamily: "'Inter', sans-serif"
+        }}>
           Детали записи
         </span>
-        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: C.textSub }}>
+        <button onClick={onClose} style={{ 
+          background: "rgba(0,0,0,0.05)", border: "none", cursor: "pointer", color: C.textSub,
+          width: 32, height: 32, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
           <X size={18} />
         </button>
       </div>
 
-      <div style={{ padding: "16px 20px", flex: 1 }}>
+      <div style={{ padding: "32px", flex: 1 }}>
         {/* Client info */}
-        <div style={{ fontSize: 16, fontWeight: 600, color: C.textMain, marginBottom: 4 }}>
+        <div style={{ fontSize: 24, fontWeight: 800, color: C.textMain, marginBottom: 8, fontFamily: "'Poppins', sans-serif", letterSpacing: "-0.02em" }}>
           {booking.clientName}
         </div>
         <a href={`tel:${booking.clientPhone}`} style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
-          color: C.textSub, fontSize: 14, textDecoration: "none",
+          display: "inline-flex", alignItems: "center", gap: 8,
+          color: C.textSub, fontSize: 15, textDecoration: "none",
+          fontWeight: 500, backgroundColor: "rgba(0,0,0,0.03)", padding: "6px 12px", borderRadius: 12
         }}>
-          <Phone size={13} />
+          <Phone size={14} />
           {booking.clientPhone}
         </a>
         {booking.masterName && (
-          <div style={{ marginTop: 8, fontSize: 13, color: C.accent, fontWeight: 600 }}>
+          <div style={{ marginTop: 16, fontSize: 14, color: "#927000", fontWeight: 700, backgroundColor: `${C.accent}15`, padding: "8px 16px", borderRadius: 12, display: "inline-block", width: "100%" }}>
             Мастер: {booking.masterName}
           </div>
         )}
@@ -3588,7 +3794,7 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
         {booking.notes && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ color: C.textSub, fontSize: 11, marginBottom: 4, textTransform: "uppercase" }}>Заметки</div>
-            <div style={{ color: C.textDark, fontSize: 13, lineHeight: 1.5, padding: "8px 10px",
+            <div style={{ color: C.textMain, fontSize: 13, lineHeight: 1.5, padding: "8px 10px",
               backgroundColor: C.gridBg, borderRadius: 6, border: `1px solid ${C.border}` }}>
               {booking.notes}
             </div>
@@ -3603,36 +3809,38 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
         const bDate = new Date(booking.date + "T00:00:00");
         const isPast = bDate < today;
         return (
-          <div style={{ padding: "16px 20px", borderTop: `1px solid ${C.border}` }}>
+          <div style={{ padding: "32px", borderTop: `1px solid rgba(0,0,0,0.05)` }}>
             {isPast ? (
-              <div style={{ color: C.textSub, fontSize: 12, textAlign: "center", padding: "8px 0" }}>
-                Удаление невозможно — дата записи уже прошла
+              <div style={{ color: C.textSub, fontSize: 13, textAlign: "center", fontWeight: 500 }}>
+                Удаление невозможно — дата уже прошла
               </div>
             ) : confirmDelete ? (
               <div>
-                <div style={{ color: C.textMain, fontSize: 13, marginBottom: 10 }}>
-                  Удалить запись {booking.clientName} на {booking.totalStartTime}?
+                <div style={{ color: C.textMain, fontSize: 14, marginBottom: 16, fontWeight: 600, textAlign: "center" }}>
+                  Удалить запись {booking.clientName}?
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: "flex", gap: 12 }}>
                   <button onClick={() => onDelete(booking.id)} style={{
-                    flex: 1, padding: "8px 0", borderRadius: 8, border: "none",
-                    backgroundColor: "#EF4444", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                  }}>Да, удалить</button>
+                    flex: 1, padding: "12px 0", borderRadius: 20, border: "none",
+                    backgroundColor: "#EF4444", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
+                    boxShadow: "0 8px 16px rgba(239, 68, 68, 0.3)"
+                  }}>Удалить</button>
                   <button onClick={() => setConfirmDelete(false)} style={{
-                    flex: 1, padding: "8px 0", borderRadius: 8,
-                    border: `1px solid ${C.border}`, backgroundColor: "transparent",
-                    color: C.textSub, fontSize: 13, cursor: "pointer",
+                    flex: 1, padding: "12px 0", borderRadius: 20,
+                    border: "none", backgroundColor: "rgba(0,0,0,0.05)",
+                    color: C.textSub, fontSize: 14, fontWeight: 700, cursor: "pointer",
                   }}>Отмена</button>
                 </div>
               </div>
             ) : (
               <button onClick={() => setConfirmDelete(true)} style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                width: "100%", padding: "8px 0", borderRadius: 8,
-                border: "1px solid #EF444466", backgroundColor: "#EF444411",
-                color: "#F87171", fontSize: 13, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                width: "100%", padding: "14px 0", borderRadius: 24,
+                border: "none", backgroundColor: "rgba(239, 68, 68, 0.1)",
+                color: "#EF4444", fontSize: 14, fontWeight: 700, cursor: "pointer",
+                transition: "all 200ms"
               }}>
-                <Trash2 size={14} /> Удалить запись
+                <Trash2 size={16} /> Удалить запись
               </button>
             )}
           </div>
@@ -3811,18 +4019,20 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
   const monthLabel = `${RU_MONTH_NOM[viewMonth.getMonth()]} ${viewMonth.getFullYear()}`;
 
   const pillStyle = (active) => ({
-    padding: "6px 16px", borderRadius: 999, fontSize: 12, fontWeight: active ? 600 : 500,
-    border: active ? "none" : `1px solid ${C.borderLight}`,
-    backgroundColor: active ? C.accent : "transparent",
-    color: active ? "#1C1C1E" : C.textDarkSub,
-    cursor: "pointer", transition: "all 200ms",
-    boxShadow: active ? `0 2px 8px ${C.accent}44` : "none",
+    padding: "8px 18px", borderRadius: 20, fontSize: 13, fontWeight: active ? 700 : 500,
+    border: "none",
+    backgroundColor: active ? C.accent : "rgba(0,0,0,0.03)",
+    color: active ? "#1b1c15" : C.textSub,
+    cursor: "pointer",
+    transition: "all 200ms",
+    boxShadow: active ? `0 8px 16px ${C.accent}33` : "none",
   });
 
   const btnStyle = (extra = {}) => ({
-    display: "flex", alignItems: "center", padding: "8px 12px", borderRadius: 14,
-    border: `1px solid ${C.borderLight}`, background: C.cardLight, color: C.textDarkSub, cursor: "pointer",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.04)", transition: "all 200ms",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    width: 38, height: 38, borderRadius: 19,
+    border: "none", backgroundColor: "rgba(0,0,0,0.03)", color: C.textSub, cursor: "pointer",
+    transition: "all 200ms",
     ...extra,
   });
 
@@ -3834,14 +4044,14 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
         <button onClick={() => setViewMonth(new Date(year, month - 1, 1))} style={btnStyle()}>
           <ChevronLeft size={15} />
         </button>
-        <span style={{ color: C.textDark, fontSize: isMobile ? 13 : 15, fontWeight: 600, minWidth: isMobile ? 120 : 180, textAlign: "center", textTransform: "capitalize" }}>
+        <span style={{ color: C.textMain, fontSize: isMobile ? 13 : 15, fontWeight: 600, minWidth: isMobile ? 120 : 180, textAlign: "center", textTransform: "capitalize" }}>
           {monthLabel}
         </span>
         <button onClick={() => setViewMonth(new Date(year, month + 1, 1))} style={btnStyle()}>
           <ChevronRight size={15} />
         </button>
 
-        {!isMobile && <div style={{ width: 1, height: 24, backgroundColor: C.borderLight, margin: "0 4px" }} />}
+        {!isMobile && <div style={{ width: 1, height: 24, backgroundColor: C.border, margin: "0 4px" }} />}
 
         {/* View mode pills */}
         {[["month","Месяц"],["2weeks","2 нед"],["week","Нед"],["custom","Период"]].map(([val,lbl]) => (
@@ -3869,8 +4079,8 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
           onClick={() => setBookingModal({ initialTime: null, initialRoomId: null })}
           style={{
             display: "flex", alignItems: "center", gap: 6,
-            padding: isMobile ? "8px 10px" : "8px 16px", borderRadius: 999,
-            backgroundColor: C.accent, color: "#1C1C1E",
+            padding: isMobile ? "8px 10px" : "8px 16px", borderRadius: 8,
+            backgroundColor: C.accent, color: C.bg,
             fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer",
           }}>
           <Plus size={14} /> {isMobile ? "" : "Новая запись"}
@@ -3900,14 +4110,24 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
             <div key={week.num}>
               {/* Week header */}
               <div style={{
-                padding: "16px 16px", marginTop: week.num > 1 ? 24 : 0,
-                borderBottom: `1px solid ${C.borderLight}`,
-                display: "flex", alignItems: "baseline", gap: 12,
+                padding: "32px 16px 16px", marginTop: week.num > 1 ? 40 : 0,
+                display: "flex", alignItems: "baseline", gap: 16,
               }}>
-                <span style={{ fontSize: isMobile ? 18 : 32, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "1px" }}>
+                <span style={{ 
+                  fontSize: isMobile ? 24 : 48, 
+                  fontWeight: 900, 
+                  color: C.accent, 
+                  fontFamily: "'Poppins', sans-serif",
+                  letterSpacing: "-0.03em" 
+                }}>
                   Неделя {week.num}
                 </span>
-                <span style={{ fontSize: isMobile ? 14 : 28, color: C.textSub }}>
+                <span style={{ 
+                  fontSize: isMobile ? 14 : 24, 
+                  color: C.textSub, 
+                  fontWeight: 500,
+                  fontFamily: "'Inter', sans-serif" 
+                }}>
                   {week.days[0].getDate()} — {week.days[week.days.length - 1].getDate()} {RU_MONTH[month]}
                 </span>
               </div>
@@ -3953,50 +4173,69 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                 const therPct = therTotal > 0 ? Math.round(therBusy / therTotal * 100) : 0;
 
                 return (
-                  <div key={ds} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
+                  <div key={ds} style={{ borderBottom: `1px solid ${C.border}22` }}>
                     {/* Day header with date + KPI bar */}
                     <div
                       onClick={() => setExpandedDates(prev => ({ ...prev, [ds]: !prev[ds] }))}
                       style={{
-                        display: "flex", alignItems: "center", gap: 12,
-                        padding: "8px 16px", cursor: "pointer",
-                        backgroundColor: isT ? `${C.accent}11` : "transparent",
-                        border: isT ? `1px solid ${C.accent}33` : `1px solid transparent`,
-                        borderRadius: 6, margin: "2px 0",
-                        transition: "background 150ms",
+                        display: "flex", alignItems: "center", gap: 20,
+                        padding: "24px 32px", cursor: "pointer",
+                        backgroundColor: isT ? "rgba(253, 192, 3, 0.08)" : "var(--surface-container)",
+                        borderRadius: 32, margin: "12px 0",
+                        transition: "all 300ms",
+                        border: isT ? `2px solid ${C.accent}44` : "1px solid rgba(0,0,0,0.02)",
+                        boxShadow: isT ? `0 8px 32px ${C.accent}22` : "0 8px 32px rgba(0,0,0,0.02)",
                       }}
                     >
                       {/* Date block */}
-                      <div style={{ minWidth: 48, textAlign: "center" }}>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: isDayOff ? C.textDarkSub : (isT ? C.accent : C.textDark) }}>
+                      <div style={{ minWidth: 64, textAlign: "center" }}>
+                        <div style={{ 
+                          fontSize: 28, 
+                          fontWeight: 800, 
+                          color: isDayOff ? C.textSub : (isT ? C.accent : C.textMain),
+                          fontFamily: "'Poppins', sans-serif",
+                          lineHeight: 1
+                        }}>
                           {day.getDate()}
                         </div>
-                        <div style={{ fontSize: 10, color: isDayOff ? "#F8717166" : C.textDarkSub, textTransform: "uppercase" }}>
+                        <div style={{ 
+                          fontSize: 12, 
+                          color: isDayOff ? "#F8717199" : C.textSub, 
+                          textTransform: "uppercase",
+                          fontWeight: 600,
+                          marginTop: 4,
+                          letterSpacing: "0.05em"
+                        }}>
                           {RU_WEEKDAY_SHORT[day.getDay()]}
                         </div>
                       </div>
 
                       {/* KPI mini-bar */}
                       {isDayOff ? (
-                        <span style={{ color: C.textDarkSub, fontSize: 12, fontStyle: "italic" }}>Выходной</span>
+                        <span style={{ color: C.textSub, fontSize: 14, fontWeight: 500, fontStyle: "italic", flex: 1 }}>Выходной день</span>
                       ) : (
-                        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 14, flex: 1, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: isMobile ? 10 : 11, color: C.textDark }}>
-                            {active.length} {active.length === 1 ? "зап." : "зап."}
+                        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 24, flex: 1, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: isMobile ? 12 : 14, color: C.textMain, fontWeight: 700 }}>
+                            {active.length} зап.
                           </span>
-                          {!isMobile && <span style={{ fontSize: 11, color: C.textDarkSub }}>{clients} кл.</span>}
-                          {overdueCount > 0 && <span style={{ fontSize: isMobile ? 10 : 11, color: "#F97316", fontWeight: 600 }}>● {overdueCount}</span>}
-                          {revenue > 0 && <span style={{ fontSize: isMobile ? 10 : 11, color: C.accent, fontWeight: 600 }}>{revenue.toLocaleString("ru-RU")} ₸</span>}
-                          {!isMobile && booked > 0 && <span style={{ fontSize: 11, color: "#D4A84B" }}>● {booked} ожид.</span>}
-                          {!isMobile && completed > 0 && <span style={{ fontSize: 11, color: "#4ADE80" }}>● {completed} выполн.</span>}
-                          {!isMobile && <span style={{ fontSize: 10, color: roomPct > 70 ? "#F87171" : C.textDarkSub }}>Каб. {roomPct}%</span>}
-                          {!isMobile && <span style={{ fontSize: 10, color: therPct > 70 ? "#F87171" : C.textDarkSub }}>Маст. {therPct}%</span>}
+                          {!isMobile && <span style={{ fontSize: 14, color: C.textSub, fontWeight: 500 }}>{clients} клиентов</span>}
+                          {overdueCount > 0 && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 4, backgroundColor: "#F9731622", padding: "4px 10px", borderRadius: 12 }}>
+                              <span style={{ fontSize: 12, color: "#F97316", fontWeight: 700 }}>{overdueCount} просрочено</span>
+                            </div>
+                          )}
+                          {revenue > 0 && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 4, backgroundColor: `${C.accent}22`, padding: "4px 10px", borderRadius: 12 }}>
+                              <span style={{ fontSize: 12, color: "#927000", fontWeight: 700 }}>{revenue.toLocaleString("ru-RU")} ₸</span>
+                            </div>
+                          )}
+                          {!isMobile && <span style={{ fontSize: 12, color: roomPct > 80 ? "#F87171" : C.textSub, fontWeight: 600 }}>Загрузка: {roomPct}%</span>}
                         </div>
                       )}
 
                       {/* Collapse/expand arrow */}
-                      <div style={{ color: C.textDarkSub }}>
-                        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      <div style={{ color: C.textSub, backgroundColor: "rgba(0,0,0,0.03)", width: 32, height: 32, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </div>
                     </div>
 
@@ -4036,35 +4275,45 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                       };
 
                       return (
-                        <div style={{ borderRadius: 8, border: `1px solid ${C.border}`, overflow: "hidden", margin: isMobile ? "4px 0 8px" : "4px 16px 8px" }}>
+                        <div style={{ 
+                          borderRadius: 32, 
+                          backgroundColor: "rgba(255,255,255,0.4)",
+                          backdropFilter: "blur(10px)",
+                          border: `1px solid rgba(0,0,0,0.03)`, 
+                          overflow: "hidden", 
+                          margin: isMobile ? "4px 0 16px" : "4px 0 16px",
+                          boxShadow: "inset 0 2px 4px rgba(0,0,0,0.02)"
+                        }}>
                           <div style={{ display: "flex" }}>
                             {/* Fixed left column */}
-                            <div style={{ width: colW, flexShrink: 0, borderRight: `1px solid ${C.border}`, backgroundColor: C.card }}>
-                              <div style={{ height: 32, borderBottom: `1px solid ${C.border}` }} />
+                            <div style={{ width: colW, flexShrink: 0, borderRight: `1px solid rgba(0,0,0,0.05)`, backgroundColor: "transparent" }}>
+                              <div style={{ height: 40, borderBottom: `1px solid rgba(0,0,0,0.05)` }} />
                               {rows.map((row, i) => (
                                 <div key={row.id} style={{
-                                  height: rowH, display: "flex", alignItems: "center", padding: isMobile ? "0 4px" : "0 12px",
-                                  borderBottom: i < rows.length - 1 ? `1px solid ${C.border}` : "none",
-                                  color: C.textSub, fontSize: 12, fontWeight: 500,
+                                  height: rowH, display: "flex", alignItems: "center", padding: isMobile ? "0 8px" : "0 16px",
+                                  borderBottom: i < rows.length - 1 ? `1px solid rgba(0,0,0,0.05)` : "none",
+                                  color: C.textSub, fontSize: 12, fontWeight: 600,
+                                  fontFamily: "'Inter', sans-serif"
                                 }}>{row.label}</div>
                               ))}
                               <div style={{
-                                borderTop: `1px solid ${C.border}`, height: 44,
-                                display: "flex", alignItems: "center", padding: "0 12px",
-                                color: C.textSub, fontSize: 11,
-                              }}>Массажистки</div>
+                                borderTop: `1px solid rgba(0,0,0,0.05)`, height: 44,
+                                display: "flex", alignItems: "center", padding: "0 16px",
+                                color: C.textSub, fontSize: 11, fontWeight: 600,
+                              }}>Мастера</div>
                             </div>
 
                             {/* Scrollable grid */}
-                            <div style={{ overflowX: "auto", flex: 1 }}>
+                            <div style={{ overflowX: "auto", flex: 1, WebkitOverflowScrolling: "touch" }}>
                               <div style={{ width: totalGridW, position: "relative", minWidth: "100%" }}>
                                 {/* Time header */}
-                                <div style={{ display: "flex", height: 32, borderBottom: `1px solid ${C.border}`, backgroundColor: C.card }}>
+                                <div style={{ display: "flex", height: 40, borderBottom: `1px solid rgba(0,0,0,0.05)`, backgroundColor: "transparent" }}>
                                   {slots.map(s => (
                                     <div key={s} style={{
                                       width: cellW, flexShrink: 0, display: "flex", alignItems: "center",
-                                      paddingLeft: isMobile ? 2 : 6, color: C.textSub, fontSize: isMobile ? 9 : 11,
-                                      borderRight: `1px solid ${C.border}`,
+                                      paddingLeft: isMobile ? 4 : 10, color: C.textSub, fontSize: isMobile ? 10 : 12,
+                                      fontWeight: 600,
+                                      borderRight: `1px solid rgba(0,0,0,0.05)`,
                                     }}>{minsToTime(s)}</div>
                                   ))}
                                 </div>
@@ -4075,18 +4324,18 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                                   return (
                                     <div key={row.id} style={{
                                       height: rowH, position: "relative",
-                                      borderBottom: rowIdx < rows.length - 1 ? `1px solid ${C.border}` : "none",
-                                      backgroundColor: C.gridBg,
+                                      borderBottom: rowIdx < rows.length - 1 ? `1px solid rgba(0,0,0,0.05)` : "none",
+                                      backgroundColor: "transparent",
                                     }}>
                                       {slots.map(s => (
                                         <div key={s} style={{
                                           position: "absolute",
                                           left: (s - wStartM) / 30 * cellW, top: 0,
                                           width: cellW, height: rowH,
-                                          borderRight: `1px solid ${C.border}`,
-                                          cursor: "pointer", transition: "background 100ms",
+                                          borderRight: `1px solid rgba(0,0,0,0.05)`,
+                                          cursor: "pointer", transition: "all 200ms",
                                         }}
-                                          onMouseEnter={e => e.currentTarget.style.backgroundColor = "#1D2A3A"}
+                                          onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.02)"}
                                           onMouseLeave={e => e.currentTarget.style.backgroundColor = "transparent"}
                                           onClick={() => setBookingModal({
                                             initialDate: ds,
@@ -4100,43 +4349,35 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                                         const cat  = proc?.category || (row.type === "sauna" ? "sauna" : "massage");
                                         const color = SEG_COLORS[cat] || SEG_COLORS.massage;
                                         const isCombo = seg.booking.bookingType === "combo";
-                                        const hasPeelingBadge = row.type === "sauna"
-                                          && seg.booking.segments.some(s2 => s2.resourceType === "peeling");
+                                        const status = seg.booking.status;
+                                        const isCompleted = status === "completed";
+                                        const isOverdue = isBookingOverdue(seg.booking);
+                                        
                                         const lx = segLeft(seg.startTime);
-                                        const wd = Math.max(segWidth(seg.startTime, seg.endTime) - 4, 20);
+                                        const wd = Math.max(segWidth(seg.startTime, seg.endTime) - 6, 24);
                                         return (
-                                          <div key={si} style={{
-                                            position: "absolute", left: lx + 2, top: 4,
-                                            width: wd, height: rowH - 8,
-                                            backgroundColor: color, borderRadius: 6,
-                                            border: isCombo ? `1px dashed ${C.accent}55` : "none",
+                                          <div key={si} className="glass" style={{
+                                            position: "absolute", left: lx + 3, top: 6,
+                                            width: wd, height: rowH - 12,
+                                            backgroundColor: isCompleted ? "#c5dfd4dd" : (isOverdue ? "#f97316dd" : `${color}dd`), 
+                                            borderRadius: 12,
+                                            border: isCombo ? `1px dashed rgba(255,255,255,0.4)` : "1px solid rgba(255,255,255,0.2)",
                                             overflow: "hidden", cursor: "pointer",
-                                            transition: "filter 150ms, box-shadow 150ms",
-                                            zIndex: 2, padding: "4px 6px",
+                                            transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+                                            zIndex: 2, padding: "6px 10px",
+                                            display: "flex", flexDirection: "column", justifyContent: "center",
+                                            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                                           }}
-                                            onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.15)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.4)"; }}
-                                            onMouseLeave={e => { e.currentTarget.style.filter = ""; e.currentTarget.style.boxShadow = ""; }}
+                                            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 16px rgba(0,0,0,0.15)"; }}
+                                            onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"; }}
                                             onClick={(e) => { e.stopPropagation(); setSelectedBookingId(seg.booking.id); }}
                                           >
-                                            {seg.booking.masterName && (
-                                              <div style={{ fontSize: 12, fontWeight: 700, color: "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", lineHeight: 1.1 }}>
-                                                {seg.booking.masterName}
-                                              </div>
-                                            )}
-                                            <div style={{ fontSize: 10, fontWeight: 600, color: seg.booking.masterName ? "rgba(255,255,255,0.85)" : "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                                            <div style={{ fontSize: 12, fontWeight: 800, color: isCompleted ? "#2D6A4F" : "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", lineHeight: 1.2 }}>
                                               {seg.booking.clientName}
                                             </div>
-                                            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.65)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                            <div style={{ fontSize: 10, fontWeight: 500, color: isCompleted ? "#2D6A4Fcc" : "rgba(255,255,255,0.85)", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
                                               {seg.procedureName}
                                             </div>
-                                            {hasPeelingBadge && (
-                                              <div style={{
-                                                position: "absolute", top: 4, right: 4,
-                                                backgroundColor: SEG_COLORS.peeling,
-                                                borderRadius: 3, padding: "1px 5px",
-                                                fontSize: 9, color: "#fff", fontWeight: 600,
-                                              }}>+ Пиллинг</div>
-                                            )}
                                           </div>
                                         );
                                       })}
@@ -4145,24 +4386,24 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                                 })}
 
                                 {/* Therapist indicator */}
-                                <div style={{ display: "flex", height: 44, borderTop: `1px solid ${C.border}`, backgroundColor: C.card }}>
+                                <div style={{ display: "flex", height: 44, borderTop: `1px solid rgba(0,0,0,0.05)`, backgroundColor: "transparent" }}>
                                   {therapistUsage.map((u, i) => {
                                     const isFull = u.used >= u.total && u.total > 0;
                                     return (
                                       <div key={i} style={{
                                         width: cellW, flexShrink: 0, display: "flex", flexDirection: "column",
                                         alignItems: "center", justifyContent: "center", gap: 3,
-                                        borderRight: `1px solid ${C.border}`,
+                                        borderRight: `1px solid rgba(0,0,0,0.05)`,
                                       }}>
-                                        <div style={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "center", maxWidth: cellW - 8 }}>
-                                          {Array.from({ length: Math.min(u.total, 12) }).map((_, j) => (
+                                        <div style={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center", maxWidth: cellW - 8 }}>
+                                          {Array.from({ length: Math.min(u.total, 8) }).map((_, j) => (
                                             <div key={j} style={{
-                                              width: 4, height: 4, borderRadius: 1,
-                                              backgroundColor: j < u.used ? C.accent : C.border,
+                                              width: 5, height: 5, borderRadius: 2,
+                                              backgroundColor: j < u.used ? C.accent : "rgba(0,0,0,0.1)",
                                             }} />
                                           ))}
                                         </div>
-                                        <span style={{ fontSize: 9, fontWeight: 600, color: isFull ? "#F87171" : C.textSub }}>
+                                        <span style={{ fontSize: 9, fontWeight: 800, color: isFull ? "#F87171" : C.textSub, fontFamily: "'Poppins', sans-serif" }}>
                                           {u.used}/{u.total}
                                         </span>
                                       </div>
@@ -4252,36 +4493,26 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
   // Pagination
   const [page, setPage] = useState(1);
 
-  // Load all bookings from all salons / all months
   const loadAll = useCallback(async () => {
     setLoadingJ(true);
     const keys = await Storage.list("spa-crm:bookings:");
     const promises = keys.map(k => Storage.get(k));
     const arrays = await Promise.all(promises);
-    const flat = arrays.flat().filter(Boolean);
-    setAllBookings(flat);
+    setAllBookings(arrays.flat().filter(Boolean));
     setLoadingJ(false);
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Derive service name for a booking
-  const serviceName = (b) => {
-    if (b.bookingType === "combo") return "Комбо";
-    return b.segments?.[0]?.procedureName || "—";
-  };
-
-  // Total duration from segments
+  const serviceName = (b) => b.bookingType === "combo" ? "Комбо" : (b.segments?.[0]?.procedureName || "—");
   const totalDuration = (b) => {
-    if (!b.segments || b.segments.length === 0) return 0;
+    if (!b.segments?.length) return 0;
+    const ends = b.segments.map(s => timeToMins(s.endTime));
     const starts = b.segments.map(s => timeToMins(s.startTime));
-    const ends   = b.segments.map(s => timeToMins(s.endTime));
     return Math.max(...ends) - Math.min(...starts);
   };
+  const salonName = (b) => salons.find(s => s.id === b.salonId)?.name || "—";
 
-  const salonName = (b) => salons.find(s => s.id === b.salonId)?.name || b.salonId;
-
-  // Filter
   const filtered = allBookings.filter(b => {
     if (filterSalon !== "all" && b.salonId !== filterSalon) return false;
     if (filterStatus !== "all" && b.status !== filterStatus) return false;
@@ -4289,60 +4520,45 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
     if (dateTo && b.date > dateTo) return false;
     if (search) {
       const q = search.toLowerCase();
-      if (!b.clientName?.toLowerCase().includes(q) && !b.clientPhone?.toLowerCase().includes(q)) return false;
+      return b.clientName?.toLowerCase().includes(q) || b.clientPhone?.includes(q);
     }
     return true;
   });
 
-  // Sort
   const sorted = [...filtered].sort((a, b) => {
     let va, vb;
     switch (sortCol) {
-      case "date":     va = a.date; vb = b.date; break;
-      case "name":     va = a.clientName?.toLowerCase() || ""; vb = b.clientName?.toLowerCase() || ""; break;
-      case "master":   va = a.masterName?.toLowerCase() || ""; vb = b.masterName?.toLowerCase() || ""; break;
-      case "salon":    va = salonName(a); vb = salonName(b); break;
-      case "service":  va = serviceName(a); vb = serviceName(b); break;
-      case "duration": va = totalDuration(a); vb = totalDuration(b); break;
-      case "price":    va = a.totalPrice || 0; vb = b.totalPrice || 0; break;
-      case "payment":  va = a.paymentMethod || ""; vb = b.paymentMethod || ""; break;
-      case "status":   va = a.status; vb = b.status; break;
-      default:         va = a.date; vb = b.date;
+      case "date": va = a.date + (a.totalStartTime || ""); vb = b.date + (b.totalStartTime || ""); break;
+      case "name": va = a.clientName || ""; vb = b.clientName || ""; break;
+      case "master": va = a.masterName || ""; vb = b.masterName || ""; break;
+      case "price": va = a.totalPrice || 0; vb = b.totalPrice || 0; break;
+      case "status": va = a.status; vb = b.status; break;
+      default: va = a.date; vb = b.date;
     }
-    if (va < vb) return sortDir === "asc" ? -1 : 1;
-    if (va > vb) return sortDir === "asc" ? 1 : -1;
-    return 0;
+    return sortDir === "asc" ? (va < vb ? -1 : 1) : (va < vb ? 1 : -1);
   });
 
-  // Pagination
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageItems = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  // Reset page on filter change
-  useEffect(() => { setPage(1); }, [search, filterSalon, filterStatus, dateFrom, dateTo, sortCol, sortDir]);
+  useEffect(() => { setPage(1); }, [search, filterSalon, filterStatus, dateFrom, dateTo]);
 
-  // Inline status change
-  const handleStatusChange = async (bookingId, salonId, bookingDate, newStatus) => {
-    const ym = bookingDate.slice(0, 7);
-    const key = KEYS.bookings(salonId, ym);
+  const handleStatusChange = async (bId, sId, bDate, newS) => {
+    const ym = bDate.slice(0, 7);
+    const key = KEYS.bookings(sId, ym);
     const arr = await Storage.get(key) || [];
-    const booking = arr.find(b => b.id === bookingId);
-    const updated = arr.map(b => b.id === bookingId ? { ...b, status: newStatus } : b);
+    const booking = arr.find(b => b.id === bId);
+    if (!booking) return;
+    const updated = arr.map(b => b.id === bId ? { ...b, status: newS } : b);
     await Storage.set(key, updated);
-    setAllBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus } : b));
-    if (currentUser && booking) {
-      await UserStorage.saveLog({
-        id: makeId(), userId: currentUser.id, userName: currentUser.name,
-        action: "edit", targetDate: booking.date, targetTime: booking.totalStartTime,
-        clientName: booking.clientName,
-        details: `Статус: ${booking.status} → ${newStatus}`,
-        timestamp: new Date().toISOString(),
-      });
+    setAllBookings(prev => prev.map(b => b.id === bId ? { ...b, status: newS } : b));
+    onShowToast("Статус обновлен");
+    
+    if (window.notifyTelegram) {
+      const sObj = salons.find(s => s.id === sId);
+      window.notifyTelegram("status", { ...booking, salonName: sObj?.name || "", oldStatus: booking.status, newStatus: newS });
     }
-    const salonObj = salons.find(s => s.id === salonId);
-    if (window.notifyTelegram && booking) window.notifyTelegram("status", { ...booking, salonName: salonObj?.name || "", oldStatus: booking.status, newStatus });
-    if (onShowToast) onShowToast("Статус изменён");
   };
 
   const toggleSort = (col) => {
@@ -4350,248 +4566,161 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
     else { setSortCol(col); setSortDir("desc"); }
   };
 
-  const sortArrow = (col) => sortCol === col ? (sortDir === "asc" ? " ↑" : " ↓") : "";
-
-  const columns = [
-    { id: "date",     label: "Дата",         w: 100 },
-    { id: "name",     label: "Имя",          w: null },
-    { id: "master",   label: "Мастер",       w: 120 },
-    { id: "phone",    label: "Телефон",      w: 140 },
-    { id: "salon",    label: "Салон",         w: 100 },
-    { id: "service",  label: "Услуга",       w: 140 },
-    { id: "duration", label: "Длит.",        w: 70 },
-    { id: "price",    label: "Цена",         w: 90 },
-    { id: "payment",  label: "Оплата",       w: 100 },
-    { id: "status",   label: "Статус",       w: 150 },
-  ];
-
-  const sortable = new Set(["date","name","master","salon","service","duration","price","payment","status"]);
-
   const formatDateRu = (d) => {
     if (!d) return "—";
     const [y, m, day] = d.split("-");
     return `${day}.${m}.${y}`;
   };
 
-  const filterInputStyle = {
-    ...inputStyle(), height: 34, fontSize: 12,
-    backgroundColor: C.cardLight, border: `1px solid ${C.borderLight}`, color: C.textDark, colorScheme: "light",
-  };
-
-  if (loadingJ) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", padding: 60, color: C.textSub }}>
-        <Loader2 size={24} style={{ animation: "spin 1s linear infinite" }} />
-      </div>
-    );
-  }
+  if (loadingJ) return (
+    <div style={{ display: "flex", justifyContent: "center", padding: 100 }}>
+      <Loader2 size={32} color={C.accent} style={{ animation: "spin 1s linear infinite" }} />
+    </div>
+  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      {/* Filters Card */}
+      <div className="glass" style={{ borderRadius: 32, padding: 32, boxShadow: "0 10px 40px rgba(0,0,0,0.03)" }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ position: "relative", flex: "1 1 240px", maxWidth: 400 }}>
+            <Search size={18} style={{ position: "absolute", left: 16, top: 15, color: C.textSub }} />
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Поиск клиента или телефона..."
+              style={{ ...inputStyle(), paddingLeft: 48, borderRadius: 16, height: 48 }}
+            />
+          </div>
 
-      {/* Filters row */}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        {/* Search */}
-        <div style={{ position: "relative", flex: "1 1 200px", maxWidth: 300 }}>
-          <Search size={14} style={{ position: "absolute", left: 10, top: 10, color: C.textSub, pointerEvents: "none" }} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Поиск по имени / телефону"
-            style={{ ...filterInputStyle, paddingLeft: 32, width: "100%" }}
-          />
-        </div>
+          <select value={filterSalon} onChange={e => setFilterSalon(e.target.value)}
+            style={{ ...inputStyle(), width: "auto", minWidth: 160, borderRadius: 16, height: 48, cursor: "pointer" }}>
+            <option value="all">Все салоны</option>
+            {salons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
 
-        {/* Salon filter */}
-        <select value={filterSalon} onChange={e => setFilterSalon(e.target.value)}
-          style={{ ...filterInputStyle, width: "auto", minWidth: 120, cursor: "pointer" }}>
-          <option value="all" style={{ backgroundColor: C.cardLight }}>Все салоны</option>
-          {salons.map(s => (
-            <option key={s.id} value={s.id} style={{ backgroundColor: C.cardLight }}>{s.name}</option>
-          ))}
-        </select>
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+            style={{ ...inputStyle(), width: "auto", minWidth: 180, borderRadius: 16, height: 48, cursor: "pointer" }}>
+            <option value="all">Все статусы</option>
+            {Object.entries(STATUS_CFG).map(([v, c]) => <option key={v} value={v}>{c.label}</option>)}
+          </select>
 
-        {/* Status filter */}
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          style={{ ...filterInputStyle, width: "auto", minWidth: 140, cursor: "pointer" }}>
-          <option value="all" style={{ backgroundColor: C.cardLight }}>Все статусы</option>
-          {Object.entries(STATUS_CFG).map(([val, cfg]) => (
-            <option key={val} value={val} style={{ backgroundColor: C.cardLight }}>{cfg.label}</option>
-          ))}
-        </select>
-
-        {/* Date range */}
-        <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            style={{ ...filterInputStyle, width: isMobile ? 120 : 140, cursor: "pointer" }} />
-          <span style={{ color: C.textDarkSub, fontSize: 12 }}>—</span>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            style={{ ...filterInputStyle, width: isMobile ? 120 : 140, cursor: "pointer" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              style={{ ...inputStyle(), width: 150, borderRadius: 16, height: 48, colorScheme: "light" }} />
+            <span style={{ color: C.textSub, fontWeight: 700 }}>—</span>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              style={{ ...inputStyle(), width: 150, borderRadius: 16, height: 48, colorScheme: "light" }} />
+          </div>
         </div>
       </div>
 
-      {/* Table / Cards */}
-      {isMobile ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {pageItems.length === 0 ? (
-            <div style={{ padding: 40, textAlign: "center", color: C.textSub, fontSize: 13 }}>Нет записей</div>
-          ) : pageItems.map((b) => {
-            const bOverdue = isBookingOverdue(b);
-            const sCfg = bOverdue ? OVERDUE_CFG : (STATUS_CFG[b.status] || STATUS_CFG.booked);
-            return (
-              <div key={b.id} style={{
-                backgroundColor: C.cardLight, borderRadius: 20, padding: 12,
-                boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: C.textDark }}>{b.clientName}</span>
-                  <span style={{ fontSize: 11, color: C.textDarkSub }}>{formatDateRu(b.date)}</span>
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", fontSize: 12, marginBottom: 8 }}>
-                  <span style={{ color: C.accent }}>{b.masterName || "—"}</span>
-                  <span style={{ color: C.textDarkSub }}>{serviceName(b)}</span>
-                  <span style={{ color: C.textDarkSub }}>{totalDuration(b)} мин</span>
-                  <span style={{ color: C.accent, fontWeight: 600 }}>
-                    {b.paymentMethod === "cert_dep" ? <s>{(b.totalPrice || 0).toLocaleString("ru-RU")} ₸</s> : <>{(b.totalPrice || 0).toLocaleString("ru-RU")} ₸</>}
-                  </span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 11, color: C.textDarkSub }}>{salonName(b)}</span>
-                  <select value={b.status}
-                    onChange={e => handleStatusChange(b.id, b.salonId, b.date, e.target.value)}
-                    style={{
-                      backgroundColor: sCfg.color + "22", border: `1px solid ${sCfg.color}55`,
-                      borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 600,
-                      color: sCfg.color, cursor: "pointer", outline: "none",
+      {/* Main Journal Table */}
+      <div className="glass" style={{ borderRadius: 32, overflow: "hidden", boxShadow: "0 20px 80px rgba(0,0,0,0.05)" }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1000 }}>
+            <thead>
+              <tr style={{ backgroundColor: "rgba(0,0,0,0.02)" }}>
+                {["date", "name", "master", "service", "duration", "price", "status"].map(col => {
+                  const labels = { date: "Дата", name: "Клиент", master: "Мастер", service: "Услуга", duration: "Длит.", price: "Цена", status: "Статус" };
+                  const isSorted = sortCol === col;
+                  return (
+                    <th key={col} onClick={() => toggleSort(col)} style={{
+                      padding: "24px 20px", textAlign: "left", fontSize: 11, fontWeight: 800,
+                      color: C.textSub, textTransform: "uppercase", letterSpacing: "0.1em",
+                      cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,0.05)",
+                      whiteSpace: "nowrap"
                     }}>
-                    {Object.entries(STATUS_CFG).map(([val, cfg]) => (
-                      <option key={val} value={val} style={{ backgroundColor: C.card, color: C.textMain }}>{cfg.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            );
-          })}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {labels[col]}
+                        {isSorted && (sortDir === "asc" ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {pageItems.map((b, bIdx) => {
+                const bOverdue = isBookingOverdue(b);
+                const sCfg = bOverdue ? OVERDUE_CFG : (STATUS_CFG[b.status] || STATUS_CFG.booked);
+                return (
+                  <tr key={b.id} style={{
+                    borderBottom: "1px solid rgba(0,0,0,0.03)", 
+                    transition: "all 200ms",
+                    backgroundColor: bIdx % 2 === 0 ? "transparent" : "rgba(0,0,0,0.01)"
+                  }} onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.02)"} onMouseLeave={e => e.currentTarget.style.backgroundColor = bIdx % 2 === 0 ? "transparent" : "rgba(0,0,0,0.01)"}>
+                    <td style={{ padding: "16px 20px" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: C.textMain }}>{formatDateRu(b.date)}</div>
+                      <div style={{ fontSize: 11, color: C.textSub, fontWeight: 600 }}>{b.totalStartTime}</div>
+                    </td>
+                    <td style={{ padding: "16px 20px" }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.textMain }}>{b.clientName}</div>
+                      <div style={{ fontSize: 12, color: C.textSub, fontWeight: 600 }}>{b.clientPhone}</div>
+                    </td>
+                    <td style={{ padding: "16px 20px" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: C.accent }}>{b.masterName || "—"}</div>
+                      <div style={{ fontSize: 11, color: C.textSub, fontWeight: 600 }}>{salonName(b)}</div>
+                    </td>
+                    <td style={{ padding: "16px 20px" }}>
+                      <span style={{ padding: "4px 10px", borderRadius: 8, backgroundColor: "rgba(0,0,0,0.05)", fontSize: 12, fontWeight: 600, color: C.textMain }}>
+                        {serviceName(b)}
+                      </span>
+                    </td>
+                    <td style={{ padding: "16px 20px", fontSize: 13, fontWeight: 600, color: C.textSub }}>
+                      {totalDuration(b)} м
+                    </td>
+                    <td style={{ padding: "16px 20px" }}>
+                      <div style={{ fontSize: 14, fontWeight: 900, color: C.textMain }}>{b.totalPrice.toLocaleString()} ₸</div>
+                      <div style={{ fontSize: 10, color: C.textSub, fontWeight: 800 }}>{PAYMENT_LABEL[b.paymentMethod] || "НАЛ"}</div>
+                    </td>
+                    <td style={{ padding: "16px 20px" }}>
+                      <select value={b.status}
+                        onChange={e => handleStatusChange(b.id, b.salonId, b.date, e.target.value)}
+                        style={{
+                          backgroundColor: sCfg.color + "15", border: "none",
+                          borderRadius: 12, padding: "8px 12px", fontSize: 12, fontWeight: 800,
+                          color: sCfg.color, cursor: "pointer", outline: "none",
+                        }}>
+                        {Object.entries(STATUS_CFG).map(([val, cfg]) => (
+                          <option key={val} value={val}>{cfg.label}</option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      ) : (
-        <div style={{ borderRadius: 20, overflow: "hidden", backgroundColor: C.cardLight, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
-          {/* Header */}
-          <div style={{
-            display: "flex", backgroundColor: C.cardLight, borderBottom: `1px solid ${C.borderLight}`,
-            padding: "0 12px", height: 36, alignItems: "center",
-          }}>
-            {columns.map(col => (
-              <div key={col.id}
-                onClick={sortable.has(col.id) ? () => toggleSort(col.id) : undefined}
-                style={{
-                  width: col.w || undefined, flex: col.w ? `0 0 ${col.w}px` : 1,
-                  fontSize: 11, fontWeight: 600, color: C.textDarkSub, textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  cursor: sortable.has(col.id) ? "pointer" : "default",
-                  userSelect: "none",
-                }}>
-                {col.label}{sortArrow(col.id)}
-              </div>
-            ))}
+
+        {pageItems.length === 0 && (
+          <div style={{ padding: 80, textAlign: "center", color: C.textSub }}>
+            <span style={{ fontSize: 40 }}>📔</span>
+            <p style={{ margin: "16px 0 0", fontSize: 18, fontWeight: 700 }}>Журнал пуст</p>
+            <p style={{ margin: "4px 0 0", fontSize: 14, fontWeight: 500 }}>Записей по вашим фильтрам не найдено</p>
           </div>
+        )}
 
-          {/* Rows */}
-          {pageItems.length === 0 ? (
-            <div style={{ padding: 40, textAlign: "center", color: C.textSub, fontSize: 13 }}>
-              Нет записей
+        {/* Pagination Footer */}
+        {totalPages > 1 && (
+          <div style={{ padding: 24, display: "flex", justifyContent: "center", gap: 8, backgroundColor: "rgba(0,0,0,0.01)", borderTop: "1px solid rgba(0,0,0,0.03)" }}>
+            <button disabled={safePage === 1} onClick={() => setPage(p => p - 1)} style={{
+              width: 40, height: 40, borderRadius: 12, border: "1px solid rgba(0,0,0,0.05)",
+              backgroundColor: "#fff", color: C.textSub, display: "flex", alignItems: "center", justifyContent: "center", cursor: safePage === 1 ? "default" : "pointer", opacity: safePage === 1 ? 0.5 : 1
+            }}>
+              <ChevronLeft size={20} />
+            </button>
+            <div style={{ display: "flex", alignItems: "center", px: 16, fontSize: 14, fontWeight: 800, color: C.textMain }}>
+              {safePage} / {totalPages}
             </div>
-          ) : pageItems.map((b, i) => {
-            const bg = i % 2 === 0 ? C.cardLight : "#F8F4EE";
-            const bOverdue = isBookingOverdue(b);
-            const sCfg = bOverdue ? OVERDUE_CFG : (STATUS_CFG[b.status] || STATUS_CFG.booked);
-            return (
-              <div key={b.id} style={{
-                display: "flex", padding: "0 12px", height: 42, alignItems: "center",
-                backgroundColor: bg, borderBottom: `1px solid ${C.borderLight}`,
-                transition: "background 100ms",
-              }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = "#F5F0E8"}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = bg}
-              >
-                <div style={{ flex: "0 0 100px", fontSize: 13, color: C.textDark }}>{formatDateRu(b.date)}</div>
-                <div style={{ flex: 1, fontSize: 13, color: C.textDark, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{b.clientName}</div>
-                <div style={{ flex: "0 0 120px", fontSize: 12, color: C.accent, fontWeight: 500, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{b.masterName || "—"}</div>
-                <div style={{ flex: "0 0 140px", fontSize: 12, color: C.textDarkSub }}>{b.clientPhone}</div>
-                <div style={{ flex: "0 0 100px", fontSize: 12, color: C.textDarkSub }}>{salonName(b)}</div>
-                <div style={{ flex: "0 0 140px", fontSize: 12, color: C.textDark, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{serviceName(b)}</div>
-                <div style={{ flex: "0 0 70px", fontSize: 12, color: C.textDarkSub }}>{totalDuration(b)} мин</div>
-                <div style={{ flex: "0 0 90px", fontSize: 13, color: b.paymentMethod === "cert_dep" ? C.textDarkSub : C.accent, fontWeight: 600 }}>
-                  {b.paymentMethod === "cert_dep" ? <s>{(b.totalPrice || 0).toLocaleString("ru-RU")} ₸</s> : <>{(b.totalPrice || 0).toLocaleString("ru-RU")} ₸</>}
-                </div>
-                <div style={{ flex: "0 0 100px", fontSize: 11, color: b.paymentMethod === "cert_dep" ? "#FBBF24" : C.textDarkSub, fontWeight: 500 }}>
-                  {PAYMENT_LABEL[b.paymentMethod] || "НАЛ"}
-                </div>
-                <div style={{ flex: "0 0 150px" }}>
-                  <select value={b.status}
-                    onChange={e => handleStatusChange(b.id, b.salonId, b.date, e.target.value)}
-                    style={{
-                      backgroundColor: sCfg.color + "22", border: `1px solid ${sCfg.color}55`,
-                      borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 600,
-                      color: sCfg.color, cursor: "pointer", outline: "none",
-                    }}>
-                    {Object.entries(STATUS_CFG).map(([val, cfg]) => (
-                      <option key={val} value={val} style={{ backgroundColor: C.card, color: C.textMain }}>{cfg.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {sorted.length > PAGE_SIZE && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <span style={{ color: C.textSub, fontSize: 12, marginRight: 12 }}>
-            Показано {Math.min(pageItems.length, PAGE_SIZE)} из {sorted.length}
-          </span>
-          <button disabled={safePage <= 1}
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            style={{
-              padding: "4px 10px", borderRadius: 4,
-              border: `1px solid ${C.border}`, backgroundColor: "transparent",
-              color: safePage <= 1 ? C.border : C.textSub, cursor: safePage <= 1 ? "default" : "pointer",
-              fontSize: 12,
+            <button disabled={safePage === totalPages} onClick={() => setPage(p => p + 1)} style={{
+              width: 40, height: 40, borderRadius: 12, border: "1px solid rgba(0,0,0,0.05)",
+              backgroundColor: "#fff", color: C.textSub, display: "flex", alignItems: "center", justifyContent: "center", cursor: safePage === totalPages ? "default" : "pointer", opacity: safePage === totalPages ? 0.5 : 1
             }}>
-            <ChevronLeft size={14} />
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
-            .reduce((acc, p, idx, arr) => {
-              if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
-              acc.push(p);
-              return acc;
-            }, [])
-            .map((p, i) =>
-              p === "..." ? (
-                <span key={`e${i}`} style={{ color: C.textSub, fontSize: 12 }}>…</span>
-              ) : (
-                <button key={p} onClick={() => setPage(p)} style={{
-                  padding: "4px 10px", borderRadius: 4, fontSize: 12,
-                  border: `1px solid ${p === safePage ? C.accent : C.border}`,
-                  backgroundColor: p === safePage ? C.accent + "22" : "transparent",
-                  color: p === safePage ? C.accent : C.textSub,
-                  cursor: "pointer", fontWeight: p === safePage ? 600 : 400,
-                }}>{p}</button>
-              )
-            )}
-          <button disabled={safePage >= totalPages}
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            style={{
-              padding: "4px 10px", borderRadius: 4,
-              border: `1px solid ${C.border}`, backgroundColor: "transparent",
-              color: safePage >= totalPages ? C.border : C.textSub,
-              cursor: safePage >= totalPages ? "default" : "pointer",
-              fontSize: 12,
-            }}>
-            <ChevronRight size={14} />
-          </button>
-        </div>
-      )}
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -4599,83 +4728,85 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
 // ─── Dashboard Screen (STEP-11) ────────────────────────────────────────────
 
 // Mini SVG chart components (no Recharts dependency)
+// Mini SVG chart components (no Recharts dependency)
 function MiniBarChart({ data, barColor, width = 400, height = 180, label }) {
-  if (!data.length) return <div style={{ color: C.textSub, fontSize: 12, padding: 20, textAlign: "center" }}>Нет данных за период</div>;
+  if (!data.length) return <div style={{ color: C.textSub, fontSize: 13, padding: 40, textAlign: "center", fontWeight: 600 }}>Нет данных</div>;
   const maxVal = Math.max(...data.map(d => d.value), 1);
-  const barW = Math.max(8, Math.min(32, (width - 40) / data.length - 4));
-  const chartH = height - 30;
+  const chartH = height - 40;
+  const gap = 12;
+  const barW = (width - 60 - (data.length - 1) * gap) / data.length;
+
   return (
     <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
       {data.map((d, i) => {
-        const x = 30 + i * ((width - 40) / data.length) + ((width - 40) / data.length - barW) / 2;
-        const h = (d.value / maxVal) * (chartH - 10);
+        const h = (d.value / maxVal) * (chartH - 20);
+        const x = 30 + i * (barW + gap);
         return (
           <g key={i}>
-            <rect x={x} y={chartH - h} width={barW} height={h} rx={3} fill={barColor} opacity={0.85}>
+            <rect x={x} y={chartH - h} width={barW} height={h} rx={barW / 2} fill={barColor} opacity={0.6}>
               <title>{d.label}: {d.value.toLocaleString("ru-RU")}{label ? ` ${label}` : ""}</title>
             </rect>
-            <text x={x + barW / 2} y={height - 2} textAnchor="middle" fill={C.textSub} fontSize={9}>{d.label}</text>
+            <text x={x + barW / 2} y={height - 5} textAnchor="middle" fill={C.textSub} fontSize={11} fontWeight={700} style={{ fontFamily: "'Inter', sans-serif" }}>{d.label}</text>
           </g>
         );
       })}
-      {/* Y axis line */}
-      <line x1={28} y1={0} x2={28} y2={chartH} stroke={C.border} strokeWidth={1} />
     </svg>
   );
 }
 
-function MiniPieChart({ data, width = 200, height = 200 }) {
+function MiniPieChart({ data, width = 240, height = 240 }) {
   const total = data.reduce((a, d) => a + d.value, 0);
-  if (!total) return <div style={{ color: C.textSub, fontSize: 12, padding: 20, textAlign: "center" }}>Нет данных</div>;
-  const cx = width / 2, cy = height / 2, r = Math.min(cx, cy) - 20;
+  if (!total) return <div style={{ color: C.textSub, fontSize: 13, padding: 40, textAlign: "center", fontWeight: 600 }}>Нет данных</div>;
+  const cx = width / 2, cy = height / 2, r = Math.min(cx, cy) - 30;
   let cumAngle = -Math.PI / 2;
   const nonZero = data.filter(d => d.value > 0);
   const slices = nonZero.map(d => {
     const angle = (d.value / total) * Math.PI * 2;
     const start = cumAngle;
     cumAngle += angle;
-    // Single slice (full circle): SVG arc can't draw start==end, use two half-arcs
-    if (nonZero.length === 1) {
-      return { ...d, path: `M${cx},${cy - r} A${r},${r} 0 1,1 ${cx},${cy + r} A${r},${r} 0 1,1 ${cx},${cy - r} Z`, pct: 100 };
-    }
+    if (nonZero.length === 1) return { ...d, path: `M${cx},${cy - r} A${r},${r} 0 1,1 ${cx},${cy + r} A${r},${r} 0 1,1 ${cx},${cy - r} Z`, pct: 100 };
     const x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start);
     const x2 = cx + r * Math.cos(start + angle), y2 = cy + r * Math.sin(start + angle);
     const large = angle > Math.PI ? 1 : 0;
     return { ...d, path: `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z`, pct: Math.round(d.value / total * 100) };
   });
+
   return (
-    <svg width="100%" height={height + 30} viewBox={`0 0 ${width} ${height + 30}`} preserveAspectRatio="xMidYMid meet">
-      {slices.map((s, i) => (
-        <path key={i} d={s.path} fill={s.color} stroke={C.card} strokeWidth={2}>
-          <title>{s.label}: {s.value} ({s.pct}%)</title>
-        </path>
-      ))}
-      {/* Legend */}
-      {slices.map((s, i) => (
-        <g key={`l${i}`} transform={`translate(${i * (width / slices.length)}, ${height + 4})`}>
-          <rect width={8} height={8} rx={2} fill={s.color} />
-          <text x={12} y={8} fill={C.textSub} fontSize={9}>{s.label}</text>
-        </g>
-      ))}
-    </svg>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32 }}>
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+        {slices.map((s, i) => (
+          <path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth={6} style={{ transition: "all 300ms", cursor: "pointer" }}>
+            <title>{s.label}: {s.value} ({s.pct}%)</title>
+          </path>
+        ))}
+      </svg>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "center" }}>
+        {slices.map((s, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: s.color }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.textMain }}>{s.label} <span style={{ color: C.textSub }}>{s.pct}%</span></span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
 function MiniHBarChart({ data, barColor, width = 400, height = 160 }) {
-  if (!data.length) return <div style={{ color: C.textSub, fontSize: 12, padding: 20, textAlign: "center" }}>Нет данных</div>;
+  if (!data.length) return <div style={{ color: C.textSub, fontSize: 13, padding: 40, textAlign: "center", fontWeight: 600 }}>Нет данных</div>;
   const maxVal = Math.max(...data.map(d => d.value), 1);
-  const rowH = Math.min(28, height / data.length);
+  const rowH = 44;
   const labelW = 120;
   return (
-    <svg width="100%" height={data.length * rowH + 4} viewBox={`0 0 ${width} ${data.length * rowH + 4}`} preserveAspectRatio="xMidYMid meet">
+    <svg width="100%" height={data.length * rowH + 10} viewBox={`0 0 ${width} ${data.length * rowH + 10}`} preserveAspectRatio="xMidYMid meet">
       {data.map((d, i) => {
-        const barMax = width - labelW - 40;
+        const barMax = width - labelW - 80;
         const w = (d.value / maxVal) * barMax;
         return (
           <g key={i}>
-            <text x={labelW - 6} y={i * rowH + rowH / 2 + 4} textAnchor="end" fill={C.textSub} fontSize={10}>{d.label}</text>
-            <rect x={labelW} y={i * rowH + 4} width={w} height={rowH - 8} rx={3} fill={barColor} opacity={0.85} />
-            <text x={labelW + w + 6} y={i * rowH + rowH / 2 + 4} fill={C.textMain} fontSize={10}>{d.value}</text>
+            <text x={0} y={i * rowH + rowH / 2 + 5} textAnchor="start" fill={C.textSub} fontSize={12} fontWeight={700} style={{ fontFamily: "'Inter', sans-serif" }}>{d.label}</text>
+            <rect x={labelW} y={i * rowH + 10} width={w} height={rowH - 20} rx={(rowH - 20) / 2} fill={barColor} opacity={0.6} />
+            <text x={labelW + w + 12} y={i * rowH + rowH / 2 + 5} fill={C.textMain} fontSize={14} fontWeight={800} style={{ fontFamily: "'Poppins', sans-serif" }}>{d.value}</text>
           </g>
         );
       })}
@@ -4684,14 +4815,15 @@ function MiniHBarChart({ data, barColor, width = 400, height = 160 }) {
 }
 
 function KpiRing({ pct, size = 40, color = C.accent }) {
-  const r = (size - 6) / 2, c = size / 2, circumference = 2 * Math.PI * r;
+  const strokeWidth = size / 8;
+  const r = (size - strokeWidth) / 2, c = size / 2, circumference = 2 * Math.PI * r;
   const dashOffset = circumference * (1 - Math.min(pct, 100) / 100);
   return (
     <svg width={size} height={size}>
-      <circle cx={c} cy={c} r={r} fill="none" stroke={C.border} strokeWidth={3} />
-      <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth={3}
+      <circle cx={c} cy={c} r={r} fill="none" stroke="rgba(0,0,0,0.03)" strokeWidth={strokeWidth} />
+      <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth={strokeWidth}
         strokeDasharray={circumference} strokeDashoffset={dashOffset}
-        strokeLinecap="round" transform={`rotate(-90 ${c} ${c})`} />
+        strokeLinecap="round" transform={`rotate(-90 ${c} ${c})`} style={{ transition: "stroke-dashoffset 1s ease-out" }} />
     </svg>
   );
 }
@@ -4717,7 +4849,6 @@ function DashboardScreen({ salons }) {
   const dateRange = (() => {
     if (period === "today") return { from: today, to: today };
     if (period === "week") return { from: toDateStr(addDays(new Date(), -6)), to: toDateStr(addDays(new Date(), 1)) };
-    // month — show entire current month (including future days)
     const d = new Date();
     const y = d.getFullYear(), m = d.getMonth() + 1;
     const from = `${y}-${String(m).padStart(2, "0")}-01`;
@@ -4726,352 +4857,284 @@ function DashboardScreen({ salons }) {
     return { from, to };
   })();
 
-  // Filter bookings
   const filtered = allBookings.filter(b => {
     if (dashSalon !== "all" && b.salonId !== dashSalon) return false;
-    if (b.date < dateRange.from || b.date > dateRange.to) return false;
-    return true;
+    return b.date >= dateRange.from && b.date <= dateRange.to;
   });
 
-  // KPI helpers
   const computeKpi = (bookings, salonFilter) => {
     const bks = salonFilter ? bookings.filter(b => b.salonId === salonFilter) : bookings;
     const active = bks.filter(b => b.status !== "cancelled_refund" && b.status !== "cancelled_no_refund");
     const paid = bks.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "cert_dep");
     const certDep = bks.filter(b => b.paymentMethod === "cert_dep" && b.status !== "cancelled_refund" && b.status !== "cancelled_no_refund");
+    
     const totalBookings = active.length;
     const totalClients = active.reduce((a, b) => a + (b.clientCount || 1), 0);
     const revenue = paid.reduce((a, b) => a + (b.totalPrice || 0), 0);
     const avgCheck = paid.length > 0 ? Math.round(revenue / paid.length) : 0;
-    const certDepCount = certDep.length;
-    const certDepOriginalPrice = certDep.reduce((a, b) => a + (b.totalPrice || 0), 0);
 
-    // Room & therapist utilization — compute per salon then aggregate (only active bookings)
     const targetSalons = salonFilter ? salons.filter(s => s.id === salonFilter) : salons;
     let roomBusyMins = 0, roomTotalMins = 0;
     let therBusyMins = 0, therTotalMins = 0;
 
     for (const sal of targetSalons) {
       const salBks = active.filter(b => b.salonId === sal.id);
-      const daySet = new Set(salBks.map(b => b.date));
-      const daysCount = daySet.size;
-      if (daysCount === 0) continue; // no bookings for this salon — skip capacity
+      const daysCount = new Set(salBks.map(b => b.date)).size;
+      if (daysCount === 0) continue;
       const wMins = timeToMins(sal.workEnd) - timeToMins(sal.workStart);
       roomTotalMins += sal.rooms.length * wMins * daysCount;
       therTotalMins += (((sal.therapists || []).length || sal.therapistCount || 1) + (sal.hasPeeling ? (sal.peelingMastersMax || 2) : 0)) * wMins * daysCount;
-
-      for (const b of salBks) {
-        for (const seg of (b.segments || [])) {
+      salBks.forEach(b => {
+        (b.segments || []).forEach(seg => {
           const dur = timeToMins(seg.endTime) - timeToMins(seg.startTime);
           if (seg.resourceType === "room" && seg.roomId) roomBusyMins += dur;
           therBusyMins += (seg.therapistCount || 0) * dur;
-        }
-      }
+        });
+      });
     }
 
-    const roomPct = roomTotalMins > 0 ? Math.round(roomBusyMins / roomTotalMins * 100) : 0;
-    const therPct = therTotalMins > 0 ? Math.round(therBusyMins / therTotalMins * 100) : 0;
-
-    const refundedBks = bks.filter(b => b.status === "cancelled_refund");
-    const refunded = refundedBks.reduce((a, b) => a + (b.totalPrice || 0), 0);
-    const refundedCount = refundedBks.reduce((a, b) => a + (b.clientCount || 1), 0);
-    const keptBks = bks.filter(b => b.status === "cancelled_no_refund");
-    const keptDeposit = keptBks.reduce((a, b) => a + (b.totalPrice || 0), 0);
-    const keptCount = keptBks.reduce((a, b) => a + (b.clientCount || 1), 0);
-
-    // Overdue bookings (past time, still "booked")
-    const overdueBookings = active.filter(b => isBookingOverdue(b)).length;
-
-    // Payment method breakdown
     const pmBreakdown = {};
     for (const pm of PAYMENT_METHODS) pmBreakdown[pm.value] = 0;
-    for (const b of active) pmBreakdown[b.paymentMethod || "cash"] = (pmBreakdown[b.paymentMethod || "cash"] || 0) + 1;
+    active.forEach(b => { pmBreakdown[b.paymentMethod || "cash"]++; });
 
-    return { totalBookings, totalClients, revenue, avgCheck, roomPct, therPct, refunded, refundedCount, keptDeposit, keptCount, certDepCount, certDepOriginalPrice, pmBreakdown, overdueBookings };
+    return {
+      totalBookings, totalClients, revenue, avgCheck, 
+      roomPct: roomTotalMins > 0 ? Math.round(roomBusyMins / roomTotalMins * 100) : 0,
+      therPct: therTotalMins > 0 ? Math.round(therBusyMins / therTotalMins * 100) : 0,
+      refunded: bks.filter(b => b.status === "cancelled_refund").reduce((a, b) => a + (b.totalPrice || 0), 0),
+      refundedCount: bks.filter(b => b.status === "cancelled_refund").reduce((a, b) => a + (b.clientCount || 1), 0),
+      keptDeposit: bks.filter(b => b.status === "cancelled_no_refund").reduce((a, b) => a + (b.totalPrice || 0), 0),
+      keptCount: bks.filter(b => b.status === "cancelled_no_refund").reduce((a, b) => a + (b.clientCount || 1), 0),
+      certDepCount: certDep.length,
+      certDepOriginalPrice: certDep.reduce((a, b) => a + (b.totalPrice || 0), 0),
+      pmBreakdown,
+      overdueBookings: active.filter(b => isBookingOverdue(b)).length
+    };
   };
 
-  const kpi = (() => {
-    if (dashSalon !== "all" || salons.length < 2) return computeKpi(filtered);
-    // "Все" — average across all salons
+  const kpi = dashSalon !== "all" || salons.length < 2 ? computeKpi(filtered) : (() => {
     const perSalon = salons.map(s => computeKpi(filtered, s.id));
     const n = perSalon.length;
+    const mergedPM = {};
+    for (const pm of PAYMENT_METHODS) mergedPM[pm.value] = perSalon.reduce((a, k) => a + (k.pmBreakdown[pm.value] || 0), 0);
     return {
-      totalBookings: Math.round(perSalon.reduce((a, k) => a + k.totalBookings, 0) / n),
-      totalClients:  Math.round(perSalon.reduce((a, k) => a + k.totalClients, 0) / n),
-      revenue:       Math.round(perSalon.reduce((a, k) => a + k.revenue, 0) / n),
-      avgCheck:      Math.round(perSalon.reduce((a, k) => a + k.avgCheck, 0) / n),
-      roomPct:       Math.round(perSalon.reduce((a, k) => a + k.roomPct, 0) / n),
-      therPct:       Math.round(perSalon.reduce((a, k) => a + k.therPct, 0) / n),
-      refunded:      Math.round(perSalon.reduce((a, k) => a + k.refunded, 0) / n),
-      refundedCount: Math.round(perSalon.reduce((a, k) => a + k.refundedCount, 0) / n),
-      keptDeposit:   Math.round(perSalon.reduce((a, k) => a + k.keptDeposit, 0) / n),
-      keptCount:     Math.round(perSalon.reduce((a, k) => a + k.keptCount, 0) / n),
+      totalBookings: Math.round(perSalon.reduce((a, k) => a + k.totalBookings, 0)),
+      totalClients: Math.round(perSalon.reduce((a, k) => a + k.totalClients, 0)),
+      revenue: Math.round(perSalon.reduce((a, k) => a + k.revenue, 0)),
+      avgCheck: Math.round(perSalon.reduce((a, k) => a + (k.revenue > 0 ? k.avgCheck : 0), 0) / perSalon.filter(k => k.revenue > 0).length || 0),
+      roomPct: Math.round(perSalon.reduce((a, k) => a + k.roomPct, 0) / n),
+      therPct: Math.round(perSalon.reduce((a, k) => a + k.therPct, 0) / n),
+      refunded: perSalon.reduce((a, k) => a + k.refunded, 0),
+      refundedCount: perSalon.reduce((a, k) => a + k.refundedCount, 0),
+      keptDeposit: perSalon.reduce((a, k) => a + k.keptDeposit, 0),
+      keptCount: perSalon.reduce((a, k) => a + k.keptCount, 0),
       overdueBookings: perSalon.reduce((a, k) => a + k.overdueBookings, 0),
-      certDepCount:  perSalon.reduce((a, k) => a + k.certDepCount, 0),
+      certDepCount: perSalon.reduce((a, k) => a + k.certDepCount, 0),
       certDepOriginalPrice: perSalon.reduce((a, k) => a + k.certDepOriginalPrice, 0),
-      pmBreakdown:   (() => {
-        const merged = {};
-        for (const pm of PAYMENT_METHODS) merged[pm.value] = perSalon.reduce((a, k) => a + (k.pmBreakdown[pm.value] || 0), 0);
-        return merged;
-      })(),
+      pmBreakdown: mergedPM,
     };
   })();
 
-  // Chart 1: Revenue by day
   const revenueByDay = (() => {
     const map = {};
     filtered.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "cert_dep").forEach(b => {
-      const key = b.date.slice(5); // MM-DD
-      map[key] = (map[key] || 0) + (b.totalPrice || 0);
+      const k = b.date.slice(5).replace("-", ".");
+      map[k] = (map[k] || 0) + (b.totalPrice || 0);
     });
-    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => ({ label: k.replace("-", "."), value: v }));
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([label, value]) => ({ label, value }));
   })();
 
-  // Chart 2: Procedure type distribution
   const typeDist = (() => {
     const counts = { massage: 0, sauna: 0, peeling: 0, combo: 0 };
     filtered.forEach(b => {
-      if (b.bookingType === "combo") { counts.combo++; return; }
-      const cat = b.segments?.[0]?.resourceType === "sauna" ? "sauna"
-        : b.segments?.[0]?.resourceType === "peeling" ? "peeling" : "massage";
-      counts[cat]++;
+      if (b.bookingType === "combo") counts.combo++;
+      else {
+        const cat = b.segments?.[0]?.resourceType || "massage";
+        counts[cat]++;
+      }
     });
     return [
-      { label: "Массаж", value: counts.massage, color: "#2D6A4F" },
-      { label: "Сауна", value: counts.sauna, color: "#B85C38" },
-      { label: "Пиллинг", value: counts.peeling, color: "#7B68AE" },
-      { label: "Комбо", value: counts.combo, color: "#D4A84B" },
+      { label: "Массаж", value: counts.massage, color: "#785900" },
+      { label: "Сауна", value: counts.sauna, color: "#d4c5ab" },
+      { label: "Пилинг", value: counts.peeling, color: "#222" },
+      { label: "Комбо", value: counts.combo, color: C.accent },
     ];
   })();
 
-  // Chart 3: Load by hour
   const loadByHour = (() => {
     const hourMap = {};
-    const dayCounts = {};
+    const dCount = new Set(filtered.map(b => b.date)).size || 1;
     filtered.forEach(b => {
-      if (!dayCounts[b.date]) dayCounts[b.date] = true;
-      for (const seg of (b.segments || [])) {
-        const sM = timeToMins(seg.startTime), eM = timeToMins(seg.endTime);
-        for (let h = Math.floor(sM / 60); h < Math.ceil(eM / 60); h++) {
-          const key = `${String(h).padStart(2, "0")}:00`;
-          hourMap[key] = (hourMap[key] || 0) + (seg.therapistCount || 0);
+      (b.segments || []).forEach(seg => {
+        const s = Math.floor(timeToMins(seg.startTime) / 60), e = Math.ceil(timeToMins(seg.endTime) / 60);
+        for (let h = s; h < e; h++) {
+          const k = `${String(h).padStart(2, "0")}:00`;
+          hourMap[k] = (hourMap[k] || 0) + (seg.therapistCount || 0);
         }
-      }
+      });
     });
-    const days = Math.max(Object.keys(dayCounts).length, 1);
-    return Object.entries(hourMap).sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => ({ label: k, value: Math.round(v / days * 10) / 10 }));
+    return Object.entries(hourMap).sort(([a], [b]) => a.localeCompare(b)).map(([label, value]) => ({ label, value: Math.round(value / dCount * 10) / 10 }));
   })();
 
-  // Chart 4: Top 5 procedures
   const topProcs = (() => {
     const counts = {};
-    filtered.forEach(b => {
-      for (const seg of (b.segments || [])) {
-        if (seg.procedureName) counts[seg.procedureName] = (counts[seg.procedureName] || 0) + 1;
-      }
-    });
-    return Object.entries(counts).sort(([, a], [, b]) => b - a).slice(0, 5)
-      .map(([k, v]) => ({ label: k.length > 18 ? k.slice(0, 18) + "…" : k, value: v }));
+    filtered.forEach(b => (b.segments || []).forEach(s => { if (s.procedureName) counts[s.procedureName] = (counts[s.procedureName] || 0) + 1; }));
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([label, value]) => ({ label: label.length > 20 ? label.slice(0, 20) + "..." : label, value }));
   })();
 
-  // Comparison table for "both" mode
-  const comparison = dashSalon === "all" && salons.length >= 2
-    ? salons.map(s => ({ name: s.name, ...computeKpi(filtered, s.id) }))
-    : null;
+  const comparison = dashSalon === "all" && salons.length >= 2 ? salons.map(s => ({ name: s.name, ...computeKpi(filtered, s.id) })) : null;
 
-  const pillBtn = (active) => ({
-    padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 500,
-    border: active ? "none" : `1px solid ${C.borderLight}`,
-    backgroundColor: active ? C.accent : "transparent",
-    color: active ? "#1C1C1E" : C.textDarkSub,
-    cursor: "pointer",
+  const pillStyle = (active) => ({
+    padding: "12px 24px", borderRadius: 24, fontSize: 13, fontWeight: 800, border: "none",
+    backgroundColor: active ? C.accent : "rgba(0,0,0,0.04)",
+    color: active ? "#1b1c15" : C.textSub,
+    cursor: "pointer", transition: "all 300ms",
+    boxShadow: active ? `0 10px 20px ${C.accent}44` : "none",
   });
 
-  const cardStyle = {
-    backgroundColor: C.cardLight, borderRadius: 24, padding: 16,
-    display: "flex", flexDirection: "column", gap: 4,
-    boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+  const bentoCard = {
+    backgroundColor: "#fff", borderRadius: 32, padding: 32,
+    boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
+    display: "flex", flexDirection: "column", gap: 8,
+    border: "1px solid rgba(0,0,0,0.02)"
   };
 
-  const chartBox = {
-    backgroundColor: C.cardLight, borderRadius: 24, padding: 16,
-    boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-  };
-
-  if (loadingD) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", padding: 60, color: C.textSub }}>
-        <Loader2 size={24} style={{ animation: "spin 1s linear infinite" }} />
-      </div>
-    );
-  }
+  if (loadingD) return (
+    <div style={{ display: "flex", justifyContent: "center", padding: 100 }}>
+      <Loader2 size={32} color={C.accent} style={{ animation: "spin 1s linear infinite" }} />
+    </div>
+  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
       {/* Switchers */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        {/* Salon pills */}
-        {salons.map(s => (
-          <button key={s.id} onClick={() => setDashSalon(s.id)}
-            style={pillBtn(dashSalon === s.id)}>{s.name}</button>
-        ))}
-        <button onClick={() => setDashSalon("all")} style={pillBtn(dashSalon === "all")}>Все</button>
-
-        <div style={{ flex: 1 }} />
-
-        {/* Period pills */}
-        {[["today", "Сегодня"], ["week", "Неделя"], ["month", "Месяц"]].map(([v, l]) => (
-          <button key={v} onClick={() => setPeriod(v)} style={pillBtn(period === v)}>{l}</button>
-        ))}
-      </div>
-
-      {/* KPI Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 12 }}>
-        <div style={cardStyle}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark }}>{kpi.totalBookings}</div>
-          <div style={{ fontSize: 11, color: C.textDarkSub }}>Всего записей</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 20 }}>
+        <div style={{ display: "flex", gap: 8, padding: 6, borderRadius: 32, backgroundColor: "rgba(0,0,0,0.03)" }}>
+          {salons.map(s => <button key={s.id} onClick={() => setDashSalon(s.id)} style={pillStyle(dashSalon === s.id)}>{s.name}</button>)}
+          <button onClick={() => setDashSalon("all")} style={pillStyle(dashSalon === "all")}>Все салоны</button>
         </div>
-        <div style={cardStyle}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark }}>{kpi.totalClients}</div>
-          <div style={{ fontSize: 11, color: C.textDarkSub }}>Всего клиентов</div>
-        </div>
-        <div style={cardStyle}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark }}>{kpi.revenue.toLocaleString("ru-RU")} ₸</div>
-          <div style={{ fontSize: 11, color: C.textDarkSub }}>Выручка</div>
-        </div>
-        <div style={cardStyle}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark }}>{kpi.avgCheck.toLocaleString("ru-RU")} ₸</div>
-          <div style={{ fontSize: 11, color: C.textDarkSub }}>Средний чек</div>
+        <div style={{ display: "flex", gap: 8, padding: 6, borderRadius: 32, backgroundColor: "rgba(0,0,0,0.03)" }}>
+          {[["today", "Сегодня"], ["week", "Неделя"], ["month", "Месяц"]].map(([v, l]) => (
+            <button key={v} onClick={() => setPeriod(v)} style={pillStyle(period === v)}>{l}</button>
+          ))}
         </div>
       </div>
-      {kpi.overdueBookings > 0 && (
-        <div style={{ ...cardStyle, border: "1px solid #F9731644", backgroundColor: "#F9731611" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#F97316" }}>{kpi.overdueBookings}</div>
-            <div style={{ fontSize: 13, color: "#F97316", fontWeight: 600 }}>Требуется изменить статус</div>
+
+      {/* Main KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 24 }}>
+        {[
+          { label: "Всего записей", val: kpi.totalBookings, icon: "📋" },
+          { label: "Клиентов", val: kpi.totalClients, icon: "👥" },
+          { label: "Выручка", val: `${kpi.revenue.toLocaleString()} ₸`, icon: "💰", accent: true },
+          { label: "Средний чек", val: `${kpi.avgCheck.toLocaleString()} ₸`, icon: "📈" }
+        ].map((item, i) => (
+          <div key={i} style={{ ...bentoCard, borderBottom: item.accent ? `4px solid ${C.accent}` : bentoCard.border }}>
+            <div style={{ fontSize: 20, marginBottom: 8 }}>{item.icon}</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: C.textMain, letterSpacing: "-0.03em" }}>{item.val}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.textSub, textTransform: "uppercase", letterSpacing: "0.05em" }}>{item.label}</div>
           </div>
-          <div style={{ fontSize: 11, color: C.textDarkSub }}>Записи с прошедшим временем, но статус до сих пор «Забронировано»</div>
+        ))}
+      </div>
+
+      {/* Utilizations */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 24 }}>
+        <div style={{ ...bentoCard, flexDirection: "row", alignItems: "center", gap: 24 }}>
+          <KpiRing pct={kpi.roomPct} size={80} color="#785900" />
+          <div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: C.textMain }}>{kpi.roomPct}%</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.textSub }}>Загрузка кабинок</div>
+          </div>
+        </div>
+        <div style={{ ...bentoCard, flexDirection: "row", alignItems: "center", gap: 24 }}>
+          <KpiRing pct={kpi.therPct} size={80} color={C.accent} />
+          <div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: C.textMain }}>{kpi.therPct}%</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.textSub }}>Загрузка мастеров</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Alert Overdue */}
+      {kpi.overdueBookings > 0 && (
+        <div style={{ ...bentoCard, backgroundColor: "#fff9f0", border: "1px solid #ffe8cc" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span style={{ fontSize: 24 }}>⚠️</span>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#862e00" }}>{kpi.overdueBookings} записей требуют внимания</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "#b45309" }}>Прошедшее время, но статус не изменен. Обновите журнал.</div>
+            </div>
+          </div>
         </div>
       )}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 12 }}>
-        <div style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#F87171" }}>{kpi.refunded.toLocaleString("ru-RU")} ₸</div>
-            <div style={{ fontSize: 13, color: C.textDarkSub }}>{kpi.refundedCount} чел.</div>
-          </div>
-          <div style={{ fontSize: 11, color: C.textDarkSub }}>Вернули за бронь</div>
+
+      {/* Secondary KPIs Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 24 }}>
+        <div style={bentoCard}>
+          <div style={{ fontSize: 20, fontWeight: 900, color: "#e03131" }}>{kpi.refunded.toLocaleString()} ₸</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.textSub }}>Возвраты ({kpi.refundedCount})</div>
         </div>
-        <div style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#34D399" }}>{kpi.keptDeposit.toLocaleString("ru-RU")} ₸</div>
-            <div style={{ fontSize: 13, color: C.textDarkSub }}>{kpi.keptCount} чел.</div>
-          </div>
-          <div style={{ fontSize: 11, color: C.textDarkSub }}>Не вернули за бронь</div>
+        <div style={bentoCard}>
+          <div style={{ fontSize: 20, fontWeight: 900, color: "#2f9e44" }}>{kpi.keptDeposit.toLocaleString()} ₸</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.textSub }}>Удержанные депозиты ({kpi.keptCount})</div>
         </div>
-      </div>
-      {/* СЕРТ/ДЕП + Payment method breakdown */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 2fr", gap: 12 }}>
-        <div style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#FBBF24" }}>{kpi.certDepCount}</div>
-            <div style={{ fontSize: 13, color: C.textDarkSub }}>{kpi.certDepOriginalPrice.toLocaleString("ru-RU")} ₸</div>
-          </div>
-          <div style={{ fontSize: 11, color: C.textDarkSub }}>СЕРТ / ДЕП (не в выручке)</div>
-        </div>
-        <div style={{ ...cardStyle, flexDirection: "row", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
-          {PAYMENT_METHODS.map(pm => {
-            const cnt = kpi.pmBreakdown?.[pm.value] || 0;
-            return (
-              <div key={pm.value} style={{ textAlign: "center", minWidth: 60 }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: pm.value === "cert_dep" ? "#FBBF24" : C.textDark }}>{cnt}</div>
-                <div style={{ fontSize: 10, color: C.textDarkSub }}>{pm.label}</div>
-              </div>
-            );
-          })}
+        <div style={bentoCard}>
+          <div style={{ fontSize: 20, fontWeight: 900, color: "#f08c00" }}>{kpi.certDepCount} шт.</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.textSub }}>Серт/Деп ({kpi.certDepOriginalPrice.toLocaleString()} ₸)</div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 12 }}>
-        <div style={{ ...cardStyle, flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <KpiRing pct={kpi.roomPct} color="#2D6A4F" />
-          <div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark }}>{kpi.roomPct}%</div>
-            <div style={{ fontSize: 11, color: C.textDarkSub }}>Загрузка кабинок</div>
-          </div>
-        </div>
-        <div style={{ ...cardStyle, flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <KpiRing pct={kpi.therPct} color={C.accent} />
-          <div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark }}>{kpi.therPct}%</div>
-            <div style={{ fontSize: 11, color: C.textDarkSub }}>Загрузка мастеров</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts 2×2 */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
-        <div style={chartBox}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 10 }}>Выручка по дням</div>
+      {/* Charts Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 32 }}>
+        <div style={bentoCard}>
+          <h3 style={{ margin: "0 0 24px 0", fontSize: 16, fontWeight: 800 }}>Выручка по дням</h3>
           <MiniBarChart data={revenueByDay} barColor={C.accent} label="₸" />
         </div>
-        <div style={chartBox}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 10 }}>Типы процедур</div>
+        <div style={bentoCard}>
+          <h3 style={{ margin: "0 0 24px 0", fontSize: 16, fontWeight: 800 }}>Распределение услуг</h3>
           <MiniPieChart data={typeDist} />
         </div>
-        <div style={chartBox}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 10 }}>Загрузка по часам (ср. мастеров)</div>
-          <MiniBarChart data={loadByHour} barColor="#2D6A4F" />
+        <div style={bentoCard}>
+          <h3 style={{ margin: "0 0 24px 0", fontSize: 16, fontWeight: 800 }}>Почасовая нагрузка</h3>
+          <MiniBarChart data={loadByHour} barColor="#222" />
         </div>
-        <div style={chartBox}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 10 }}>Топ процедур</div>
+        <div style={bentoCard}>
+          <h3 style={{ margin: "0 0 24px 0", fontSize: 16, fontWeight: 800 }}>Популярные услуги</h3>
           <MiniHBarChart data={topProcs} barColor={C.accent} />
         </div>
       </div>
 
-      {/* Comparison table (both salons) */}
+      {/* Comparison Table */}
       {comparison && (
-        <div style={{ ...chartBox }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 12 }}>Сравнение салонов</div>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: "left", padding: "6px 10px", color: C.textDarkSub, fontSize: 11, textTransform: "uppercase", borderBottom: `1px solid ${C.borderLight}` }}>Метрика</th>
-                {comparison.map(s => (
-                  <th key={s.name} style={{ textAlign: "right", padding: "6px 10px", color: C.textDarkSub, fontSize: 11, textTransform: "uppercase", borderBottom: `1px solid ${C.borderLight}` }}>{s.name}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { label: "Записей", key: "totalBookings", fmt: v => v },
-                { label: "Выручка", key: "revenue", fmt: v => v.toLocaleString("ru-RU") + " ₸" },
-                { label: "Ср. чек", key: "avgCheck", fmt: v => v.toLocaleString("ru-RU") + " ₸" },
-                { label: "Загр. кабинок", key: "roomPct", fmt: v => v + "%" },
-                { label: "Загр. мастеров", key: "therPct", fmt: v => v + "%" },
-                { label: "Вернули за бронь", key: "refunded", fmt: (v, row) => v.toLocaleString("ru-RU") + " ₸ (" + (row.refundedCount || 0) + " чел.)" },
-                { label: "Не вернули за бронь", key: "keptDeposit", fmt: (v, row) => v.toLocaleString("ru-RU") + " ₸ (" + (row.keptCount || 0) + " чел.)" },
-                { label: "СЕРТ / ДЕП", key: "certDepCount", fmt: (v, row) => v + " зап. (" + (row.certDepOriginalPrice || 0).toLocaleString("ru-RU") + " ₸)" },
-              ].map(row => {
-                const vals = comparison.map(s => s[row.key]);
-                const best = Math.max(...vals);
-                return (
-                  <tr key={row.key}>
-                    <td style={{ padding: "8px 10px", color: C.textDarkSub, borderBottom: `1px solid ${C.borderLight}` }}>{row.label}</td>
-                    {comparison.map((_s, i) => (
-                      <td key={i} style={{
-                        textAlign: "right", padding: "8px 10px",
-                        color: vals[i] === best && best > 0 ? C.accent : C.textDark,
-                        fontWeight: vals[i] === best && best > 0 ? 600 : 400,
-                        borderBottom: `1px solid ${C.borderLight}`,
-                      }}>{row.fmt(vals[i], comparison[i])}</td>
+        <div style={{ ...bentoCard, padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "32px 32px 16px" }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Сравнение салонов</h3>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ backgroundColor: "rgba(0,0,0,0.02)" }}>
+                  <th style={{ padding: "16px 32px", textAlign: "left", fontSize: 11, color: C.textSub, textTransform: "uppercase", letterSpacing: "0.1em" }}>Показатель</th>
+                  {comparison.map(s => <th key={s.name} style={{ padding: "16px 32px", textAlign: "right", fontSize: 11, color: C.textSub, textTransform: "uppercase" }}>{s.name}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { l: "Выручка", k: "revenue", f: v => `${v.toLocaleString()} ₸` },
+                  { l: "Записей", k: "totalBookings", f: v => v },
+                  { l: "Средний чек", k: "avgCheck", f: v => `${v.toLocaleString()} ₸` },
+                  { l: "Загрузка мастеров", k: "therPct", f: v => `${v}%` },
+                  { l: "Загрузка кабинок", k: "roomPct", f: v => `${v}%` },
+                ].map((row, idx) => (
+                  <tr key={row.k} style={{ borderBottom: "1px solid rgba(0,0,0,0.03)", backgroundColor: idx % 2 === 0 ? "transparent" : "rgba(0,0,0,0.01)" }}>
+                    <td style={{ padding: "16px 32px", fontSize: 14, fontWeight: 700, color: C.textSub }}>{row.l}</td>
+                    {comparison.map(s => (
+                      <td key={s.name} style={{ padding: "16px 32px", textAlign: "right", fontSize: 15, fontWeight: 800, color: C.textMain }}>{row.f(s[row.k])}</td>
                     ))}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -5085,23 +5148,29 @@ function WorkersScreen({ onShowToast, currentUser }) {
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  // Form states
   const [name, setName] = useState("");
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [newRole, setNewRole] = useState("worker");
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  // Edit states
+  const [editName, setEditName] = useState("");
+  const [editRole, setEditRole] = useState("worker");
+  const [editPassword, setEditPassword] = useState("");
+  const [showEditPwd, setShowEditPwd] = useState(false);
+
+  // Detail view
   const [selectedUser, setSelectedUser] = useState(null);
   const [userLogs, setUserLogs] = useState([]);
-  const [editingUser, setEditingUser] = useState(null);
-  const [editName, setEditName] = useState("");
-  const [editPassword, setEditPassword] = useState("");
-  const [editRole, setEditRole] = useState("worker");
-  const [showEditPwd, setShowEditPwd] = useState(false);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
     const users = await UserStorage.getUsers();
-    setAllUsers(users);
+    setAllUsers(users.sort((a, b) => a.name.localeCompare(b.name)));
     setLoading(false);
   }, []);
 
@@ -5112,31 +5181,19 @@ function WorkersScreen({ onShowToast, currentUser }) {
       if (onShowToast) onShowToast("Заполните все поля");
       return;
     }
-    const users = await UserStorage.getUsers();
-    if (users.some(u => u.login === login.trim())) {
+    const ok = await UserStorage.registerUser(name.trim(), login.trim(), password.trim(), newRole);
+    if (!ok) {
       if (onShowToast) onShowToast("Логин уже занят");
       return;
     }
-    const result = await UserStorage.createUser(login.trim(), password, name.trim(), newRole);
-    if (result.error) {
-      if (onShowToast) onShowToast("Ошибка: " + result.error);
-      return;
-    }
-    setName(""); setLogin(""); setPassword(""); setNewRole("worker");
-    setShowAdd(false);
+    setShowAdd(false); setName(""); setLogin(""); setPassword(""); setNewRole("worker");
     await loadUsers();
     if (onShowToast) onShowToast("Аккаунт создан");
   };
 
   const handleDelete = async (id) => {
-    if (currentUser && id === currentUser.id) {
-      if (onShowToast) onShowToast("Нельзя удалить свой аккаунт");
-      setConfirmDeleteId(null);
-      return;
-    }
     const users = await UserStorage.getUsers();
-    const target = users.find(u => u.id === id);
-    if (target && target.role === "admin") {
+    if (users.find(u => u.id === id)?.role === "admin") {
       const adminCount = users.filter(u => u.role === "admin").length;
       if (adminCount <= 1) {
         if (onShowToast) onShowToast("Нельзя удалить последнего администратора");
@@ -5150,18 +5207,17 @@ function WorkersScreen({ onShowToast, currentUser }) {
     if (onShowToast) onShowToast("Аккаунт удалён");
   };
 
-  const startEdit = async (u) => {
-    setEditingUser(u);
-    setEditName(u.name);
-    setEditPassword("");
-    setEditRole(u.role);
+  const startEdit = (user) => {
+    setEditingUser(user);
+    setEditName(user.name);
+    setEditRole(user.role);
+    setEditPassword(user.password || "");
     setShowEditPwd(false);
   };
 
   const handleSaveEdit = async () => {
-    if (!editName.trim()) { if (onShowToast) onShowToast("Имя обязательно"); return; }
+    if (!editName.trim()) return;
     const users = await UserStorage.getUsers();
-    // Protect last admin from role change
     if (editingUser.role === "admin" && editRole !== "admin") {
       const adminCount = users.filter(u => u.role === "admin").length;
       if (adminCount <= 1) {
@@ -5169,7 +5225,7 @@ function WorkersScreen({ onShowToast, currentUser }) {
         return;
       }
     }
-    await UserStorage.saveUser({ ...editingUser, name: editName.trim(), role: editRole });
+    await UserStorage.saveUser({ ...editingUser, name: editName.trim(), role: editRole, password: editPassword });
     setEditingUser(null);
     await loadUsers();
     if (onShowToast) onShowToast("Аккаунт обновлён");
@@ -5181,114 +5237,118 @@ function WorkersScreen({ onShowToast, currentUser }) {
     setUserLogs(logs.filter(l => l.userId === user.id).sort((a, b) => b.timestamp.localeCompare(a.timestamp)));
   };
 
-  // Detail view: user logs
+  const inputStyle = {
+    width: "100%", padding: "14px 20px", borderRadius: 20, fontSize: 13, fontWeight: 600,
+    border: "none", backgroundColor: "rgba(0,0,0,0.03)", color: C.textMain, outline: "none",
+  };
+
+  const roleToggle = (value, onChange) => (
+    <div style={{ display: "flex", gap: 6, padding: 6, borderRadius: 32, backgroundColor: "rgba(0,0,0,0.03)" }}>
+      {[{ v: "worker", l: "Работник" }, { v: "admin", l: "Админ" }].map(r => (
+        <button key={r.v} type="button" onClick={() => onChange(r.v)} style={{
+          flex: 1, padding: "10px 20px", borderRadius: 24, border: "none",
+          fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 300ms",
+          backgroundColor: value === r.v ? C.accent : "transparent",
+          color: value === r.v ? "#1b1c15" : C.textSub,
+        }}>{r.l}</button>
+      ))}
+    </div>
+  );
+
+  const bentoCard = {
+    backgroundColor: "#fff", borderRadius: 32, padding: 32,
+    boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
+    display: "flex", flexDirection: "column", gap: 8,
+    border: "1px solid rgba(0,0,0,0.02)"
+  };
+
   if (selectedUser) {
     return (
-      <div>
+      <div style={{ animation: "fadeIn 400ms ease-out" }}>
         <button onClick={() => setSelectedUser(null)} style={{
           background: "none", border: "none", color: C.accent, cursor: "pointer",
-          fontSize: 14, marginBottom: 16, display: "flex", alignItems: "center", gap: 6,
+          fontSize: 14, fontWeight: 800, marginBottom: 24, display: "flex", alignItems: "center", gap: 8,
         }}>
-          <ChevronLeft size={16} /> Назад к списку
+          <ChevronLeft size={18} /> Назад к списку
         </button>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <h2 style={{ color: C.textDark, fontSize: 18, fontWeight: 600, margin: 0 }}>{selectedUser.name}</h2>
-          <span style={{
-            padding: "2px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-            backgroundColor: selectedUser.role === "admin" ? `${C.accent}22` : "#34D39922",
-            color: selectedUser.role === "admin" ? C.accent : "#34D399",
-          }}>{selectedUser.role === "admin" ? "Админ" : "Работник"}</span>
+        <div style={{ ...bentoCard, marginBottom: 32 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>👤</div>
+            <div>
+              <h2 style={{ color: C.textMain, fontSize: 24, fontWeight: 900, margin: 0 }}>{selectedUser.name}</h2>
+              <div style={{ color: C.textSub, fontSize: 13, fontWeight: 600 }}>Логин: {selectedUser.login} · Создан: {new Date(selectedUser.createdAt).toLocaleDateString("ru-RU")}</div>
+            </div>
+            <span style={{
+              marginLeft: "auto", padding: "6px 16px", borderRadius: 20, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em",
+              backgroundColor: selectedUser.role === "admin" ? "#222" : "#d4c5ab",
+              color: selectedUser.role === "admin" ? "#fff" : "#1b1c15",
+            }}>{selectedUser.role === "admin" ? "Админ" : "Работник"}</span>
+          </div>
         </div>
-        <p style={{ color: C.textDarkSub, fontSize: 13, marginBottom: 20 }}>Логин: {selectedUser.login} · Создан: {new Date(selectedUser.createdAt).toLocaleDateString("ru-RU")}</p>
 
-        <h3 style={{ color: C.textDark, fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Журнал действий ({userLogs.length})</h3>
+        <h3 style={{ color: C.textMain, fontSize: 18, fontWeight: 800, marginBottom: 20 }}>Логи действий ({userLogs.length})</h3>
         {userLogs.length === 0 ? (
-          <div style={{ color: C.textSub, fontSize: 13, padding: 20, textAlign: "center" }}>Нет действий</div>
+          <div style={bentoCard}>Нет действий</div>
         ) : (
-          <div style={{ borderRadius: 20, overflow: "hidden", overflowX: "auto", WebkitOverflowScrolling: "touch", backgroundColor: C.cardLight, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600 }}>
-              <thead>
-                <tr style={{ backgroundColor: C.cardLight }}>
-                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Дата/время</th>
-                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Действие</th>
-                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Клиент</th>
-                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Дата записи</th>
-                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Детали</th>
-                </tr>
-              </thead>
-              <tbody>
-                {userLogs.map(log => (
-                  <tr key={log.id} style={{ borderTop: `1px solid ${C.borderLight}` }}>
-                    <td style={{ padding: "10px 12px", color: C.textDark }}>{new Date(log.timestamp).toLocaleString("ru-RU")}</td>
-                    <td style={{ padding: "10px 12px" }}>
-                      <span style={{
-                        padding: "2px 8px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-                        backgroundColor: log.action === "create" ? "#34D39922" : log.action === "delete" ? "#EF444422" : "#FBBF2422",
-                        color: log.action === "create" ? "#34D399" : log.action === "delete" ? "#F87171" : "#FBBF24",
-                      }}>
-                        {log.action === "create" ? "Создание" : log.action === "delete" ? "Удаление" : "Изменение"}
-                      </span>
-                    </td>
-                    <td style={{ padding: "10px 12px", color: C.textDark }}>{log.clientName || "—"}</td>
-                    <td style={{ padding: "10px 12px", color: C.textDarkSub }}>{log.targetDate || "—"} {log.targetTime || ""}</td>
-                    <td style={{ padding: "10px 12px", color: C.textDarkSub, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.details || "—"}</td>
+          <div style={{ ...bentoCard, padding: 0, overflow: "hidden" }}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ backgroundColor: "rgba(0,0,0,0.02)" }}>
+                    <th style={{ padding: "16px 32px", textAlign: "left", fontSize: 11, color: C.textSub, textTransform: "uppercase" }}>Дата</th>
+                    <th style={{ padding: "16px 32px", textAlign: "left", fontSize: 11, color: C.textSub, textTransform: "uppercase" }}>Действие</th>
+                    <th style={{ padding: "16px 32px", textAlign: "left", fontSize: 11, color: C.textSub, textTransform: "uppercase" }}>Детали</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {userLogs.map(log => (
+                    <tr key={log.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.03)" }}>
+                      <td style={{ padding: "16px 32px", fontSize: 14, fontWeight: 600 }}>{new Date(log.timestamp).toLocaleString("ru-RU")}</td>
+                      <td style={{ padding: "16px 32px" }}>
+                        <span style={{
+                          padding: "4px 12px", borderRadius: 12, fontSize: 11, fontWeight: 800, textTransform: "uppercase",
+                          backgroundColor: log.action === "create" ? "#34D39915" : log.action === "delete" ? "#EF444415" : "#FBBF2415",
+                          color: log.action === "create" ? "#059669" : log.action === "delete" ? "#DC2626" : "#A67C00",
+                        }}>{log.action === "create" ? "Создание" : log.action === "delete" ? "Удаление" : "Изменение"}</span>
+                      </td>
+                      <td style={{ padding: "16px 32px", fontSize: 13, color: C.textSub, fontWeight: 500 }}>{log.details || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
     );
   }
 
-  const inputStyle = {
-    width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 14,
-    border: `1px solid ${C.borderLight}`, backgroundColor: "#F5F0E8",
-    color: C.textDark, outline: "none",
-  };
-
-  const roleToggle = (value, onChange) => (
-    <div style={{ display: "flex", gap: 4, padding: 3, borderRadius: 8, backgroundColor: C.gridBg, border: `1px solid ${C.border}` }}>
-      {[{ v: "worker", l: "Работник" }, { v: "admin", l: "Администратор" }].map(r => (
-        <button key={r.v} type="button" onClick={() => onChange(r.v)} style={{
-          flex: 1, padding: "6px 12px", borderRadius: 6, border: "none",
-          fontSize: 12, fontWeight: value === r.v ? 700 : 400, cursor: "pointer",
-          backgroundColor: value === r.v ? C.accent : "transparent",
-          color: value === r.v ? C.bg : C.textSub,
-        }}>{r.l}</button>
-      ))}
-    </div>
-  );
-
   return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <h2 style={{ color: C.textDark, fontSize: 18, fontWeight: 600, margin: 0 }}>Аккаунты</h2>
+    <div style={{ animation: "fadeIn 400ms ease-out" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
+        <h2 style={{ color: C.textMain, fontSize: 28, fontWeight: 900, margin: 0 }}>Персонал</h2>
         <button onClick={() => setShowAdd(!showAdd)} style={{
-          display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 999,
-          border: "none", backgroundColor: C.accent, color: "#1C1C1E",
-          fontSize: 13, fontWeight: 600, cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 10, padding: "14px 28px", borderRadius: 32,
+          border: "none", backgroundColor: C.accent, color: "#1b1c15",
+          fontSize: 14, fontWeight: 800, cursor: "pointer", transition: "all 300ms",
+          boxShadow: `0 10px 20px ${C.accent}44`,
         }}>
-          <UserPlus size={15} /> Добавить
+          <UserPlus size={18} /> Добавить
         </button>
       </div>
 
-      {/* Add form */}
       {showAdd && (
-        <div style={{ padding: 20, borderRadius: 12, marginBottom: 20, backgroundColor: C.card, border: `1px solid ${C.border}` }}>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+        <div style={{ ...bentoCard, marginBottom: 32, gap: 24, backgroundColor: "rgba(255,255,255,0.8)", backdropFilter: "blur(20px)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 20 }}>
             <div>
-              <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 4 }}>Имя</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: C.textSub, marginBottom: 8, textTransform: "uppercase" }}>Имя</label>
               <input value={name} onChange={e => setName(e.target.value)} placeholder="Имя Фамилия" style={inputStyle} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 4 }}>Логин</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: C.textSub, marginBottom: 8, textTransform: "uppercase" }}>Логин</label>
               <input value={login} onChange={e => setLogin(e.target.value)} placeholder="worker1" style={inputStyle} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 4 }}>Пароль</label>
-              <input value={password} onChange={e => setPassword(e.target.value)} placeholder="pass123" style={inputStyle} />
             </div>
           </div>
           <div style={{ marginBottom: 12 }}>
@@ -5297,8 +5357,8 @@ function WorkersScreen({ onShowToast, currentUser }) {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={handleAdd} style={{
-              padding: "8px 20px", borderRadius: 999, border: "none",
-              backgroundColor: C.accent, color: "#1C1C1E", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              padding: "8px 20px", borderRadius: 8, border: "none",
+              backgroundColor: C.accent, color: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer",
             }}>Сохранить</button>
             <button onClick={() => { setShowAdd(false); setName(""); setLogin(""); setPassword(""); setNewRole("worker"); }} style={{
               padding: "8px 20px", borderRadius: 8, border: `1px solid ${C.border}`,
@@ -5350,8 +5410,8 @@ function WorkersScreen({ onShowToast, currentUser }) {
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={handleSaveEdit} style={{
-                flex: 1, padding: "10px 0", borderRadius: 999, border: "none",
-                backgroundColor: C.accent, color: "#1C1C1E", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                flex: 1, padding: "10px 0", borderRadius: 8, border: "none",
+                backgroundColor: C.accent, color: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer",
               }}>Сохранить</button>
               <button onClick={() => setEditingUser(null)} style={{
                 flex: 1, padding: "10px 0", borderRadius: 8, border: `1px solid ${C.border}`,
@@ -5374,46 +5434,45 @@ function WorkersScreen({ onShowToast, currentUser }) {
             return (
               <div key={w.id} style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "14px 18px", borderRadius: 20,
-                backgroundColor: C.cardLight, boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-                border: isSelf ? `1px solid ${C.accent}66` : "none",
+                padding: "14px 18px", borderRadius: 10,
+                backgroundColor: C.card, border: `1px solid ${isSelf ? C.accent + "66" : C.border}`,
                 cursor: "pointer",
               }} onClick={() => openUserLogs(w)}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: C.textDark, fontWeight: 600, fontSize: 14 }}>{w.name}</span>
+                      <span style={{ color: C.textMain, fontWeight: 600, fontSize: 14 }}>{w.name}</span>
                       <span style={{
                         padding: "1px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600,
                         backgroundColor: w.role === "admin" ? `${C.accent}22` : "#34D39922",
                         color: w.role === "admin" ? C.accent : "#34D399",
                       }}>{w.role === "admin" ? "Админ" : "Работник"}</span>
-                      {isSelf && <span style={{ fontSize: 11, color: C.textDarkSub }}>(вы)</span>}
+                      {isSelf && <span style={{ fontSize: 11, color: C.textSub }}>(вы)</span>}
                     </div>
-                    <div style={{ color: C.textDarkSub, fontSize: 12 }}>@{w.login} · {new Date(w.createdAt).toLocaleDateString("ru-RU")}</div>
+                    <div style={{ color: C.textSub, fontSize: 12 }}>@{w.login} · {new Date(w.createdAt).toLocaleDateString("ru-RU")}</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <button onClick={(e) => { e.stopPropagation(); startEdit(w); }} style={{
-                    background: "none", border: "none", cursor: "pointer", color: C.textDarkSub, padding: 4,
+                    background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
                   }} title="Редактировать">
                     <Settings size={14} />
                   </button>
                   {confirmDeleteId === w.id ? (
                     <>
-                      <span style={{ color: C.textDarkSub, fontSize: 12 }}>Удалить?</span>
+                      <span style={{ color: C.textSub, fontSize: 12 }}>Удалить?</span>
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(w.id); }} style={{
                         padding: "4px 12px", borderRadius: 6, border: "none",
                         backgroundColor: "#EF4444", color: "#fff", fontSize: 12, cursor: "pointer",
                       }}>Да</button>
                       <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }} style={{
-                        padding: "4px 12px", borderRadius: 6, border: `1px solid ${C.borderLight}`,
-                        backgroundColor: "transparent", color: C.textDarkSub, fontSize: 12, cursor: "pointer",
+                        padding: "4px 12px", borderRadius: 6, border: `1px solid ${C.border}`,
+                        backgroundColor: "transparent", color: C.textSub, fontSize: 12, cursor: "pointer",
                       }}>Нет</button>
                     </>
                   ) : (
                     <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(w.id); }} style={{
-                      background: "none", border: "none", cursor: "pointer", color: C.textDarkSub, padding: 4,
+                      background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
                     }} title="Удалить">
                       <Trash2 size={14} />
                     </button>
@@ -5458,75 +5517,79 @@ function LogsScreen() {
   });
 
   const selectStyle = {
-    padding: "8px 12px", borderRadius: 8, fontSize: 13,
-    border: `1px solid ${C.borderLight}`, backgroundColor: C.cardLight,
-    color: C.textDark, outline: "none", cursor: "pointer", colorScheme: "light",
+    padding: "14px 24px", borderRadius: 32, fontSize: 13, fontWeight: 800,
+    border: "none", backgroundColor: "rgba(0,0,0,0.04)",
+    color: "#1b1c15", outline: "none", cursor: "pointer",
+  };
+
+  const bentoCard = {
+    backgroundColor: "#fff", borderRadius: 32, padding: 32,
+    boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
+    display: "flex", flexDirection: "column", gap: 8,
+    border: "1px solid rgba(0,0,0,0.02)"
   };
 
   return (
-    <div>
-      <h2 style={{ color: C.textDark, fontSize: 18, fontWeight: 600, marginBottom: 16 }}>Логи действий</h2>
+    <div style={{ animation: "fadeIn 400ms ease-out" }}>
+      <h2 style={{ color: C.textMain, fontSize: 28, fontWeight: 900, marginBottom: 32 }}>Логи действий</h2>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ 
+        display: "flex", gap: 12, marginBottom: 32, flexWrap: "wrap", alignItems: "center",
+        padding: "12px", borderRadius: 40, backgroundColor: "rgba(0,0,0,0.03)"
+      }}>
         <select value={filterUser} onChange={e => setFilterUser(e.target.value)} style={selectStyle}>
-          <option value="all" style={{ backgroundColor: C.cardLight }}>Все работники</option>
-          {workers.map(w => (
-            <option key={w.id} value={w.id} style={{ backgroundColor: C.cardLight }}>{w.name}</option>
-          ))}
+          <option value="all">Все работники</option>
+          {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
         </select>
         <select value={filterAction} onChange={e => setFilterAction(e.target.value)} style={selectStyle}>
-          <option value="all" style={{ backgroundColor: C.cardLight }}>Все действия</option>
-          <option value="create" style={{ backgroundColor: C.cardLight }}>Создание</option>
-          <option value="edit" style={{ backgroundColor: C.cardLight }}>Изменение</option>
-          <option value="delete" style={{ backgroundColor: C.cardLight }}>Удаление</option>
+          <option value="all">Все действия</option>
+          <option value="create">Создание</option>
+          <option value="edit">Изменение</option>
+          <option value="delete">Удаление</option>
         </select>
-        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-          style={{ ...selectStyle, cursor: "text" }} />
-        <span style={{ color: C.textDarkSub }}>—</span>
-        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-          style={{ ...selectStyle, cursor: "text" }} />
-        <span style={{ color: C.textDarkSub, fontSize: 13 }}>Найдено: {filtered.length}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, backgroundColor: "rgba(0,0,0,0.03)", padding: "10px 24px", borderRadius: 32 }}>
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            style={{ background: "none", border: "none", fontSize: 13, fontWeight: 800, color: "#1b1c15", outline: "none" }} />
+          <span style={{ color: C.textSub, fontWeight: 800 }}>—</span>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            style={{ background: "none", border: "none", fontSize: 13, fontWeight: 800, color: "#1b1c15", outline: "none" }} />
+        </div>
+        <div style={{ marginLeft: "auto", paddingRight: 24, fontSize: 13, fontWeight: 800, color: C.textSub }}>Найдено: {filtered.length}</div>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: "center", color: C.textSub, padding: 40 }}>Загрузка…</div>
-      ) : filtered.length === 0 ? (
-        <div style={{ textAlign: "center", color: C.textSub, padding: 40, fontSize: 13 }}>Нет записей в логах</div>
+        <div style={{ padding: 100, textAlign: "center" }}><Loader2 size={32} color={C.accent} style={{ animation: "spin 1s linear infinite" }} /></div>
       ) : (
-        <div style={{ borderRadius: 20, overflow: "hidden", overflowX: "auto", WebkitOverflowScrolling: "touch", backgroundColor: C.cardLight, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 700 }}>
-            <thead>
-              <tr style={{ backgroundColor: C.cardLight }}>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Дата/время</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Работник</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Действие</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Клиент</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Дата записи</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Детали</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.slice(0, 100).map(log => (
-                <tr key={log.id} style={{ borderTop: `1px solid ${C.borderLight}` }}>
-                  <td style={{ padding: "10px 12px", color: C.textDark, whiteSpace: "nowrap" }}>{new Date(log.timestamp).toLocaleString("ru-RU")}</td>
-                  <td style={{ padding: "10px 12px", color: C.textDark }}>{log.userName}</td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <span style={{
-                      padding: "2px 8px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-                      backgroundColor: log.action === "create" ? "#34D39922" : log.action === "delete" ? "#EF444422" : "#FBBF2422",
-                      color: log.action === "create" ? "#34D399" : log.action === "delete" ? "#F87171" : "#FBBF24",
-                    }}>
-                      {log.action === "create" ? "Создание" : log.action === "delete" ? "Удаление" : "Изменение"}
-                    </span>
-                  </td>
-                  <td style={{ padding: "10px 12px", color: C.textDark }}>{log.clientName || "—"}</td>
-                  <td style={{ padding: "10px 12px", color: C.textDarkSub }}>{log.targetDate || "—"} {log.targetTime || ""}</td>
-                  <td style={{ padding: "10px 12px", color: C.textDarkSub, maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.details || "—"}</td>
+        <div style={{ ...bentoCard, padding: 0, overflow: "hidden" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ backgroundColor: "rgba(0,0,0,0.02)" }}>
+                  <th style={{ padding: "20px 32px", textAlign: "left", fontSize: 11, color: C.textSub, textTransform: "uppercase" }}>Время</th>
+                  <th style={{ padding: "20px 32px", textAlign: "left", fontSize: 11, color: C.textSub, textTransform: "uppercase" }}>Работник</th>
+                  <th style={{ padding: "20px 32px", textAlign: "left", fontSize: 11, color: C.textSub, textTransform: "uppercase" }}>Действие</th>
+                  <th style={{ padding: "20px 32px", textAlign: "left", fontSize: 11, color: C.textSub, textTransform: "uppercase" }}>Детали</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map(log => (
+                  <tr key={log.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.03)" }}>
+                    <td style={{ padding: "20px 32px", fontSize: 14, fontWeight: 600 }}>{new Date(log.timestamp).toLocaleString("ru-RU")}</td>
+                    <td style={{ padding: "20px 32px", fontSize: 14, fontWeight: 800, color: C.textMain }}>{log.userName}</td>
+                    <td style={{ padding: "20px 32px" }}>
+                      <span style={{
+                        padding: "4px 12px", borderRadius: 12, fontSize: 11, fontWeight: 800, textTransform: "uppercase",
+                        backgroundColor: log.action === "create" ? "#34D39915" : log.action === "delete" ? "#EF444415" : "#D4A84B15",
+                        color: log.action === "create" ? "#059669" : log.action === "delete" ? "#DC2626" : "#A67C00",
+                      }}>{log.action === "create" ? "Создание" : log.action === "delete" ? "Удаление" : "Изменение"}</span>
+                    </td>
+                    <td style={{ padding: "20px 32px", fontSize: 13, color: C.textSub, fontWeight: 500, maxWidth: 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={log.details}>{log.details || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -5683,10 +5746,10 @@ function App() {
 
   if (needsOnboarding && isAdmin) return <OnboardingWizard onComplete={handleOnboardingComplete} />;
   if (needsOnboarding && !isAdmin) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", backgroundColor: C.bg, color: C.textDarkSub, fontFamily: "'Inter', system-ui, sans-serif", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", backgroundColor: C.bg, color: C.textSub, fontFamily: "system-ui, sans-serif", flexDirection: "column", gap: 16 }}>
       <Lock size={32} color={C.textSub} />
       <span style={{ fontSize: 14 }}>Система ещё не настроена. Обратитесь к администратору.</span>
-      <button onClick={handleLogout} style={{ padding: "8px 20px", borderRadius: 999, border: "none", backgroundColor: C.accent, color: "#1C1C1E", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Выйти</button>
+      <button onClick={handleLogout} style={{ padding: "8px 20px", borderRadius: 8, border: "none", backgroundColor: C.accent, color: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Выйти</button>
     </div>
   );
 
@@ -5707,23 +5770,21 @@ function App() {
   return (
     <div style={{
       backgroundColor: C.bg,
-      backgroundImage: "radial-gradient(ellipse at 50% 0%, rgba(232,168,48,0.08) 0%, transparent 60%)",
       minHeight: "100vh",
-      color: C.textDark,
-      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-      fontSize: 14,
+      color: C.textMain,
+      fontFamily: "system-ui, -apple-system, sans-serif",
+      fontSize: 13,
       lineHeight: 1.5,
       overflowX: "hidden",
     }}>
       {/* Header with user info */}
       <header style={{
-        position: "fixed", top: 0, left: 0, right: 0, height: 60, zIndex: 50,
-        backgroundColor: C.header,
-        boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+        position: "fixed", top: 0, left: 0, right: 0, height: 56, zIndex: 50,
+        backgroundColor: C.header, borderBottom: `1px solid ${C.border}`,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: isMobile ? "0 12px" : "0 28px",
+        padding: isMobile ? "0 12px" : "0 24px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {isMobile && (
             <button onClick={() => setMobileMenuOpen(v => !v)} style={{
               background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
@@ -5732,25 +5793,23 @@ function App() {
               <Menu size={22} />
             </button>
           )}
-          <div style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: `${C.accent}22`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Gem size={isMobile ? 16 : 18} color={C.accent} />
-          </div>
-          {!isMobile && <span style={{ color: C.textMain, fontWeight: 800, fontSize: 17, letterSpacing: "-0.3px" }}>SPA CRM</span>}
+          <Gem size={isMobile ? 18 : 22} color={C.accent} />
+          {!isMobile && <span style={{ color: C.textMain, fontWeight: 600, fontSize: 16, letterSpacing: "0.5px" }}>SPA CRM</span>}
         </div>
 
         {/* Salon switcher */}
-        <div style={{ display: "flex", gap: isMobile ? 4 : 6 }}>
+        <div style={{ display: "flex", gap: isMobile ? 4 : 8 }}>
           {salons.map((salon) => {
             const isActive = salon.id === activeSalonId;
             return (
               <button key={salon.id} onClick={() => handleSalonChange(salon.id)} style={{
-                padding: isMobile ? (isActive ? "6px 14px" : "5px 12px") : (isActive ? "8px 20px" : "6px 16px"), borderRadius: 999,
-                border: "none",
-                backgroundColor: isActive ? C.accent : "rgba(255,255,255,0.1)",
-                color: isActive ? "#1C1C1E" : C.textSub,
-                fontWeight: isActive ? 700 : 500, fontSize: isMobile ? 11 : 13,
-                cursor: "pointer", transition: "all 200ms",
-                boxShadow: isActive ? `0 2px 12px ${C.accent}55` : "none",
+                padding: isMobile ? (isActive ? "6px 12px" : "4px 10px") : (isActive ? "8px 24px" : "6px 16px"), borderRadius: 8,
+                border: isActive ? `2px solid ${C.accent}` : `1px solid ${C.accent}55`,
+                backgroundColor: isActive ? C.accent : "transparent",
+                color: isActive ? C.bg : C.accent,
+                fontWeight: isActive ? 700 : 500, fontSize: isMobile ? 11 : (isActive ? 15 : 13),
+                cursor: "pointer", transition: "all 150ms",
+                boxShadow: isActive ? `0 0 12px ${C.accent}44` : "none",
               }}>{salon.name}</button>
             );
           })}
@@ -5768,10 +5827,9 @@ function App() {
             </div>
           )}
           <button onClick={handleLogout} title="Выйти" style={{
-            background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 999,
-            padding: "8px 12px", cursor: "pointer", color: C.textSub,
+            background: "none", border: `1px solid ${C.border}`, borderRadius: 8,
+            padding: "6px 10px", cursor: "pointer", color: C.textSub,
             display: "flex", alignItems: "center", gap: 4,
-            transition: "background 200ms",
           }}>
             <LogOut size={14} />
           </button>
@@ -5783,9 +5841,8 @@ function App() {
         <>
           {/* Mobile bottom nav */}
           <nav style={{
-            position: "fixed", bottom: 0, left: 0, right: 0, height: 60, zIndex: 49,
-            backgroundColor: C.header,
-            boxShadow: "0 -4px 24px rgba(0,0,0,0.15)",
+            position: "fixed", bottom: 0, left: 0, right: 0, height: 56, zIndex: 49,
+            backgroundColor: C.header, borderTop: `1px solid ${C.border}`,
             display: "flex", alignItems: "center", justifyContent: "space-around",
             paddingBottom: "env(safe-area-inset-bottom, 0px)",
           }}>
@@ -5793,14 +5850,14 @@ function App() {
               const isActive = activeTab === id;
               return (
                 <button key={id} onClick={() => { handleTabChange(id); setMobileMenuOpen(false); }} style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-                  padding: "6px 0", flex: 1,
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                  padding: "4px 0", flex: 1,
                   background: "none", border: "none",
                   color: isActive ? C.accent : C.textSub,
                   fontSize: 9, fontWeight: isActive ? 600 : 400,
                   cursor: "pointer", transition: "all 150ms",
                 }}>
-                  <Icon size={20} />
+                  <Icon size={18} />
                   <span>{label}</span>
                 </button>
               );
@@ -5811,28 +5868,27 @@ function App() {
             <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(0,0,0,0.5)" }}
               onClick={() => setMobileMenuOpen(false)}>
               <div style={{
-                position: "absolute", top: 0, left: 0, bottom: 0, width: 280,
-                backgroundColor: C.card,
-                boxShadow: "4px 0 32px rgba(0,0,0,0.3)",
-                padding: "80px 20px 24px", display: "flex", flexDirection: "column", gap: 6,
+                position: "absolute", top: 0, left: 0, bottom: 0, width: 260,
+                backgroundColor: C.card, borderRight: `1px solid ${C.border}`,
+                padding: "72px 16px 24px", display: "flex", flexDirection: "column", gap: 8,
               }} onClick={e => e.stopPropagation()}>
-                <div style={{ color: C.textMain, fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{currentUser.name}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 20 }}>
+                <div style={{ color: C.textMain, fontSize: 14, fontWeight: 600, marginBottom: 8 }}>{currentUser.name}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 16 }}>
                   {isAdmin && <Shield size={12} color={C.accent} />}
-                  <span style={{ color: C.textSub, fontSize: 12, fontWeight: 500 }}>{isAdmin ? "Админ" : "Работник"}</span>
+                  <span style={{ color: C.textSub, fontSize: 12 }}>{isAdmin ? "Админ" : "Работник"}</span>
                 </div>
                 {visibleTabs.map(({ id, label, icon: Icon }) => {
                   const isActive = activeTab === id;
                   return (
                     <button key={id} onClick={() => { handleTabChange(id); setMobileMenuOpen(false); }} style={{
-                      display: "flex", alignItems: "center", gap: 12,
-                      padding: "12px 16px", borderRadius: 16,
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "10px 12px", borderRadius: 8,
                       background: isActive ? `${C.accent}22` : "none", border: "none",
                       color: isActive ? C.accent : C.textSub,
                       fontSize: 14, fontWeight: isActive ? 600 : 400,
                       cursor: "pointer", textAlign: "left", width: "100%",
                     }}>
-                      <Icon size={20} />
+                      <Icon size={18} />
                       <span>{label}</span>
                     </button>
                   );
@@ -5843,22 +5899,23 @@ function App() {
         </>
       ) : (
         <nav style={{
-          position: "fixed", top: 60, left: 0, right: 0, height: 48, zIndex: 49,
-          backgroundColor: C.header,
-          display: "flex", alignItems: "center", padding: "0 28px", gap: 4,
+          position: "fixed", top: 56, left: 0, right: 0, height: 44, zIndex: 49,
+          backgroundColor: C.header, borderBottom: `1px solid ${C.border}`,
+          display: "flex", alignItems: "center", padding: "0 24px", gap: 0,
         }}>
           {visibleTabs.map(({ id, label, icon: Icon }) => {
             const isActive = activeTab === id;
             return (
               <button key={id} onClick={() => handleTabChange(id)} style={{
                 display: "flex", alignItems: "center", gap: 6,
-                padding: "6px 16px", height: 36, borderRadius: 999,
-                background: isActive ? `${C.accent}22` : "none", border: "none",
+                padding: "0 16px", height: "100%",
+                background: "none", border: "none",
+                borderBottom: isActive ? `2px solid ${C.accent}` : "2px solid transparent",
                 color: isActive ? C.accent : C.textSub,
-                fontSize: 13, fontWeight: isActive ? 600 : 400,
-                cursor: "pointer", transition: "all 200ms", letterSpacing: "0.2px",
+                fontSize: 14, fontWeight: isActive ? 600 : 400,
+                cursor: "pointer", transition: "all 150ms", letterSpacing: "0.3px",
               }}>
-                <Icon size={16} />
+                <Icon size={15} />
                 <span>{label}</span>
               </button>
             );
@@ -5868,10 +5925,10 @@ function App() {
 
       {/* Content area */}
       <main style={{
-        marginTop: isMobile ? 60 : 108,
-        padding: isMobile ? "16px 12px 80px" : "28px 32px",
+        marginTop: isMobile ? 56 : 100,
+        padding: isMobile ? "12px 8px 72px" : 24,
         maxWidth: 1400,
-        margin: isMobile ? undefined : "108px auto 0",
+        margin: isMobile ? undefined : "100px auto 0",
         overflowY: "auto",
       }}>
         {activeTab === "settings" && isAdmin && (

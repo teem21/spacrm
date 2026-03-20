@@ -4,30 +4,77 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SPA CRM</title>
+  
+  <!-- Modern Typography (Inter & Poppins) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: #FAF6F0;
-      background-image: radial-gradient(ellipse at 50% 0%, rgba(245,210,120,0.18) 0%, transparent 70%);
-      -webkit-text-size-adjust: 100%;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    :root {
+      /* Modern Warm Minimalist Palette */
+      --bg-color: #fbfaee; /* Creamy off-white background */
+      --surface-container-low: #f5f4e8;
+      --surface-container: #efeee3;
+      --surface-container-high: #e9e9dd;
+      --surface-container-highest: #e4e3d7;
+      
+      --accent-color: #fdc003; /* Vibrant honey-yellow */
+      --primary-color: #5f5e5e; /* Deep charcoal (for text/primary actions) */
+      --secondary-color: #785900;
+      
+      --text-main: #1b1c15; /* Charcoal black for readability */
+      --text-sub: #4f4632;
+      
+      --radius-xl: 32px;
+      --radius-lg: 24px;
+      --radius-pill: 9999px;
+      
+      --glow-gradient: radial-gradient(circle at top left, rgba(255, 253, 231, 0.8) 0%, rgba(251, 250, 238, 0) 50%);
     }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body { 
+      background: var(--bg-color); 
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      -webkit-text-size-adjust: 100%; 
+      position: relative;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* Radial Glow Background */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--glow-gradient);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* Glassmorphism Classes */
+    .glass {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Bento Grid Utils */
+    .bento-grid {
+      display: grid;
+      gap: 32px;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+
     @media (max-width: 767px) {
       body { -webkit-overflow-scrolling: touch; }
       input, select, textarea { font-size: 16px !important; }
+      .bento-grid { gap: 16px; }
     }
-    /* Glassmorphism utility */
-    .glass { backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); }
-    /* Custom scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
-    /* Smooth transitions */
-    button, input, select, textarea { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
   </style>
 </head>
 <body>
