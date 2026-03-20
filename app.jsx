@@ -296,19 +296,20 @@ const currentYearMonth = () => {
 // ─── Colors / Design Tokens ───────────────────────────────────────────────────
 
 const C = {
-  bg:        "#FDFCF0",
-  card:      "#1A1A1A",    // Deep charcoal black
-  gridBg:    "#F9F8E6",    // Slightly darker creamy
-  border:    "rgba(0,0,0,0.06)",
-  borderDark: "rgba(255,255,255,0.1)",
-  textMain:  "#1A1A1A",
-  textInv:   "#FDFCF0",
-  textSub:   "#757575",
-  accent:    "#FFB300",    // Honey-yellow
-  accentHov: "#FFA000",
-  header:    "rgba(253, 252, 240, 0.8)",
-  glass:     "rgba(26, 26, 26, 0.9)",
-  radius:    32,
+  bg:        "#FAF6F0",
+  card:      "#1C1C1E",
+  gridBg:    "#252528",
+  border:    "#3A3A3C",
+  textMain:  "#FFFFFF",
+  textSub:   "#9A9A9E",
+  accent:    "#E8A830",
+  accentHov: "#F0BC50",
+  header:    "#1C1C1E",
+  // Light-surface variants (for elements on the cream background)
+  cardLight: "#FFFFFF",
+  borderLight: "#E8E0D6",
+  textDark:  "#1C1C1E",
+  textDarkSub: "#6B6B6F",
 };
 
 // ─── UI Components ────────────────────────────────────────────────────────────
@@ -316,26 +317,21 @@ const C = {
 function Header({ salons, activeSalonId, onSalonChange }) {
   return (
     <header style={{
-      position: "fixed", top: 0, left: 0, right: 0, height: 80, zIndex: 50,
-      backgroundColor: C.header, backdropFilter: "blur(12px)",
+      position: "fixed", top: 0, left: 0, right: 0, height: 56, zIndex: 50,
+      backgroundColor: C.header, borderBottom: `1px solid ${C.border}`,
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0 40px",
+      padding: "0 24px",
     }}>
       {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Gem size={24} color="#000" />
-        </div>
-        <span style={{ color: C.textMain, fontWeight: 800, fontSize: 20, letterSpacing: "-0.5px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Gem size={22} color={C.accent} />
+        <span style={{ color: C.textMain, fontWeight: 600, fontSize: 16, letterSpacing: "0.5px" }}>
           SPA CRM
         </span>
       </div>
 
-      {/* Salon switcher (Pill style) */}
-      <div style={{ 
-        display: "flex", gap: 4, backgroundColor: "rgba(0,0,0,0.04)", 
-        padding: 4, borderRadius: 20, border: "1px solid rgba(0,0,0,0.03)" 
-      }}>
+      {/* Salon switcher */}
+      <div style={{ display: "flex", gap: 8 }}>
         {salons.map((salon) => {
           const isActive = salon.id === activeSalonId;
           return (
@@ -343,16 +339,16 @@ function Header({ salons, activeSalonId, onSalonChange }) {
               key={salon.id}
               onClick={() => onSalonChange(salon.id)}
               style={{
-                padding: "8px 24px",
-                borderRadius: 16,
-                border: "none",
-                backgroundColor: isActive ? C.card : "transparent",
-                color: isActive ? C.textInv : C.textSub,
-                fontWeight: 600,
-                fontSize: 13,
+                padding: isActive ? "8px 24px" : "6px 16px",
+                borderRadius: 8,
+                border: isActive ? `2px solid ${C.accent}` : `1px solid ${C.accent}55`,
+                backgroundColor: isActive ? C.accent : "transparent",
+                color: isActive ? C.bg : C.accent,
+                fontWeight: isActive ? 700 : 500,
+                fontSize: isActive ? 15 : 13,
                 cursor: "pointer",
-                transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
-                boxShadow: isActive ? "0 4px 12px rgba(0,0,0,0.15)" : "none",
+                transition: "all 150ms",
+                boxShadow: isActive ? `0 0 12px ${C.accent}44` : "none",
               }}
             >
               {salon.name}
@@ -362,10 +358,9 @@ function Header({ salons, activeSalonId, onSalonChange }) {
       </div>
 
       {/* Date */}
-      <div style={{ textAlign: "right" }}>
-        <div style={{ color: C.textMain, fontWeight: 700, fontSize: 14 }}>{formatDate()}</div>
-        <div style={{ color: C.textSub, fontSize: 11, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 500 }}>Сегодня</div>
-      </div>
+      <span style={{ color: C.textSub, fontSize: 13 }}>
+        {formatDate()}
+      </span>
     </header>
   );
 }
@@ -381,14 +376,10 @@ const TABS = [
 function TabBar({ activeTab, onTabChange }) {
   return (
     <nav style={{
-      position: "fixed", bottom: 40, left: "50%", transform: "translateX(-50%)",
-      height: 64, zIndex: 100,
-      backgroundColor: "rgba(26, 26, 26, 0.95)", backdropFilter: "blur(12px)",
-      border: "1px solid rgba(255,255,255,0.1)",
+      position: "fixed", top: 56, left: 0, right: 0, height: 44, zIndex: 49,
+      backgroundColor: C.header, borderBottom: `1px solid ${C.border}`,
       display: "flex", alignItems: "center",
-      padding: "0 12px", gap: 8,
-      borderRadius: 32,
-      boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
+      padding: "0 24px", gap: 0,
     }}>
       {TABS.map(({ id, label, icon: Icon }) => {
         const isActive = activeTab === id;
@@ -397,19 +388,19 @@ function TabBar({ activeTab, onTabChange }) {
             key={id}
             onClick={() => onTabChange(id)}
             style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "0 20px", height: 44,
-              borderRadius: 24,
-              background: isActive ? C.accent : "transparent",
-              border: "none",
-              color: isActive ? "#000" : "rgba(255,255,255,0.6)",
-              fontSize: 14, fontWeight: 600,
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "0 16px", height: "100%",
+              background: "none", border: "none",
+              borderBottom: isActive ? `2px solid ${C.accent}` : "2px solid transparent",
+              color: isActive ? C.accent : C.textSub,
+              fontSize: 14, fontWeight: isActive ? 600 : 400,
               cursor: "pointer",
-              transition: "all 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+              transition: "all 150ms",
+              letterSpacing: "0.3px",
             }}
           >
-            <Icon size={18} />
-            {isActive && <span>{label}</span>}
+            <Icon size={15} />
+            {label && <span>{label}</span>}
           </button>
         );
       })}
@@ -423,6 +414,7 @@ function LoadingScreen() {
       display: "flex", flexDirection: "column", alignItems: "center",
       justifyContent: "center", height: "100vh", gap: 16,
       color: C.textSub, backgroundColor: C.bg,
+      backgroundImage: "radial-gradient(circle at 50% 40%, rgba(255,255,255,0.04) 0%, transparent 70%)",
     }}>
       <Loader2 size={32} color={C.accent} style={{ animation: "spin 1s linear infinite" }} />
       <span style={{ fontSize: 14 }}>Загрузка данных…</span>
@@ -461,101 +453,105 @@ function LoginScreen({ onLogin }) {
   };
 
   const tabStyle = (active) => ({
-    flex: 1, padding: "12px 0", borderRadius: 16, border: "none",
-    fontSize: 14, fontWeight: 700, cursor: "pointer",
+    flex: 1, padding: "10px 0", borderRadius: 14, border: "none",
+    fontSize: 13, fontWeight: active ? 700 : 400, cursor: "pointer",
     backgroundColor: active ? C.accent : "transparent",
-    color: active ? "#000" : C.textSub,
-    transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+    color: active ? "#1C1C1E" : C.textSub,
+    transition: "all 200ms",
+    boxShadow: active ? `0 2px 8px ${C.accent}44` : "none",
   });
 
   return (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "center",
-      minHeight: "100vh", backgroundColor: C.bg,
-      padding: isMobile ? 12 : 0,
+      height: "100vh", backgroundColor: C.bg,
+      backgroundImage: "radial-gradient(ellipse at 50% 30%, rgba(232,168,48,0.12) 0%, transparent 60%)",
+      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
     }}>
-      <div style={{
-        width: "100%", maxWidth: 1200, display: "grid", 
-        gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", 
-        gap: 24, padding: isMobile ? 12 : 24,
+      <form onSubmit={handleSubmit} style={{
+        width: isMobile ? "100%" : 420, maxWidth: 420, padding: isMobile ? 28 : 44, borderRadius: 32,
+        backgroundColor: C.card,
+        boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05) inset",
+        margin: isMobile ? "0 16px" : 0,
       }}>
-        {/* Left Bento: Branding */}
-        {!isMobile && (
-          <div style={{
-            backgroundColor: C.card, borderRadius: C.radius, padding: 60,
-            display: "flex", flexDirection: "column", justifyContent: "center",
-            boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
-          }}>
-            <div style={{ width: 80, height: 80, borderRadius: 24, backgroundColor: C.accent, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 40 }}>
-              <Gem size={48} color="#000" />
-            </div>
-            <h1 style={{ fontSize: 48, fontWeight: 800, color: C.textInv, letterSpacing: "-1px", lineHeight: 1.1, marginBottom: 24 }}>
-              Ваша личная<br />SPA Вселенная
-            </h1>
-            <p style={{ fontSize: 18, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, maxWidth: 400 }}>
-              Премиальная система управления для настоящих мастеров своего дела. Просто, красиво, профессионально.
-            </p>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: `${C.accent}22`, display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+            <Gem size={28} color={C.accent} />
           </div>
+          <h1 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 800, color: C.textMain, letterSpacing: "-0.5px" }}>SPA CRM</h1>
+          <p style={{ fontSize: 14, color: C.textSub, margin: 0, fontWeight: 300 }}>Войдите в систему</p>
+        </div>
+
+        {/* Role tab switcher */}
+        <div style={{
+          display: "flex", gap: 4, padding: 4, borderRadius: 18, marginBottom: 28,
+          backgroundColor: C.gridBg,
+        }}>
+          <button type="button" onClick={() => { setRoleTab("admin"); setError(""); }} style={tabStyle(roleTab === "admin")}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Shield size={14} /> Администратор
+            </span>
+          </button>
+          <button type="button" onClick={() => { setRoleTab("worker"); setError(""); }} style={tabStyle(roleTab === "worker")}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Users size={14} /> Работник
+            </span>
+          </button>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 6, fontWeight: 500 }}>Логин</label>
+          <input
+            type="text" value={login} onChange={e => setLogin(e.target.value)}
+            autoFocus placeholder={roleTab === "admin" ? "admin" : "worker1"}
+            style={{
+              width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 14,
+              border: `1px solid ${C.border}`, backgroundColor: C.gridBg,
+              color: C.textMain, outline: "none",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 6, fontWeight: 500 }}>Пароль</label>
+          <div style={{ position: "relative" }}>
+            <input
+              type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
+              placeholder="••••••"
+              style={{
+                width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, fontSize: 14,
+                border: `1px solid ${C.border}`, backgroundColor: C.gridBg,
+                color: C.textMain, outline: "none",
+              }}
+            />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} style={{
+              position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+              background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
+            }}>
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <div style={{
+            padding: "8px 12px", borderRadius: 8, marginBottom: 16,
+            backgroundColor: "#EF444422", border: "1px solid #EF444444",
+            color: "#F87171", fontSize: 13,
+          }}>{error}</div>
         )}
 
-        {/* Right Bento: Form */}
-        <form onSubmit={handleSubmit} style={{
-          backgroundColor: isMobile ? C.card : "#fff", 
-          borderRadius: C.radius, padding: isMobile ? 32 : 60,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
-          display: "flex", flexDirection: "column", justifyContent: "center",
-          border: isMobile ? `1px solid ${C.borderDark}` : `1px solid ${C.border}`,
+        <button type="submit" disabled={loading} style={{
+          width: "100%", padding: "13px 0", borderRadius: 999, border: "none",
+          backgroundColor: C.accent, color: "#1C1C1E", fontSize: 15, fontWeight: 700,
+          cursor: loading ? "wait" : "pointer", opacity: loading ? 0.7 : 1,
+          boxShadow: `0 4px 16px ${C.accent}55`,
+          transition: "all 200ms",
+          letterSpacing: "0.3px",
         }}>
-          <div style={{ marginBottom: 40 }}>
-            <h2 style={{ fontSize: 32, fontWeight: 800, color: isMobile ? C.textInv : C.textMain, letterSpacing: "-0.5px", marginBottom: 8 }}>Добро пожаловать</h2>
-            <p style={{ color: C.textSub, fontSize: 15 }}>Войдите в свой аккаунт для начала работы</p>
-          </div>
-
-          <div style={{
-            display: "flex", gap: 4, padding: 4, borderRadius: 20, marginBottom: 32,
-            backgroundColor: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.02)",
-          }}>
-            <button type="button" onClick={() => { setRoleTab("admin"); setError(""); }} style={tabStyle(roleTab === "admin")}>Администратор</button>
-            <button type="button" onClick={() => { setRoleTab("worker"); setError(""); }} style={tabStyle(roleTab === "worker")}>Работник</button>
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>Логин</label>
-            <input type="text" value={login} onChange={e => setLogin(e.target.value)}
-              placeholder={roleTab === "admin" ? "admin" : "worker1"}
-              style={{ ...inputStyle(), backgroundColor: isMobile ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)", color: isMobile ? C.textInv : C.textMain }} />
-          </div>
-
-          <div style={{ marginBottom: 32 }}>
-            <label style={labelStyle}>Пароль</label>
-            <div style={{ position: "relative" }}>
-              <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
-                placeholder="••••••"
-                style={{ ...inputStyle(), backgroundColor: isMobile ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)", color: isMobile ? C.textInv : C.textMain }} />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} style={{
-                position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)",
-                background: "none", border: "none", cursor: "pointer", color: C.textSub,
-              }}>
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <div style={{ padding: "12px 16px", borderRadius: 16, backgroundColor: "#EF444411", color: "#EF4444", fontSize: 14, fontWeight: 500, marginBottom: 24, textAlign: "center" }}>
-              {error}
-            </div>
-          )}
-
-          <button type="submit" disabled={loading} style={{
-            width: "100%", height: 56, borderRadius: 28, border: "none",
-            backgroundColor: C.accent, color: "#000", fontSize: 16, fontWeight: 700,
-            cursor: "pointer", transition: "all 300ms", boxShadow: "0 8px 24px rgba(255, 179, 0, 0.3)",
-          }}>
-            {loading ? "Загрузка..." : "Войти в CRM"}
-          </button>
-        </form>
-      </div>
+          {loading ? "Вход…" : "Войти"}
+        </button>
+      </form>
     </div>
   );
 }
@@ -596,34 +592,36 @@ const inputStyle = (focused = false) => ({
   width: "100%",
   boxSizing: "border-box",
   height: 44,
-  padding: "8px 16px",
-  borderRadius: 16,
-  backgroundColor: "rgba(0,0,0,0.03)",
-  border: `1px solid ${focused ? C.accent : "rgba(0,0,0,0.08)"}`,
-  boxShadow: focused ? `0 0 0 4px ${C.accent}22` : "none",
+  padding: "10px 16px",
+  borderRadius: 14,
+  backgroundColor: C.gridBg,
+  border: `1px solid ${focused ? C.accent : C.border}`,
+  boxShadow: focused ? `0 0 0 3px ${C.accent}33` : "none",
   color: C.textMain,
   fontSize: 14,
   outline: "none",
-  transition: "all 200ms ease",
+  transition: "border-color 200ms, box-shadow 200ms",
 });
 
-const labelStyle = { display: "block", color: C.textSub, fontSize: 12, marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" };
+const labelStyle = { display: "block", color: C.textSub, fontSize: 12, marginBottom: 8, fontWeight: 500, letterSpacing: "0.3px" };
 
 function Toggle({ checked, onChange }) {
   return (
     <div
       onClick={() => onChange(!checked)}
       style={{
-        width: 44, height: 24, borderRadius: 12, cursor: "pointer",
+        width: 48, height: 26, borderRadius: 13, cursor: "pointer",
         backgroundColor: checked ? C.accent : C.border,
         position: "relative", transition: "background 200ms", flexShrink: 0,
+        boxShadow: checked ? `0 0 12px ${C.accent}44` : "none",
       }}
     >
       <div style={{
-        position: "absolute", top: 3, left: checked ? 23 : 3,
-        width: 18, height: 18, borderRadius: "50%",
-        backgroundColor: checked ? C.bg : C.textSub,
+        position: "absolute", top: 3, left: checked ? 25 : 3,
+        width: 20, height: 20, borderRadius: "50%",
+        backgroundColor: "#fff",
         transition: "left 200ms",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
       }} />
     </div>
   );
@@ -916,7 +914,7 @@ function ProgressBar({ current, total }) {
     <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
       {Array.from({ length: total }).map((_, i) => (
         <div key={i} style={{
-          flex: 1, height: 4, borderRadius: 2,
+          flex: 1, height: 6, borderRadius: 3,
           backgroundColor: i < current ? C.accent : C.border,
           transition: "background 200ms",
         }} />
@@ -1080,7 +1078,7 @@ function OnboardingWizard({ onComplete }) {
     }}>
       <div style={{
         width: "100%", maxWidth: 480,
-        backgroundColor: C.card, borderRadius: 12, padding: 32,
+        backgroundColor: C.card, borderRadius: 32, padding: 36,
       }}>
         {/* Progress bar */}
         <ProgressBar current={step + 1} total={TOTAL_STEPS} />
@@ -1137,8 +1135,8 @@ function OnboardingWizard({ onComplete }) {
               onClick={next}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
-                padding: "10px 24px", borderRadius: 8,
-                backgroundColor: C.accent, color: C.bg,
+                padding: "10px 24px", borderRadius: 999,
+                backgroundColor: C.accent, color: "#1C1C1E",
                 fontWeight: 600, fontSize: 14, border: "none", cursor: "pointer",
               }}
             >
@@ -1150,9 +1148,9 @@ function OnboardingWizard({ onComplete }) {
               disabled={saving}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
-                padding: "10px 24px", borderRadius: 8,
+                padding: "10px 24px", borderRadius: 999,
                 backgroundColor: saving ? C.border : C.accent,
-                color: saving ? C.textSub : C.bg,
+                color: saving ? C.textSub : "#1C1C1E",
                 fontWeight: 600, fontSize: 14, border: "none",
                 cursor: saving ? "not-allowed" : "pointer",
               }}
@@ -1200,8 +1198,8 @@ function Toast({ message, onDone }) {
       position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
       zIndex: 200, display: "flex", alignItems: "center", gap: 8,
       backgroundColor: C.card, border: `1px solid ${C.accent}`,
-      borderRadius: 8, padding: "10px 18px",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+      borderRadius: 999, padding: "10px 18px",
+      boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
       animation: "slideUp 200ms ease-out",
     }}>
       <Check size={15} color={C.accent} />
@@ -1254,8 +1252,8 @@ function SalonSettingsCard({ salon, onChange }) {
 
   return (
     <div style={{
-      backgroundColor: C.card, borderRadius: 12, padding: 24,
-      border: `1px solid ${C.border}`,
+      backgroundColor: C.card, borderRadius: 24, padding: 28,
+      boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
     }}>
       <h3 style={{ margin: "0 0 20px", fontSize: 15, fontWeight: 600, color: C.textMain }}>
         {salon.name || `Салон ${salon.id.replace("salon-", "")}`}
@@ -1505,7 +1503,7 @@ function PasswordChangeBlock({ currentUser, onShowToast }) {
   };
 
   return (
-    <div style={{ backgroundColor: C.card, borderRadius: 12, padding: 24, border: `1px solid ${C.border}` }}>
+    <div style={{ backgroundColor: C.card, borderRadius: 24, padding: 24, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
       <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 600, color: C.textMain }}>Безопасность</h3>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
         <div>
@@ -1522,8 +1520,8 @@ function PasswordChangeBlock({ currentUser, onShowToast }) {
         </div>
       </div>
       <button onClick={handleChange} disabled={saving} style={{
-        padding: "8px 20px", borderRadius: 8, border: "none",
-        backgroundColor: C.accent, color: C.bg, fontSize: 13, fontWeight: 600,
+        padding: "8px 20px", borderRadius: 999, border: "none",
+        backgroundColor: C.accent, color: "#1C1C1E", fontSize: 13, fontWeight: 600,
         cursor: saving ? "wait" : "pointer", opacity: saving ? 0.7 : 1,
       }}>{saving ? "Сохранение…" : "Сменить пароль"}</button>
     </div>
@@ -1710,7 +1708,7 @@ function SettingsScreen({ salons, onSalonsChange, onShowToast, onReset, onImport
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 720 }}>
-      <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: C.textMain }}>Настройки салонов</h2>
+      <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: C.textDark, letterSpacing: "-0.3px" }}>Настройки салонов</h2>
 
       {salons.map(salon => (
         <SalonSettingsCard
@@ -1727,8 +1725,8 @@ function SettingsScreen({ salons, onSalonsChange, onShowToast, onReset, onImport
 
       {/* Data management — STEP-12 */}
       <div style={{
-        backgroundColor: C.card, borderRadius: 12, padding: 24,
-        border: `1px solid ${C.border}`,
+        backgroundColor: C.card, borderRadius: 24, padding: 24,
+        boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
       }}>
         <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 600, color: C.textMain }}>Данные</h3>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
@@ -1790,9 +1788,9 @@ function SettingsScreen({ salons, onSalonsChange, onShowToast, onReset, onImport
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400,
         }} onClick={() => confirmModal.onCancel()}>
           <div style={{
-            backgroundColor: C.card, borderRadius: 12, padding: 24,
+            backgroundColor: C.card, borderRadius: 24, padding: 24,
             width: 400, maxWidth: "90vw",
-            border: `1px solid ${C.border}`,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
           }} onClick={e => e.stopPropagation()}>
             <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: C.textMain }}>
               {confirmModal.title}
@@ -1840,7 +1838,7 @@ function SubTabBar({ tabs, active, onChange }) {
         const isActive = t.id === active;
         return (
           <button key={t.id} onClick={() => onChange(t.id)} style={{
-            padding: "5px 14px", borderRadius: 6, fontSize: 13,
+            padding: "5px 14px", borderRadius: 999, fontSize: 13,
             border: `1px solid ${C.accent}`,
             backgroundColor: isActive ? C.accent : "transparent",
             color: isActive ? C.bg : C.accent,
@@ -1983,7 +1981,7 @@ function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowTo
       </div>
 
       {/* Table */}
-      <div style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
+      <div style={{ borderRadius: 16, overflow: "hidden", border: `1px solid ${C.border}` }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -2072,7 +2070,7 @@ function SaunaPeelingTab({ salon, onSalonChange, onShowToast }) {
   return (
     <div style={{ maxWidth: 560, display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Сауна */}
-      <div style={{ backgroundColor: C.card, borderRadius: 12, padding: 24, border: `1px solid ${C.border}` }}>
+      <div style={{ backgroundColor: C.card, borderRadius: 24, padding: 24, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: salon.hasSauna ? 20 : 0 }}>
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: C.textMain }}>Сауна</h3>
           <Toggle checked={salon.hasSauna} onChange={v => handleChange({ hasSauna: v })} />
@@ -2097,8 +2095,8 @@ function SaunaPeelingTab({ salon, onSalonChange, onShowToast }) {
 
       {/* Пиллинг */}
       <div style={{
-        backgroundColor: C.card, borderRadius: 12, padding: 24,
-        border: `1px solid ${C.border}`,
+        backgroundColor: C.card, borderRadius: 24, padding: 24,
+        boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
         opacity: salon.hasSauna ? 1 : 0.5,
         pointerEvents: salon.hasSauna ? "auto" : "none",
       }}>
@@ -2222,9 +2220,9 @@ function ComboModal({ combo, procedures, onSave, onClose }) {
     }}>
       <div style={{
         width: "100%", maxWidth: 520,
-        backgroundColor: C.card, borderRadius: 12, padding: 28,
+        backgroundColor: C.card, borderRadius: 28, padding: 28,
         maxHeight: "90vh", overflowY: "auto",
-        boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
       }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
@@ -2349,9 +2347,9 @@ function ComboModal({ combo, procedures, onSave, onClose }) {
             color: C.textSub, fontSize: 13, cursor: "pointer",
           }}>Отмена</button>
           <button onClick={handleSave} style={{
-            padding: "8px 20px", borderRadius: 8,
+            padding: "8px 20px", borderRadius: 999,
             border: "none", backgroundColor: C.accent,
-            color: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer",
+            color: "#1C1C1E", fontSize: 13, fontWeight: 600, cursor: "pointer",
           }}>Сохранить</button>
         </div>
       </div>
@@ -2406,7 +2404,7 @@ function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowTo
         </button>
       </div>
 
-      <div style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
+      <div style={{ borderRadius: 16, overflow: "hidden", border: `1px solid ${C.border}` }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -2983,9 +2981,9 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     }}>
       <div style={{
         width: "100%", maxWidth: 520,
-        backgroundColor: C.card, borderRadius: 12, padding: 28,
+        backgroundColor: C.card, borderRadius: 28, padding: 28,
         maxHeight: "90vh", overflowY: "auto",
-        boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
       }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -3360,8 +3358,8 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <div style={{
-            width: "100%", maxWidth: 400, backgroundColor: C.card, borderRadius: 12, padding: 28,
-            boxShadow: "0 8px 40px rgba(0,0,0,0.6)", margin: "0 16px",
+            width: "100%", maxWidth: 400, backgroundColor: C.card, borderRadius: 24, padding: 28,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3)", margin: "0 16px",
           }}>
             <h4 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 600, color: C.textMain }}>
               Подтвердите запись
@@ -3396,8 +3394,8 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
               }}>Отмена</button>
               <button onClick={handleConfirmedSave} style={{
                 display: "flex", alignItems: "center", gap: 6,
-                padding: "8px 24px", borderRadius: 8, border: "none",
-                backgroundColor: C.accent, color: C.bg,
+                padding: "8px 24px", borderRadius: 999, border: "none",
+                backgroundColor: C.accent, color: "#1C1C1E",
                 fontSize: 13, fontWeight: 600, cursor: "pointer",
               }}>
                 <Check size={14} />
@@ -3470,9 +3468,9 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
   return (
     <div ref={panelRef} style={{
       position: "fixed", top: 0, right: 0, bottom: 0, width: window.innerWidth < 768 ? "100%" : 360, zIndex: 300,
-      backgroundColor: C.card, borderLeft: window.innerWidth >= 768 ? `2px solid ${C.accent}` : "none",
+      backgroundColor: C.card, borderLeft: "none",
       display: "flex", flexDirection: "column",
-      boxShadow: "-4px 0 24px rgba(0,0,0,0.4)",
+      boxShadow: "-8px 0 32px rgba(0,0,0,0.3)",
       animation: "slideInRight 250ms ease-out",
       overflowY: "auto",
     }}>
@@ -3813,16 +3811,18 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
   const monthLabel = `${RU_MONTH_NOM[viewMonth.getMonth()]} ${viewMonth.getFullYear()}`;
 
   const pillStyle = (active) => ({
-    padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: active ? 600 : 400,
-    border: `1px solid ${active ? C.accent : C.border}`,
+    padding: "6px 16px", borderRadius: 999, fontSize: 12, fontWeight: active ? 600 : 500,
+    border: active ? "none" : `1px solid ${C.borderLight}`,
     backgroundColor: active ? C.accent : "transparent",
-    color: active ? C.bg : C.textSub,
-    cursor: "pointer",
+    color: active ? "#1C1C1E" : C.textDarkSub,
+    cursor: "pointer", transition: "all 200ms",
+    boxShadow: active ? `0 2px 8px ${C.accent}44` : "none",
   });
 
   const btnStyle = (extra = {}) => ({
-    display: "flex", alignItems: "center", padding: "6px 10px", borderRadius: 6,
-    border: `1px solid ${C.border}`, background: "none", color: C.textSub, cursor: "pointer",
+    display: "flex", alignItems: "center", padding: "8px 12px", borderRadius: 14,
+    border: `1px solid ${C.borderLight}`, background: C.cardLight, color: C.textDarkSub, cursor: "pointer",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)", transition: "all 200ms",
     ...extra,
   });
 
@@ -3834,14 +3834,14 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
         <button onClick={() => setViewMonth(new Date(year, month - 1, 1))} style={btnStyle()}>
           <ChevronLeft size={15} />
         </button>
-        <span style={{ color: C.textMain, fontSize: isMobile ? 13 : 15, fontWeight: 600, minWidth: isMobile ? 120 : 180, textAlign: "center", textTransform: "capitalize" }}>
+        <span style={{ color: C.textDark, fontSize: isMobile ? 13 : 15, fontWeight: 600, minWidth: isMobile ? 120 : 180, textAlign: "center", textTransform: "capitalize" }}>
           {monthLabel}
         </span>
         <button onClick={() => setViewMonth(new Date(year, month + 1, 1))} style={btnStyle()}>
           <ChevronRight size={15} />
         </button>
 
-        {!isMobile && <div style={{ width: 1, height: 24, backgroundColor: C.border, margin: "0 4px" }} />}
+        {!isMobile && <div style={{ width: 1, height: 24, backgroundColor: C.borderLight, margin: "0 4px" }} />}
 
         {/* View mode pills */}
         {[["month","Месяц"],["2weeks","2 нед"],["week","Нед"],["custom","Период"]].map(([val,lbl]) => (
@@ -3869,8 +3869,8 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
           onClick={() => setBookingModal({ initialTime: null, initialRoomId: null })}
           style={{
             display: "flex", alignItems: "center", gap: 6,
-            padding: isMobile ? "8px 10px" : "8px 16px", borderRadius: 8,
-            backgroundColor: C.accent, color: C.bg,
+            padding: isMobile ? "8px 10px" : "8px 16px", borderRadius: 999,
+            backgroundColor: C.accent, color: "#1C1C1E",
             fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer",
           }}>
           <Plus size={14} /> {isMobile ? "" : "Новая запись"}
@@ -3901,7 +3901,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
               {/* Week header */}
               <div style={{
                 padding: "16px 16px", marginTop: week.num > 1 ? 24 : 0,
-                borderBottom: `1px solid ${C.border}`,
+                borderBottom: `1px solid ${C.borderLight}`,
                 display: "flex", alignItems: "baseline", gap: 12,
               }}>
                 <span style={{ fontSize: isMobile ? 18 : 32, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "1px" }}>
@@ -3953,7 +3953,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                 const therPct = therTotal > 0 ? Math.round(therBusy / therTotal * 100) : 0;
 
                 return (
-                  <div key={ds} style={{ borderBottom: `1px solid ${C.border}22` }}>
+                  <div key={ds} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
                     {/* Day header with date + KPI bar */}
                     <div
                       onClick={() => setExpandedDates(prev => ({ ...prev, [ds]: !prev[ds] }))}
@@ -3968,34 +3968,34 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                     >
                       {/* Date block */}
                       <div style={{ minWidth: 48, textAlign: "center" }}>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: isDayOff ? C.textSub : (isT ? C.accent : C.textMain) }}>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: isDayOff ? C.textDarkSub : (isT ? C.accent : C.textDark) }}>
                           {day.getDate()}
                         </div>
-                        <div style={{ fontSize: 10, color: isDayOff ? "#F8717166" : C.textSub, textTransform: "uppercase" }}>
+                        <div style={{ fontSize: 10, color: isDayOff ? "#F8717166" : C.textDarkSub, textTransform: "uppercase" }}>
                           {RU_WEEKDAY_SHORT[day.getDay()]}
                         </div>
                       </div>
 
                       {/* KPI mini-bar */}
                       {isDayOff ? (
-                        <span style={{ color: C.textSub, fontSize: 12, fontStyle: "italic" }}>Выходной</span>
+                        <span style={{ color: C.textDarkSub, fontSize: 12, fontStyle: "italic" }}>Выходной</span>
                       ) : (
                         <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 14, flex: 1, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: isMobile ? 10 : 11, color: C.textMain }}>
+                          <span style={{ fontSize: isMobile ? 10 : 11, color: C.textDark }}>
                             {active.length} {active.length === 1 ? "зап." : "зап."}
                           </span>
-                          {!isMobile && <span style={{ fontSize: 11, color: C.textSub }}>{clients} кл.</span>}
+                          {!isMobile && <span style={{ fontSize: 11, color: C.textDarkSub }}>{clients} кл.</span>}
                           {overdueCount > 0 && <span style={{ fontSize: isMobile ? 10 : 11, color: "#F97316", fontWeight: 600 }}>● {overdueCount}</span>}
                           {revenue > 0 && <span style={{ fontSize: isMobile ? 10 : 11, color: C.accent, fontWeight: 600 }}>{revenue.toLocaleString("ru-RU")} ₸</span>}
                           {!isMobile && booked > 0 && <span style={{ fontSize: 11, color: "#D4A84B" }}>● {booked} ожид.</span>}
                           {!isMobile && completed > 0 && <span style={{ fontSize: 11, color: "#4ADE80" }}>● {completed} выполн.</span>}
-                          {!isMobile && <span style={{ fontSize: 10, color: roomPct > 70 ? "#F87171" : C.textSub }}>Каб. {roomPct}%</span>}
-                          {!isMobile && <span style={{ fontSize: 10, color: therPct > 70 ? "#F87171" : C.textSub }}>Маст. {therPct}%</span>}
+                          {!isMobile && <span style={{ fontSize: 10, color: roomPct > 70 ? "#F87171" : C.textDarkSub }}>Каб. {roomPct}%</span>}
+                          {!isMobile && <span style={{ fontSize: 10, color: therPct > 70 ? "#F87171" : C.textDarkSub }}>Маст. {therPct}%</span>}
                         </div>
                       )}
 
                       {/* Collapse/expand arrow */}
-                      <div style={{ color: C.textSub }}>
+                      <div style={{ color: C.textDarkSub }}>
                         {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                       </div>
                     </div>
@@ -4375,6 +4375,7 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
 
   const filterInputStyle = {
     ...inputStyle(), height: 34, fontSize: 12,
+    backgroundColor: C.cardLight, border: `1px solid ${C.borderLight}`, color: C.textDark, colorScheme: "light",
   };
 
   if (loadingJ) {
@@ -4402,28 +4403,28 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
         {/* Salon filter */}
         <select value={filterSalon} onChange={e => setFilterSalon(e.target.value)}
           style={{ ...filterInputStyle, width: "auto", minWidth: 120, cursor: "pointer" }}>
-          <option value="all" style={{ backgroundColor: C.card }}>Все салоны</option>
+          <option value="all" style={{ backgroundColor: C.cardLight }}>Все салоны</option>
           {salons.map(s => (
-            <option key={s.id} value={s.id} style={{ backgroundColor: C.card }}>{s.name}</option>
+            <option key={s.id} value={s.id} style={{ backgroundColor: C.cardLight }}>{s.name}</option>
           ))}
         </select>
 
         {/* Status filter */}
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           style={{ ...filterInputStyle, width: "auto", minWidth: 140, cursor: "pointer" }}>
-          <option value="all" style={{ backgroundColor: C.card }}>Все статусы</option>
+          <option value="all" style={{ backgroundColor: C.cardLight }}>Все статусы</option>
           {Object.entries(STATUS_CFG).map(([val, cfg]) => (
-            <option key={val} value={val} style={{ backgroundColor: C.card }}>{cfg.label}</option>
+            <option key={val} value={val} style={{ backgroundColor: C.cardLight }}>{cfg.label}</option>
           ))}
         </select>
 
         {/* Date range */}
         <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
           <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            style={{ ...filterInputStyle, width: isMobile ? 120 : 140, colorScheme: "dark", cursor: "pointer" }} />
-          <span style={{ color: C.textSub, fontSize: 12 }}>—</span>
+            style={{ ...filterInputStyle, width: isMobile ? 120 : 140, cursor: "pointer" }} />
+          <span style={{ color: C.textDarkSub, fontSize: 12 }}>—</span>
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            style={{ ...filterInputStyle, width: isMobile ? 120 : 140, colorScheme: "dark", cursor: "pointer" }} />
+            style={{ ...filterInputStyle, width: isMobile ? 120 : 140, cursor: "pointer" }} />
         </div>
       </div>
 
@@ -4437,23 +4438,23 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
             const sCfg = bOverdue ? OVERDUE_CFG : (STATUS_CFG[b.status] || STATUS_CFG.booked);
             return (
               <div key={b.id} style={{
-                backgroundColor: C.card, borderRadius: 8, padding: 12,
-                border: `1px solid ${C.border}`,
+                backgroundColor: C.cardLight, borderRadius: 20, padding: 12,
+                boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: C.textMain }}>{b.clientName}</span>
-                  <span style={{ fontSize: 11, color: C.textSub }}>{formatDateRu(b.date)}</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: C.textDark }}>{b.clientName}</span>
+                  <span style={{ fontSize: 11, color: C.textDarkSub }}>{formatDateRu(b.date)}</span>
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", fontSize: 12, marginBottom: 8 }}>
                   <span style={{ color: C.accent }}>{b.masterName || "—"}</span>
-                  <span style={{ color: C.textSub }}>{serviceName(b)}</span>
-                  <span style={{ color: C.textSub }}>{totalDuration(b)} мин</span>
+                  <span style={{ color: C.textDarkSub }}>{serviceName(b)}</span>
+                  <span style={{ color: C.textDarkSub }}>{totalDuration(b)} мин</span>
                   <span style={{ color: C.accent, fontWeight: 600 }}>
                     {b.paymentMethod === "cert_dep" ? <s>{(b.totalPrice || 0).toLocaleString("ru-RU")} ₸</s> : <>{(b.totalPrice || 0).toLocaleString("ru-RU")} ₸</>}
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 11, color: C.textSub }}>{salonName(b)}</span>
+                  <span style={{ fontSize: 11, color: C.textDarkSub }}>{salonName(b)}</span>
                   <select value={b.status}
                     onChange={e => handleStatusChange(b.id, b.salonId, b.date, e.target.value)}
                     style={{
@@ -4471,10 +4472,10 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
           })}
         </div>
       ) : (
-        <div style={{ borderRadius: 8, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+        <div style={{ borderRadius: 20, overflow: "hidden", backgroundColor: C.cardLight, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
           {/* Header */}
           <div style={{
-            display: "flex", backgroundColor: C.card, borderBottom: `1px solid ${C.border}`,
+            display: "flex", backgroundColor: C.cardLight, borderBottom: `1px solid ${C.borderLight}`,
             padding: "0 12px", height: 36, alignItems: "center",
           }}>
             {columns.map(col => (
@@ -4482,7 +4483,7 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
                 onClick={sortable.has(col.id) ? () => toggleSort(col.id) : undefined}
                 style={{
                   width: col.w || undefined, flex: col.w ? `0 0 ${col.w}px` : 1,
-                  fontSize: 11, fontWeight: 600, color: C.textSub, textTransform: "uppercase",
+                  fontSize: 11, fontWeight: 600, color: C.textDarkSub, textTransform: "uppercase",
                   letterSpacing: "0.5px",
                   cursor: sortable.has(col.id) ? "pointer" : "default",
                   userSelect: "none",
@@ -4498,29 +4499,29 @@ function JournalScreen({ salons, onShowToast, currentUser }) {
               Нет записей
             </div>
           ) : pageItems.map((b, i) => {
-            const bg = i % 2 === 0 ? C.card : C.gridBg;
+            const bg = i % 2 === 0 ? C.cardLight : "#F8F4EE";
             const bOverdue = isBookingOverdue(b);
             const sCfg = bOverdue ? OVERDUE_CFG : (STATUS_CFG[b.status] || STATUS_CFG.booked);
             return (
               <div key={b.id} style={{
                 display: "flex", padding: "0 12px", height: 42, alignItems: "center",
-                backgroundColor: bg, borderBottom: `1px solid ${C.border}`,
+                backgroundColor: bg, borderBottom: `1px solid ${C.borderLight}`,
                 transition: "background 100ms",
               }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = "#1D2A3A"}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = "#F5F0E8"}
                 onMouseLeave={e => e.currentTarget.style.backgroundColor = bg}
               >
-                <div style={{ flex: "0 0 100px", fontSize: 13, color: C.textMain }}>{formatDateRu(b.date)}</div>
-                <div style={{ flex: 1, fontSize: 13, color: C.textMain, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{b.clientName}</div>
+                <div style={{ flex: "0 0 100px", fontSize: 13, color: C.textDark }}>{formatDateRu(b.date)}</div>
+                <div style={{ flex: 1, fontSize: 13, color: C.textDark, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{b.clientName}</div>
                 <div style={{ flex: "0 0 120px", fontSize: 12, color: C.accent, fontWeight: 500, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{b.masterName || "—"}</div>
-                <div style={{ flex: "0 0 140px", fontSize: 12, color: C.textSub }}>{b.clientPhone}</div>
-                <div style={{ flex: "0 0 100px", fontSize: 12, color: C.textSub }}>{salonName(b)}</div>
-                <div style={{ flex: "0 0 140px", fontSize: 12, color: C.textMain, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{serviceName(b)}</div>
-                <div style={{ flex: "0 0 70px", fontSize: 12, color: C.textSub }}>{totalDuration(b)} мин</div>
-                <div style={{ flex: "0 0 90px", fontSize: 13, color: b.paymentMethod === "cert_dep" ? C.textSub : C.accent, fontWeight: 600 }}>
+                <div style={{ flex: "0 0 140px", fontSize: 12, color: C.textDarkSub }}>{b.clientPhone}</div>
+                <div style={{ flex: "0 0 100px", fontSize: 12, color: C.textDarkSub }}>{salonName(b)}</div>
+                <div style={{ flex: "0 0 140px", fontSize: 12, color: C.textDark, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{serviceName(b)}</div>
+                <div style={{ flex: "0 0 70px", fontSize: 12, color: C.textDarkSub }}>{totalDuration(b)} мин</div>
+                <div style={{ flex: "0 0 90px", fontSize: 13, color: b.paymentMethod === "cert_dep" ? C.textDarkSub : C.accent, fontWeight: 600 }}>
                   {b.paymentMethod === "cert_dep" ? <s>{(b.totalPrice || 0).toLocaleString("ru-RU")} ₸</s> : <>{(b.totalPrice || 0).toLocaleString("ru-RU")} ₸</>}
                 </div>
-                <div style={{ flex: "0 0 100px", fontSize: 11, color: b.paymentMethod === "cert_dep" ? "#FBBF24" : C.textSub, fontWeight: 500 }}>
+                <div style={{ flex: "0 0 100px", fontSize: 11, color: b.paymentMethod === "cert_dep" ? "#FBBF24" : C.textDarkSub, fontWeight: 500 }}>
                   {PAYMENT_LABEL[b.paymentMethod] || "НАЛ"}
                 </div>
                 <div style={{ flex: "0 0 150px" }}>
@@ -4882,19 +4883,21 @@ function DashboardScreen({ salons }) {
 
   const pillBtn = (active) => ({
     padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 500,
-    border: active ? "none" : `1px solid ${C.border}`,
+    border: active ? "none" : `1px solid ${C.borderLight}`,
     backgroundColor: active ? C.accent : "transparent",
-    color: active ? C.bg : C.textSub,
+    color: active ? "#1C1C1E" : C.textDarkSub,
     cursor: "pointer",
   });
 
   const cardStyle = {
-    backgroundColor: C.card, borderRadius: 8, padding: 16,
+    backgroundColor: C.cardLight, borderRadius: 24, padding: 16,
     display: "flex", flexDirection: "column", gap: 4,
+    boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
   };
 
   const chartBox = {
-    backgroundColor: C.card, borderRadius: 8, padding: 16,
+    backgroundColor: C.cardLight, borderRadius: 24, padding: 16,
+    boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
   };
 
   if (loadingD) {
@@ -4927,20 +4930,20 @@ function DashboardScreen({ salons }) {
       {/* KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 12 }}>
         <div style={cardStyle}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: C.textMain }}>{kpi.totalBookings}</div>
-          <div style={{ fontSize: 11, color: C.textSub }}>Всего записей</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark }}>{kpi.totalBookings}</div>
+          <div style={{ fontSize: 11, color: C.textDarkSub }}>Всего записей</div>
         </div>
         <div style={cardStyle}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: C.textMain }}>{kpi.totalClients}</div>
-          <div style={{ fontSize: 11, color: C.textSub }}>Всего клиентов</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark }}>{kpi.totalClients}</div>
+          <div style={{ fontSize: 11, color: C.textDarkSub }}>Всего клиентов</div>
         </div>
         <div style={cardStyle}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: C.textMain }}>{kpi.revenue.toLocaleString("ru-RU")} ₸</div>
-          <div style={{ fontSize: 11, color: C.textSub }}>Выручка</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark }}>{kpi.revenue.toLocaleString("ru-RU")} ₸</div>
+          <div style={{ fontSize: 11, color: C.textDarkSub }}>Выручка</div>
         </div>
         <div style={cardStyle}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: C.textMain }}>{kpi.avgCheck.toLocaleString("ru-RU")} ₸</div>
-          <div style={{ fontSize: 11, color: C.textSub }}>Средний чек</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark }}>{kpi.avgCheck.toLocaleString("ru-RU")} ₸</div>
+          <div style={{ fontSize: 11, color: C.textDarkSub }}>Средний чек</div>
         </div>
       </div>
       {kpi.overdueBookings > 0 && (
@@ -4949,23 +4952,23 @@ function DashboardScreen({ salons }) {
             <div style={{ fontSize: 24, fontWeight: 700, color: "#F97316" }}>{kpi.overdueBookings}</div>
             <div style={{ fontSize: 13, color: "#F97316", fontWeight: 600 }}>Требуется изменить статус</div>
           </div>
-          <div style={{ fontSize: 11, color: C.textSub }}>Записи с прошедшим временем, но статус до сих пор «Забронировано»</div>
+          <div style={{ fontSize: 11, color: C.textDarkSub }}>Записи с прошедшим временем, но статус до сих пор «Забронировано»</div>
         </div>
       )}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 12 }}>
         <div style={cardStyle}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
             <div style={{ fontSize: 24, fontWeight: 700, color: "#F87171" }}>{kpi.refunded.toLocaleString("ru-RU")} ₸</div>
-            <div style={{ fontSize: 13, color: C.textSub }}>{kpi.refundedCount} чел.</div>
+            <div style={{ fontSize: 13, color: C.textDarkSub }}>{kpi.refundedCount} чел.</div>
           </div>
-          <div style={{ fontSize: 11, color: C.textSub }}>Вернули за бронь</div>
+          <div style={{ fontSize: 11, color: C.textDarkSub }}>Вернули за бронь</div>
         </div>
         <div style={cardStyle}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
             <div style={{ fontSize: 24, fontWeight: 700, color: "#34D399" }}>{kpi.keptDeposit.toLocaleString("ru-RU")} ₸</div>
-            <div style={{ fontSize: 13, color: C.textSub }}>{kpi.keptCount} чел.</div>
+            <div style={{ fontSize: 13, color: C.textDarkSub }}>{kpi.keptCount} чел.</div>
           </div>
-          <div style={{ fontSize: 11, color: C.textSub }}>Не вернули за бронь</div>
+          <div style={{ fontSize: 11, color: C.textDarkSub }}>Не вернули за бронь</div>
         </div>
       </div>
       {/* СЕРТ/ДЕП + Payment method breakdown */}
@@ -4973,17 +4976,17 @@ function DashboardScreen({ salons }) {
         <div style={cardStyle}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
             <div style={{ fontSize: 24, fontWeight: 700, color: "#FBBF24" }}>{kpi.certDepCount}</div>
-            <div style={{ fontSize: 13, color: C.textSub }}>{kpi.certDepOriginalPrice.toLocaleString("ru-RU")} ₸</div>
+            <div style={{ fontSize: 13, color: C.textDarkSub }}>{kpi.certDepOriginalPrice.toLocaleString("ru-RU")} ₸</div>
           </div>
-          <div style={{ fontSize: 11, color: C.textSub }}>СЕРТ / ДЕП (не в выручке)</div>
+          <div style={{ fontSize: 11, color: C.textDarkSub }}>СЕРТ / ДЕП (не в выручке)</div>
         </div>
         <div style={{ ...cardStyle, flexDirection: "row", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
           {PAYMENT_METHODS.map(pm => {
             const cnt = kpi.pmBreakdown?.[pm.value] || 0;
             return (
               <div key={pm.value} style={{ textAlign: "center", minWidth: 60 }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: pm.value === "cert_dep" ? "#FBBF24" : C.textMain }}>{cnt}</div>
-                <div style={{ fontSize: 10, color: C.textSub }}>{pm.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: pm.value === "cert_dep" ? "#FBBF24" : C.textDark }}>{cnt}</div>
+                <div style={{ fontSize: 10, color: C.textDarkSub }}>{pm.label}</div>
               </div>
             );
           })}
@@ -4994,15 +4997,15 @@ function DashboardScreen({ salons }) {
         <div style={{ ...cardStyle, flexDirection: "row", alignItems: "center", gap: 12 }}>
           <KpiRing pct={kpi.roomPct} color="#2D6A4F" />
           <div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: C.textMain }}>{kpi.roomPct}%</div>
-            <div style={{ fontSize: 11, color: C.textSub }}>Загрузка кабинок</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark }}>{kpi.roomPct}%</div>
+            <div style={{ fontSize: 11, color: C.textDarkSub }}>Загрузка кабинок</div>
           </div>
         </div>
         <div style={{ ...cardStyle, flexDirection: "row", alignItems: "center", gap: 12 }}>
           <KpiRing pct={kpi.therPct} color={C.accent} />
           <div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: C.textMain }}>{kpi.therPct}%</div>
-            <div style={{ fontSize: 11, color: C.textSub }}>Загрузка мастеров</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark }}>{kpi.therPct}%</div>
+            <div style={{ fontSize: 11, color: C.textDarkSub }}>Загрузка мастеров</div>
           </div>
         </div>
       </div>
@@ -5010,19 +5013,19 @@ function DashboardScreen({ salons }) {
       {/* Charts 2×2 */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
         <div style={chartBox}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.textMain, marginBottom: 10 }}>Выручка по дням</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 10 }}>Выручка по дням</div>
           <MiniBarChart data={revenueByDay} barColor={C.accent} label="₸" />
         </div>
         <div style={chartBox}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.textMain, marginBottom: 10 }}>Типы процедур</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 10 }}>Типы процедур</div>
           <MiniPieChart data={typeDist} />
         </div>
         <div style={chartBox}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.textMain, marginBottom: 10 }}>Загрузка по часам (ср. мастеров)</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 10 }}>Загрузка по часам (ср. мастеров)</div>
           <MiniBarChart data={loadByHour} barColor="#2D6A4F" />
         </div>
         <div style={chartBox}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.textMain, marginBottom: 10 }}>Топ процедур</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 10 }}>Топ процедур</div>
           <MiniHBarChart data={topProcs} barColor={C.accent} />
         </div>
       </div>
@@ -5030,13 +5033,13 @@ function DashboardScreen({ salons }) {
       {/* Comparison table (both salons) */}
       {comparison && (
         <div style={{ ...chartBox }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.textMain, marginBottom: 12 }}>Сравнение салонов</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 12 }}>Сравнение салонов</div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr>
-                <th style={{ textAlign: "left", padding: "6px 10px", color: C.textSub, fontSize: 11, textTransform: "uppercase", borderBottom: `1px solid ${C.border}` }}>Метрика</th>
+                <th style={{ textAlign: "left", padding: "6px 10px", color: C.textDarkSub, fontSize: 11, textTransform: "uppercase", borderBottom: `1px solid ${C.borderLight}` }}>Метрика</th>
                 {comparison.map(s => (
-                  <th key={s.name} style={{ textAlign: "right", padding: "6px 10px", color: C.textSub, fontSize: 11, textTransform: "uppercase", borderBottom: `1px solid ${C.border}` }}>{s.name}</th>
+                  <th key={s.name} style={{ textAlign: "right", padding: "6px 10px", color: C.textDarkSub, fontSize: 11, textTransform: "uppercase", borderBottom: `1px solid ${C.borderLight}` }}>{s.name}</th>
                 ))}
               </tr>
             </thead>
@@ -5055,13 +5058,13 @@ function DashboardScreen({ salons }) {
                 const best = Math.max(...vals);
                 return (
                   <tr key={row.key}>
-                    <td style={{ padding: "8px 10px", color: C.textSub, borderBottom: `1px solid ${C.border}` }}>{row.label}</td>
+                    <td style={{ padding: "8px 10px", color: C.textDarkSub, borderBottom: `1px solid ${C.borderLight}` }}>{row.label}</td>
                     {comparison.map((_s, i) => (
                       <td key={i} style={{
                         textAlign: "right", padding: "8px 10px",
-                        color: vals[i] === best && best > 0 ? C.accent : C.textMain,
+                        color: vals[i] === best && best > 0 ? C.accent : C.textDark,
                         fontWeight: vals[i] === best && best > 0 ? 600 : 400,
-                        borderBottom: `1px solid ${C.border}`,
+                        borderBottom: `1px solid ${C.borderLight}`,
                       }}>{row.fmt(vals[i], comparison[i])}</td>
                     ))}
                   </tr>
@@ -5189,34 +5192,34 @@ function WorkersScreen({ onShowToast, currentUser }) {
           <ChevronLeft size={16} /> Назад к списку
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <h2 style={{ color: C.textMain, fontSize: 18, fontWeight: 600, margin: 0 }}>{selectedUser.name}</h2>
+          <h2 style={{ color: C.textDark, fontSize: 18, fontWeight: 600, margin: 0 }}>{selectedUser.name}</h2>
           <span style={{
             padding: "2px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
             backgroundColor: selectedUser.role === "admin" ? `${C.accent}22` : "#34D39922",
             color: selectedUser.role === "admin" ? C.accent : "#34D399",
           }}>{selectedUser.role === "admin" ? "Админ" : "Работник"}</span>
         </div>
-        <p style={{ color: C.textSub, fontSize: 13, marginBottom: 20 }}>Логин: {selectedUser.login} · Создан: {new Date(selectedUser.createdAt).toLocaleDateString("ru-RU")}</p>
+        <p style={{ color: C.textDarkSub, fontSize: 13, marginBottom: 20 }}>Логин: {selectedUser.login} · Создан: {new Date(selectedUser.createdAt).toLocaleDateString("ru-RU")}</p>
 
-        <h3 style={{ color: C.textMain, fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Журнал действий ({userLogs.length})</h3>
+        <h3 style={{ color: C.textDark, fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Журнал действий ({userLogs.length})</h3>
         {userLogs.length === 0 ? (
           <div style={{ color: C.textSub, fontSize: 13, padding: 20, textAlign: "center" }}>Нет действий</div>
         ) : (
-          <div style={{ borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <div style={{ borderRadius: 20, overflow: "hidden", overflowX: "auto", WebkitOverflowScrolling: "touch", backgroundColor: C.cardLight, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600 }}>
               <thead>
-                <tr style={{ backgroundColor: C.gridBg }}>
-                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textSub, fontWeight: 500 }}>Дата/время</th>
-                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textSub, fontWeight: 500 }}>Действие</th>
-                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textSub, fontWeight: 500 }}>Клиент</th>
-                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textSub, fontWeight: 500 }}>Дата записи</th>
-                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textSub, fontWeight: 500 }}>Детали</th>
+                <tr style={{ backgroundColor: C.cardLight }}>
+                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Дата/время</th>
+                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Действие</th>
+                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Клиент</th>
+                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Дата записи</th>
+                  <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Детали</th>
                 </tr>
               </thead>
               <tbody>
                 {userLogs.map(log => (
-                  <tr key={log.id} style={{ borderTop: `1px solid ${C.border}` }}>
-                    <td style={{ padding: "10px 12px", color: C.textMain }}>{new Date(log.timestamp).toLocaleString("ru-RU")}</td>
+                  <tr key={log.id} style={{ borderTop: `1px solid ${C.borderLight}` }}>
+                    <td style={{ padding: "10px 12px", color: C.textDark }}>{new Date(log.timestamp).toLocaleString("ru-RU")}</td>
                     <td style={{ padding: "10px 12px" }}>
                       <span style={{
                         padding: "2px 8px", borderRadius: 6, fontSize: 12, fontWeight: 600,
@@ -5226,9 +5229,9 @@ function WorkersScreen({ onShowToast, currentUser }) {
                         {log.action === "create" ? "Создание" : log.action === "delete" ? "Удаление" : "Изменение"}
                       </span>
                     </td>
-                    <td style={{ padding: "10px 12px", color: C.textMain }}>{log.clientName || "—"}</td>
-                    <td style={{ padding: "10px 12px", color: C.textSub }}>{log.targetDate || "—"} {log.targetTime || ""}</td>
-                    <td style={{ padding: "10px 12px", color: C.textSub, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.details || "—"}</td>
+                    <td style={{ padding: "10px 12px", color: C.textDark }}>{log.clientName || "—"}</td>
+                    <td style={{ padding: "10px 12px", color: C.textDarkSub }}>{log.targetDate || "—"} {log.targetTime || ""}</td>
+                    <td style={{ padding: "10px 12px", color: C.textDarkSub, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.details || "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -5241,8 +5244,8 @@ function WorkersScreen({ onShowToast, currentUser }) {
 
   const inputStyle = {
     width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 14,
-    border: `1px solid ${C.border}`, backgroundColor: C.gridBg,
-    color: C.textMain, outline: "none",
+    border: `1px solid ${C.borderLight}`, backgroundColor: "#F5F0E8",
+    color: C.textDark, outline: "none",
   };
 
   const roleToggle = (value, onChange) => (
@@ -5261,10 +5264,10 @@ function WorkersScreen({ onShowToast, currentUser }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <h2 style={{ color: C.textMain, fontSize: 18, fontWeight: 600, margin: 0 }}>Аккаунты</h2>
+        <h2 style={{ color: C.textDark, fontSize: 18, fontWeight: 600, margin: 0 }}>Аккаунты</h2>
         <button onClick={() => setShowAdd(!showAdd)} style={{
-          display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8,
-          border: "none", backgroundColor: C.accent, color: C.bg,
+          display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 999,
+          border: "none", backgroundColor: C.accent, color: "#1C1C1E",
           fontSize: 13, fontWeight: 600, cursor: "pointer",
         }}>
           <UserPlus size={15} /> Добавить
@@ -5294,8 +5297,8 @@ function WorkersScreen({ onShowToast, currentUser }) {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={handleAdd} style={{
-              padding: "8px 20px", borderRadius: 8, border: "none",
-              backgroundColor: C.accent, color: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer",
+              padding: "8px 20px", borderRadius: 999, border: "none",
+              backgroundColor: C.accent, color: "#1C1C1E", fontSize: 13, fontWeight: 600, cursor: "pointer",
             }}>Сохранить</button>
             <button onClick={() => { setShowAdd(false); setName(""); setLogin(""); setPassword(""); setNewRole("worker"); }} style={{
               padding: "8px 20px", borderRadius: 8, border: `1px solid ${C.border}`,
@@ -5347,8 +5350,8 @@ function WorkersScreen({ onShowToast, currentUser }) {
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={handleSaveEdit} style={{
-                flex: 1, padding: "10px 0", borderRadius: 8, border: "none",
-                backgroundColor: C.accent, color: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                flex: 1, padding: "10px 0", borderRadius: 999, border: "none",
+                backgroundColor: C.accent, color: "#1C1C1E", fontSize: 13, fontWeight: 600, cursor: "pointer",
               }}>Сохранить</button>
               <button onClick={() => setEditingUser(null)} style={{
                 flex: 1, padding: "10px 0", borderRadius: 8, border: `1px solid ${C.border}`,
@@ -5371,45 +5374,46 @@ function WorkersScreen({ onShowToast, currentUser }) {
             return (
               <div key={w.id} style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "14px 18px", borderRadius: 10,
-                backgroundColor: C.card, border: `1px solid ${isSelf ? C.accent + "66" : C.border}`,
+                padding: "14px 18px", borderRadius: 20,
+                backgroundColor: C.cardLight, boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+                border: isSelf ? `1px solid ${C.accent}66` : "none",
                 cursor: "pointer",
               }} onClick={() => openUserLogs(w)}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: C.textMain, fontWeight: 600, fontSize: 14 }}>{w.name}</span>
+                      <span style={{ color: C.textDark, fontWeight: 600, fontSize: 14 }}>{w.name}</span>
                       <span style={{
                         padding: "1px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600,
                         backgroundColor: w.role === "admin" ? `${C.accent}22` : "#34D39922",
                         color: w.role === "admin" ? C.accent : "#34D399",
                       }}>{w.role === "admin" ? "Админ" : "Работник"}</span>
-                      {isSelf && <span style={{ fontSize: 11, color: C.textSub }}>(вы)</span>}
+                      {isSelf && <span style={{ fontSize: 11, color: C.textDarkSub }}>(вы)</span>}
                     </div>
-                    <div style={{ color: C.textSub, fontSize: 12 }}>@{w.login} · {new Date(w.createdAt).toLocaleDateString("ru-RU")}</div>
+                    <div style={{ color: C.textDarkSub, fontSize: 12 }}>@{w.login} · {new Date(w.createdAt).toLocaleDateString("ru-RU")}</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <button onClick={(e) => { e.stopPropagation(); startEdit(w); }} style={{
-                    background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
+                    background: "none", border: "none", cursor: "pointer", color: C.textDarkSub, padding: 4,
                   }} title="Редактировать">
                     <Settings size={14} />
                   </button>
                   {confirmDeleteId === w.id ? (
                     <>
-                      <span style={{ color: C.textSub, fontSize: 12 }}>Удалить?</span>
+                      <span style={{ color: C.textDarkSub, fontSize: 12 }}>Удалить?</span>
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(w.id); }} style={{
                         padding: "4px 12px", borderRadius: 6, border: "none",
                         backgroundColor: "#EF4444", color: "#fff", fontSize: 12, cursor: "pointer",
                       }}>Да</button>
                       <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }} style={{
-                        padding: "4px 12px", borderRadius: 6, border: `1px solid ${C.border}`,
-                        backgroundColor: "transparent", color: C.textSub, fontSize: 12, cursor: "pointer",
+                        padding: "4px 12px", borderRadius: 6, border: `1px solid ${C.borderLight}`,
+                        backgroundColor: "transparent", color: C.textDarkSub, fontSize: 12, cursor: "pointer",
                       }}>Нет</button>
                     </>
                   ) : (
                     <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(w.id); }} style={{
-                      background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
+                      background: "none", border: "none", cursor: "pointer", color: C.textDarkSub, padding: 4,
                     }} title="Удалить">
                       <Trash2 size={14} />
                     </button>
@@ -5455,34 +5459,34 @@ function LogsScreen() {
 
   const selectStyle = {
     padding: "8px 12px", borderRadius: 8, fontSize: 13,
-    border: `1px solid ${C.border}`, backgroundColor: C.gridBg,
-    color: C.textMain, outline: "none", cursor: "pointer",
+    border: `1px solid ${C.borderLight}`, backgroundColor: C.cardLight,
+    color: C.textDark, outline: "none", cursor: "pointer", colorScheme: "light",
   };
 
   return (
     <div>
-      <h2 style={{ color: C.textMain, fontSize: 18, fontWeight: 600, marginBottom: 16 }}>Логи действий</h2>
+      <h2 style={{ color: C.textDark, fontSize: 18, fontWeight: 600, marginBottom: 16 }}>Логи действий</h2>
 
       {/* Filters */}
       <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
         <select value={filterUser} onChange={e => setFilterUser(e.target.value)} style={selectStyle}>
-          <option value="all" style={{ backgroundColor: C.card }}>Все работники</option>
+          <option value="all" style={{ backgroundColor: C.cardLight }}>Все работники</option>
           {workers.map(w => (
-            <option key={w.id} value={w.id} style={{ backgroundColor: C.card }}>{w.name}</option>
+            <option key={w.id} value={w.id} style={{ backgroundColor: C.cardLight }}>{w.name}</option>
           ))}
         </select>
         <select value={filterAction} onChange={e => setFilterAction(e.target.value)} style={selectStyle}>
-          <option value="all" style={{ backgroundColor: C.card }}>Все действия</option>
-          <option value="create" style={{ backgroundColor: C.card }}>Создание</option>
-          <option value="edit" style={{ backgroundColor: C.card }}>Изменение</option>
-          <option value="delete" style={{ backgroundColor: C.card }}>Удаление</option>
+          <option value="all" style={{ backgroundColor: C.cardLight }}>Все действия</option>
+          <option value="create" style={{ backgroundColor: C.cardLight }}>Создание</option>
+          <option value="edit" style={{ backgroundColor: C.cardLight }}>Изменение</option>
+          <option value="delete" style={{ backgroundColor: C.cardLight }}>Удаление</option>
         </select>
         <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
           style={{ ...selectStyle, cursor: "text" }} />
-        <span style={{ color: C.textSub }}>—</span>
+        <span style={{ color: C.textDarkSub }}>—</span>
         <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
           style={{ ...selectStyle, cursor: "text" }} />
-        <span style={{ color: C.textSub, fontSize: 13 }}>Найдено: {filtered.length}</span>
+        <span style={{ color: C.textDarkSub, fontSize: 13 }}>Найдено: {filtered.length}</span>
       </div>
 
       {loading ? (
@@ -5490,23 +5494,23 @@ function LogsScreen() {
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: "center", color: C.textSub, padding: 40, fontSize: 13 }}>Нет записей в логах</div>
       ) : (
-        <div style={{ borderRadius: 10, border: `1px solid ${C.border}`, overflow: "hidden", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ borderRadius: 20, overflow: "hidden", overflowX: "auto", WebkitOverflowScrolling: "touch", backgroundColor: C.cardLight, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 700 }}>
             <thead>
-              <tr style={{ backgroundColor: C.gridBg }}>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textSub, fontWeight: 500 }}>Дата/время</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textSub, fontWeight: 500 }}>Работник</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textSub, fontWeight: 500 }}>Действие</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textSub, fontWeight: 500 }}>Клиент</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textSub, fontWeight: 500 }}>Дата записи</th>
-                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textSub, fontWeight: 500 }}>Детали</th>
+              <tr style={{ backgroundColor: C.cardLight }}>
+                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Дата/время</th>
+                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Работник</th>
+                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Действие</th>
+                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Клиент</th>
+                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Дата записи</th>
+                <th style={{ padding: "10px 12px", textAlign: "left", color: C.textDarkSub, fontWeight: 500, borderBottom: `1px solid ${C.borderLight}` }}>Детали</th>
               </tr>
             </thead>
             <tbody>
               {filtered.slice(0, 100).map(log => (
-                <tr key={log.id} style={{ borderTop: `1px solid ${C.border}` }}>
-                  <td style={{ padding: "10px 12px", color: C.textMain, whiteSpace: "nowrap" }}>{new Date(log.timestamp).toLocaleString("ru-RU")}</td>
-                  <td style={{ padding: "10px 12px", color: C.textMain }}>{log.userName}</td>
+                <tr key={log.id} style={{ borderTop: `1px solid ${C.borderLight}` }}>
+                  <td style={{ padding: "10px 12px", color: C.textDark, whiteSpace: "nowrap" }}>{new Date(log.timestamp).toLocaleString("ru-RU")}</td>
+                  <td style={{ padding: "10px 12px", color: C.textDark }}>{log.userName}</td>
                   <td style={{ padding: "10px 12px" }}>
                     <span style={{
                       padding: "2px 8px", borderRadius: 6, fontSize: 12, fontWeight: 600,
@@ -5516,9 +5520,9 @@ function LogsScreen() {
                       {log.action === "create" ? "Создание" : log.action === "delete" ? "Удаление" : "Изменение"}
                     </span>
                   </td>
-                  <td style={{ padding: "10px 12px", color: C.textMain }}>{log.clientName || "—"}</td>
-                  <td style={{ padding: "10px 12px", color: C.textSub }}>{log.targetDate || "—"} {log.targetTime || ""}</td>
-                  <td style={{ padding: "10px 12px", color: C.textSub, maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.details || "—"}</td>
+                  <td style={{ padding: "10px 12px", color: C.textDark }}>{log.clientName || "—"}</td>
+                  <td style={{ padding: "10px 12px", color: C.textDarkSub }}>{log.targetDate || "—"} {log.targetTime || ""}</td>
+                  <td style={{ padding: "10px 12px", color: C.textDarkSub, maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.details || "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -5679,10 +5683,10 @@ function App() {
 
   if (needsOnboarding && isAdmin) return <OnboardingWizard onComplete={handleOnboardingComplete} />;
   if (needsOnboarding && !isAdmin) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", backgroundColor: C.bg, color: C.textSub, fontFamily: "system-ui, sans-serif", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", backgroundColor: C.bg, color: C.textDarkSub, fontFamily: "'Inter', system-ui, sans-serif", flexDirection: "column", gap: 16 }}>
       <Lock size={32} color={C.textSub} />
       <span style={{ fontSize: 14 }}>Система ещё не настроена. Обратитесь к администратору.</span>
-      <button onClick={handleLogout} style={{ padding: "8px 20px", borderRadius: 8, border: "none", backgroundColor: C.accent, color: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Выйти</button>
+      <button onClick={handleLogout} style={{ padding: "8px 20px", borderRadius: 999, border: "none", backgroundColor: C.accent, color: "#1C1C1E", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Выйти</button>
     </div>
   );
 
@@ -5703,93 +5707,227 @@ function App() {
   return (
     <div style={{
       backgroundColor: C.bg,
+      backgroundImage: "radial-gradient(ellipse at 50% 0%, rgba(232,168,48,0.08) 0%, transparent 60%)",
       minHeight: "100vh",
-      color: C.textMain,
-      fontFamily: "'Inter', sans-serif",
+      color: C.textDark,
+      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
       fontSize: 14,
-      lineHeight: 1.6,
+      lineHeight: 1.5,
       overflowX: "hidden",
     }}>
-      <Header 
-        salons={salons} 
-        activeSalonId={activeSalonId} 
-        onSalonChange={handleSalonChange} 
-      />
-
-      <main style={{
-        paddingTop: 100,
-        paddingBottom: 140,
-        paddingLeft: isMobile ? 16 : 40,
-        paddingRight: isMobile ? 16 : 40,
-        maxWidth: 1600,
-        margin: "0 auto",
+      {/* Header with user info */}
+      <header style={{
+        position: "fixed", top: 0, left: 0, right: 0, height: 60, zIndex: 50,
+        backgroundColor: C.header,
+        boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: isMobile ? "0 12px" : "0 28px",
       }}>
-        {/* Bento Container */}
-        <div style={{
-          backgroundColor: "#fff",
-          borderRadius: C.radius,
-          boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
-          minHeight: "calc(100vh - 240px)",
-          padding: isMobile ? 20 : 40,
-          border: `1px solid ${C.border}`,
-        }}>
-          {activeTab === "settings" && isAdmin && (
-            <SettingsScreen
-              salons={salons}
-              onSalonsChange={setSalons}
-              onShowToast={showToast}
-              onReset={() => setNeedsOnboarding(true)}
-              onImportComplete={async (importedSalons) => {
-                setSalons(importedSalons);
-                const firstId = importedSalons[0].id;
-                setActiveSalonId(firstId);
-                await loadSalonData(firstId);
-              }}
-              currentUser={currentUser}
-            />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {isMobile && (
+            <button onClick={() => setMobileMenuOpen(v => !v)} style={{
+              background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
+              display: "flex", alignItems: "center",
+            }}>
+              <Menu size={22} />
+            </button>
           )}
-          {activeTab === "services" && isAdmin && (
-            <ServicesScreen
-              procedures={procedures}
-              onProceduresChange={setProcedures}
-              combos={combos}
-              onCombosChange={setCombos}
-              activeSalonId={activeSalonId}
-              salons={salons}
-              onSalonsChange={setSalons}
-              onShowToast={showToast}
-            />
-          )}
-          {activeTab === "schedule" && (
-            <ScheduleScreen
-              activeSalonId={activeSalonId}
-              salons={salons}
-              procedures={procedures}
-              combos={combos}
-              onShowToast={showToast}
-              currentUser={currentUser}
-            />
-          )}
-          {activeTab === "journal" && (
-            <JournalScreen
-              salons={salons}
-              onShowToast={showToast}
-              currentUser={currentUser}
-            />
-          )}
-          {activeTab === "dashboard" && isAdmin && (
-            <DashboardScreen salons={salons} />
-          )}
-          {activeTab === "logs" && isAdmin && (
-            <LogsScreen />
-          )}
-          {activeTab === "workers" && isAdmin && (
-            <WorkersScreen onShowToast={showToast} currentUser={currentUser} />
-          )}
+          <div style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: `${C.accent}22`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Gem size={isMobile ? 16 : 18} color={C.accent} />
+          </div>
+          {!isMobile && <span style={{ color: C.textMain, fontWeight: 800, fontSize: 17, letterSpacing: "-0.3px" }}>SPA CRM</span>}
         </div>
-      </main>
 
-      <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
+        {/* Salon switcher */}
+        <div style={{ display: "flex", gap: isMobile ? 4 : 6 }}>
+          {salons.map((salon) => {
+            const isActive = salon.id === activeSalonId;
+            return (
+              <button key={salon.id} onClick={() => handleSalonChange(salon.id)} style={{
+                padding: isMobile ? (isActive ? "6px 14px" : "5px 12px") : (isActive ? "8px 20px" : "6px 16px"), borderRadius: 999,
+                border: "none",
+                backgroundColor: isActive ? C.accent : "rgba(255,255,255,0.1)",
+                color: isActive ? "#1C1C1E" : C.textSub,
+                fontWeight: isActive ? 700 : 500, fontSize: isMobile ? 11 : 13,
+                cursor: "pointer", transition: "all 200ms",
+                boxShadow: isActive ? `0 2px 12px ${C.accent}55` : "none",
+              }}>{salon.name}</button>
+            );
+          })}
+        </div>
+
+        {/* User info + logout */}
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 12 }}>
+          {!isMobile && (
+            <div style={{ textAlign: "right" }}>
+              <div style={{ color: C.textMain, fontSize: 13, fontWeight: 600 }}>{currentUser.name}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
+                {isAdmin && <Shield size={10} color={C.accent} />}
+                <span style={{ color: C.textSub, fontSize: 11 }}>{isAdmin ? "Админ" : "Работник"}</span>
+              </div>
+            </div>
+          )}
+          <button onClick={handleLogout} title="Выйти" style={{
+            background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 999,
+            padding: "8px 12px", cursor: "pointer", color: C.textSub,
+            display: "flex", alignItems: "center", gap: 4,
+            transition: "background 200ms",
+          }}>
+            <LogOut size={14} />
+          </button>
+        </div>
+      </header>
+
+      {/* Tab bar — role-aware */}
+      {isMobile ? (
+        <>
+          {/* Mobile bottom nav */}
+          <nav style={{
+            position: "fixed", bottom: 0, left: 0, right: 0, height: 60, zIndex: 49,
+            backgroundColor: C.header,
+            boxShadow: "0 -4px 24px rgba(0,0,0,0.15)",
+            display: "flex", alignItems: "center", justifyContent: "space-around",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          }}>
+            {visibleTabs.map(({ id, label, icon: Icon }) => {
+              const isActive = activeTab === id;
+              return (
+                <button key={id} onClick={() => { handleTabChange(id); setMobileMenuOpen(false); }} style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                  padding: "6px 0", flex: 1,
+                  background: "none", border: "none",
+                  color: isActive ? C.accent : C.textSub,
+                  fontSize: 9, fontWeight: isActive ? 600 : 400,
+                  cursor: "pointer", transition: "all 150ms",
+                }}>
+                  <Icon size={20} />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </nav>
+          {/* Mobile slide-out menu overlay */}
+          {mobileMenuOpen && (
+            <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(0,0,0,0.5)" }}
+              onClick={() => setMobileMenuOpen(false)}>
+              <div style={{
+                position: "absolute", top: 0, left: 0, bottom: 0, width: 280,
+                backgroundColor: C.card,
+                boxShadow: "4px 0 32px rgba(0,0,0,0.3)",
+                padding: "80px 20px 24px", display: "flex", flexDirection: "column", gap: 6,
+              }} onClick={e => e.stopPropagation()}>
+                <div style={{ color: C.textMain, fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{currentUser.name}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 20 }}>
+                  {isAdmin && <Shield size={12} color={C.accent} />}
+                  <span style={{ color: C.textSub, fontSize: 12, fontWeight: 500 }}>{isAdmin ? "Админ" : "Работник"}</span>
+                </div>
+                {visibleTabs.map(({ id, label, icon: Icon }) => {
+                  const isActive = activeTab === id;
+                  return (
+                    <button key={id} onClick={() => { handleTabChange(id); setMobileMenuOpen(false); }} style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "12px 16px", borderRadius: 16,
+                      background: isActive ? `${C.accent}22` : "none", border: "none",
+                      color: isActive ? C.accent : C.textSub,
+                      fontSize: 14, fontWeight: isActive ? 600 : 400,
+                      cursor: "pointer", textAlign: "left", width: "100%",
+                    }}>
+                      <Icon size={20} />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <nav style={{
+          position: "fixed", top: 60, left: 0, right: 0, height: 48, zIndex: 49,
+          backgroundColor: C.header,
+          display: "flex", alignItems: "center", padding: "0 28px", gap: 4,
+        }}>
+          {visibleTabs.map(({ id, label, icon: Icon }) => {
+            const isActive = activeTab === id;
+            return (
+              <button key={id} onClick={() => handleTabChange(id)} style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "6px 16px", height: 36, borderRadius: 999,
+                background: isActive ? `${C.accent}22` : "none", border: "none",
+                color: isActive ? C.accent : C.textSub,
+                fontSize: 13, fontWeight: isActive ? 600 : 400,
+                cursor: "pointer", transition: "all 200ms", letterSpacing: "0.2px",
+              }}>
+                <Icon size={16} />
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
+      {/* Content area */}
+      <main style={{
+        marginTop: isMobile ? 60 : 108,
+        padding: isMobile ? "16px 12px 80px" : "28px 32px",
+        maxWidth: 1400,
+        margin: isMobile ? undefined : "108px auto 0",
+        overflowY: "auto",
+      }}>
+        {activeTab === "settings" && isAdmin && (
+          <SettingsScreen
+            salons={salons}
+            onSalonsChange={setSalons}
+            onShowToast={showToast}
+            onReset={() => setNeedsOnboarding(true)}
+            onImportComplete={async (importedSalons) => {
+              setSalons(importedSalons);
+              const firstId = importedSalons[0].id;
+              setActiveSalonId(firstId);
+              await loadSalonData(firstId);
+            }}
+            currentUser={currentUser}
+          />
+        )}
+        {activeTab === "services" && isAdmin && (
+          <ServicesScreen
+            procedures={procedures}
+            onProceduresChange={setProcedures}
+            combos={combos}
+            onCombosChange={setCombos}
+            activeSalonId={activeSalonId}
+            salons={salons}
+            onSalonsChange={setSalons}
+            onShowToast={showToast}
+          />
+        )}
+        {activeTab === "schedule" && (
+          <ScheduleScreen
+            activeSalonId={activeSalonId}
+            salons={salons}
+            procedures={procedures}
+            combos={combos}
+            onShowToast={showToast}
+            currentUser={currentUser}
+          />
+        )}
+        {activeTab === "journal" && (
+          <JournalScreen
+            salons={salons}
+            onShowToast={showToast}
+            currentUser={currentUser}
+          />
+        )}
+        {activeTab === "dashboard" && isAdmin && (
+          <DashboardScreen salons={salons} />
+        )}
+        {activeTab === "logs" && isAdmin && (
+          <LogsScreen />
+        )}
+        {activeTab === "workers" && isAdmin && (
+          <WorkersScreen onShowToast={showToast} currentUser={currentUser} />
+        )}
+      </main>
 
       {toastMsg && (
         <Toast message={toastMsg} onDone={() => setToastMsg(null)} />

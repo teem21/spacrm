@@ -9,35 +9,25 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      background: #FDFCF0; 
-      color: #1A1A1A;
-      font-family: 'Inter', -apple-system, sans-serif;
-      -webkit-text-size-adjust: 100%; 
-      overflow-x: hidden;
-      min-height: 100vh;
-      position: relative;
-    }
-    /* Subtle radial glow */
-    body::before {
-      content: "";
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      width: 140vw;
-      height: 140vh;
-      transform: translate(-50%, -50%);
-      background: radial-gradient(circle, #FFFDE7 0%, rgba(253, 252, 240, 0) 70%);
-      z-index: -1;
-      pointer-events: none;
+    body {
+      background: #FAF6F0;
+      background-image: radial-gradient(ellipse at 50% 0%, rgba(245,210,120,0.18) 0%, transparent 70%);
+      -webkit-text-size-adjust: 100%;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
     @media (max-width: 767px) {
       body { -webkit-overflow-scrolling: touch; }
       input, select, textarea { font-size: 16px !important; }
     }
+    /* Glassmorphism utility */
+    .glass { backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); }
+    /* Custom scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+    /* Smooth transitions */
+    button, input, select, textarea { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
   </style>
 </head>
 <body>
