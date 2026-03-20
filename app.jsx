@@ -5802,10 +5802,9 @@ function App() {
 
       {/* Content area */}
       <main style={{
-        marginTop: isMobile ? 56 : 100,
-        padding: isMobile ? "12px 12px calc(72px + env(safe-area-inset-bottom, 0px))" : 24,
         maxWidth: 1400,
-        margin: isMobile ? undefined : "100px auto 0",
+        margin: isMobile ? "64px 0 0" : "100px auto 0",
+        padding: isMobile ? "12px 12px calc(72px + env(safe-area-inset-bottom, 0px))" : 24,
         overflowY: "auto",
       }}>
         {activeTab === "settings" && isAdmin && (
