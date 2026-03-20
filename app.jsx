@@ -296,15 +296,19 @@ const currentYearMonth = () => {
 // ─── Colors / Design Tokens ───────────────────────────────────────────────────
 
 const C = {
-  bg:        "#0F1419",
-  card:      "#1A2332",
-  gridBg:    "#151E2B",
-  border:    "#2A3A4E",
-  textMain:  "#E8E0D6",
-  textSub:   "#8A9AAE",
-  accent:    "#D4A84B",
-  accentHov: "#E6BE6A",
-  header:    "#141B24",
+  bg:        "#FDFCF0",
+  card:      "#1A1A1A",    // Deep charcoal black
+  gridBg:    "#F9F8E6",    // Slightly darker creamy
+  border:    "rgba(0,0,0,0.06)",
+  borderDark: "rgba(255,255,255,0.1)",
+  textMain:  "#1A1A1A",
+  textInv:   "#FDFCF0",
+  textSub:   "#757575",
+  accent:    "#FFB300",    // Honey-yellow
+  accentHov: "#FFA000",
+  header:    "rgba(253, 252, 240, 0.8)",
+  glass:     "rgba(26, 26, 26, 0.9)",
+  radius:    32,
 };
 
 // ─── UI Components ────────────────────────────────────────────────────────────
@@ -312,21 +316,26 @@ const C = {
 function Header({ salons, activeSalonId, onSalonChange }) {
   return (
     <header style={{
-      position: "fixed", top: 0, left: 0, right: 0, height: 56, zIndex: 50,
-      backgroundColor: C.header, borderBottom: `1px solid ${C.border}`,
+      position: "fixed", top: 0, left: 0, right: 0, height: 80, zIndex: 50,
+      backgroundColor: C.header, backdropFilter: "blur(12px)",
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0 24px",
+      padding: "0 40px",
     }}>
       {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Gem size={22} color={C.accent} />
-        <span style={{ color: C.textMain, fontWeight: 600, fontSize: 16, letterSpacing: "0.5px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Gem size={24} color="#000" />
+        </div>
+        <span style={{ color: C.textMain, fontWeight: 800, fontSize: 20, letterSpacing: "-0.5px" }}>
           SPA CRM
         </span>
       </div>
 
-      {/* Salon switcher */}
-      <div style={{ display: "flex", gap: 8 }}>
+      {/* Salon switcher (Pill style) */}
+      <div style={{ 
+        display: "flex", gap: 4, backgroundColor: "rgba(0,0,0,0.04)", 
+        padding: 4, borderRadius: 20, border: "1px solid rgba(0,0,0,0.03)" 
+      }}>
         {salons.map((salon) => {
           const isActive = salon.id === activeSalonId;
           return (
@@ -334,16 +343,16 @@ function Header({ salons, activeSalonId, onSalonChange }) {
               key={salon.id}
               onClick={() => onSalonChange(salon.id)}
               style={{
-                padding: isActive ? "8px 24px" : "6px 16px",
-                borderRadius: 8,
-                border: isActive ? `2px solid ${C.accent}` : `1px solid ${C.accent}55`,
-                backgroundColor: isActive ? C.accent : "transparent",
-                color: isActive ? C.bg : C.accent,
-                fontWeight: isActive ? 700 : 500,
-                fontSize: isActive ? 15 : 13,
+                padding: "8px 24px",
+                borderRadius: 16,
+                border: "none",
+                backgroundColor: isActive ? C.card : "transparent",
+                color: isActive ? C.textInv : C.textSub,
+                fontWeight: 600,
+                fontSize: 13,
                 cursor: "pointer",
-                transition: "all 150ms",
-                boxShadow: isActive ? `0 0 12px ${C.accent}44` : "none",
+                transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
+                boxShadow: isActive ? "0 4px 12px rgba(0,0,0,0.15)" : "none",
               }}
             >
               {salon.name}
@@ -353,9 +362,10 @@ function Header({ salons, activeSalonId, onSalonChange }) {
       </div>
 
       {/* Date */}
-      <span style={{ color: C.textSub, fontSize: 13 }}>
-        {formatDate()}
-      </span>
+      <div style={{ textAlign: "right" }}>
+        <div style={{ color: C.textMain, fontWeight: 700, fontSize: 14 }}>{formatDate()}</div>
+        <div style={{ color: C.textSub, fontSize: 11, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 500 }}>Сегодня</div>
+      </div>
     </header>
   );
 }
@@ -371,10 +381,14 @@ const TABS = [
 function TabBar({ activeTab, onTabChange }) {
   return (
     <nav style={{
-      position: "fixed", top: 56, left: 0, right: 0, height: 44, zIndex: 49,
-      backgroundColor: C.header, borderBottom: `1px solid ${C.border}`,
+      position: "fixed", bottom: 40, left: "50%", transform: "translateX(-50%)",
+      height: 64, zIndex: 100,
+      backgroundColor: "rgba(26, 26, 26, 0.95)", backdropFilter: "blur(12px)",
+      border: "1px solid rgba(255,255,255,0.1)",
       display: "flex", alignItems: "center",
-      padding: "0 24px", gap: 0,
+      padding: "0 12px", gap: 8,
+      borderRadius: 32,
+      boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
     }}>
       {TABS.map(({ id, label, icon: Icon }) => {
         const isActive = activeTab === id;
@@ -383,19 +397,19 @@ function TabBar({ activeTab, onTabChange }) {
             key={id}
             onClick={() => onTabChange(id)}
             style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "0 16px", height: "100%",
-              background: "none", border: "none",
-              borderBottom: isActive ? `2px solid ${C.accent}` : "2px solid transparent",
-              color: isActive ? C.accent : C.textSub,
-              fontSize: 14, fontWeight: isActive ? 600 : 400,
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "0 20px", height: 44,
+              borderRadius: 24,
+              background: isActive ? C.accent : "transparent",
+              border: "none",
+              color: isActive ? "#000" : "rgba(255,255,255,0.6)",
+              fontSize: 14, fontWeight: 600,
               cursor: "pointer",
-              transition: "all 150ms",
-              letterSpacing: "0.3px",
+              transition: "all 250ms cubic-bezier(0.4, 0, 0.2, 1)",
             }}
           >
-            <Icon size={15} />
-            {label && <span>{label}</span>}
+            <Icon size={18} />
+            {isActive && <span>{label}</span>}
           </button>
         );
       })}
@@ -447,98 +461,101 @@ function LoginScreen({ onLogin }) {
   };
 
   const tabStyle = (active) => ({
-    flex: 1, padding: "10px 0", borderRadius: 8, border: "none",
-    fontSize: 13, fontWeight: active ? 700 : 400, cursor: "pointer",
+    flex: 1, padding: "12px 0", borderRadius: 16, border: "none",
+    fontSize: 14, fontWeight: 700, cursor: "pointer",
     backgroundColor: active ? C.accent : "transparent",
-    color: active ? C.bg : C.textSub,
-    transition: "all 150ms",
+    color: active ? "#000" : C.textSub,
+    transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
   });
 
   return (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "center",
-      height: "100vh", backgroundColor: C.bg,
-      fontFamily: "system-ui, -apple-system, sans-serif",
+      minHeight: "100vh", backgroundColor: C.bg,
+      padding: isMobile ? 12 : 0,
     }}>
-      <form onSubmit={handleSubmit} style={{
-        width: isMobile ? "100%" : 380, maxWidth: 380, padding: isMobile ? 24 : 36, borderRadius: 16,
-        backgroundColor: C.card, border: `1px solid ${C.border}`,
-        boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
-        margin: isMobile ? "0 16px" : 0,
+      <div style={{
+        width: "100%", maxWidth: 1200, display: "grid", 
+        gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", 
+        gap: 24, padding: isMobile ? 12 : 24,
       }}>
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <Gem size={36} color={C.accent} />
-          <h1 style={{ margin: "12px 0 4px", fontSize: 22, fontWeight: 700, color: C.textMain }}>SPA CRM</h1>
-          <p style={{ fontSize: 13, color: C.textSub, margin: 0 }}>Войдите в систему</p>
-        </div>
-
-        {/* Role tab switcher */}
-        <div style={{
-          display: "flex", gap: 4, padding: 4, borderRadius: 10, marginBottom: 24,
-          backgroundColor: C.gridBg, border: `1px solid ${C.border}`,
-        }}>
-          <button type="button" onClick={() => { setRoleTab("admin"); setError(""); }} style={tabStyle(roleTab === "admin")}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <Shield size={14} /> Администратор
-            </span>
-          </button>
-          <button type="button" onClick={() => { setRoleTab("worker"); setError(""); }} style={tabStyle(roleTab === "worker")}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <Users size={14} /> Работник
-            </span>
-          </button>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 6, fontWeight: 500 }}>Логин</label>
-          <input
-            type="text" value={login} onChange={e => setLogin(e.target.value)}
-            autoFocus placeholder={roleTab === "admin" ? "admin" : "worker1"}
-            style={{
-              width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 14,
-              border: `1px solid ${C.border}`, backgroundColor: C.gridBg,
-              color: C.textMain, outline: "none",
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 6, fontWeight: 500 }}>Пароль</label>
-          <div style={{ position: "relative" }}>
-            <input
-              type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
-              placeholder="••••••"
-              style={{
-                width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, fontSize: 14,
-                border: `1px solid ${C.border}`, backgroundColor: C.gridBg,
-                color: C.textMain, outline: "none",
-              }}
-            />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} style={{
-              position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
-              background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
-            }}>
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-        </div>
-
-        {error && (
+        {/* Left Bento: Branding */}
+        {!isMobile && (
           <div style={{
-            padding: "8px 12px", borderRadius: 8, marginBottom: 16,
-            backgroundColor: "#EF444422", border: "1px solid #EF444444",
-            color: "#F87171", fontSize: 13,
-          }}>{error}</div>
+            backgroundColor: C.card, borderRadius: C.radius, padding: 60,
+            display: "flex", flexDirection: "column", justifyContent: "center",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
+          }}>
+            <div style={{ width: 80, height: 80, borderRadius: 24, backgroundColor: C.accent, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 40 }}>
+              <Gem size={48} color="#000" />
+            </div>
+            <h1 style={{ fontSize: 48, fontWeight: 800, color: C.textInv, letterSpacing: "-1px", lineHeight: 1.1, marginBottom: 24 }}>
+              Ваша личная<br />SPA Вселенная
+            </h1>
+            <p style={{ fontSize: 18, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, maxWidth: 400 }}>
+              Премиальная система управления для настоящих мастеров своего дела. Просто, красиво, профессионально.
+            </p>
+          </div>
         )}
 
-        <button type="submit" disabled={loading} style={{
-          width: "100%", padding: "11px 0", borderRadius: 8, border: "none",
-          backgroundColor: C.accent, color: C.bg, fontSize: 14, fontWeight: 600,
-          cursor: loading ? "wait" : "pointer", opacity: loading ? 0.7 : 1,
+        {/* Right Bento: Form */}
+        <form onSubmit={handleSubmit} style={{
+          backgroundColor: isMobile ? C.card : "#fff", 
+          borderRadius: C.radius, padding: isMobile ? 32 : 60,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+          display: "flex", flexDirection: "column", justifyContent: "center",
+          border: isMobile ? `1px solid ${C.borderDark}` : `1px solid ${C.border}`,
         }}>
-          {loading ? "Вход…" : "Войти"}
-        </button>
-      </form>
+          <div style={{ marginBottom: 40 }}>
+            <h2 style={{ fontSize: 32, fontWeight: 800, color: isMobile ? C.textInv : C.textMain, letterSpacing: "-0.5px", marginBottom: 8 }}>Добро пожаловать</h2>
+            <p style={{ color: C.textSub, fontSize: 15 }}>Войдите в свой аккаунт для начала работы</p>
+          </div>
+
+          <div style={{
+            display: "flex", gap: 4, padding: 4, borderRadius: 20, marginBottom: 32,
+            backgroundColor: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.02)",
+          }}>
+            <button type="button" onClick={() => { setRoleTab("admin"); setError(""); }} style={tabStyle(roleTab === "admin")}>Администратор</button>
+            <button type="button" onClick={() => { setRoleTab("worker"); setError(""); }} style={tabStyle(roleTab === "worker")}>Работник</button>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={labelStyle}>Логин</label>
+            <input type="text" value={login} onChange={e => setLogin(e.target.value)}
+              placeholder={roleTab === "admin" ? "admin" : "worker1"}
+              style={{ ...inputStyle(), backgroundColor: isMobile ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)", color: isMobile ? C.textInv : C.textMain }} />
+          </div>
+
+          <div style={{ marginBottom: 32 }}>
+            <label style={labelStyle}>Пароль</label>
+            <div style={{ position: "relative" }}>
+              <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="••••••"
+                style={{ ...inputStyle(), backgroundColor: isMobile ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)", color: isMobile ? C.textInv : C.textMain }} />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} style={{
+                position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)",
+                background: "none", border: "none", cursor: "pointer", color: C.textSub,
+              }}>
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div style={{ padding: "12px 16px", borderRadius: 16, backgroundColor: "#EF444411", color: "#EF4444", fontSize: 14, fontWeight: 500, marginBottom: 24, textAlign: "center" }}>
+              {error}
+            </div>
+          )}
+
+          <button type="submit" disabled={loading} style={{
+            width: "100%", height: 56, borderRadius: 28, border: "none",
+            backgroundColor: C.accent, color: "#000", fontSize: 16, fontWeight: 700,
+            cursor: "pointer", transition: "all 300ms", boxShadow: "0 8px 24px rgba(255, 179, 0, 0.3)",
+          }}>
+            {loading ? "Загрузка..." : "Войти в CRM"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
@@ -578,18 +595,19 @@ const makeInitialSalonConfig = (id) => ({
 const inputStyle = (focused = false) => ({
   width: "100%",
   boxSizing: "border-box",
-  height: 40,
-  padding: "8px 12px",
-  borderRadius: 8,
-  backgroundColor: C.bg,
-  border: `1px solid ${focused ? C.accent : C.border}`,
-  boxShadow: focused ? `0 0 0 2px ${C.accent}33` : "none",
+  height: 44,
+  padding: "8px 16px",
+  borderRadius: 16,
+  backgroundColor: "rgba(0,0,0,0.03)",
+  border: `1px solid ${focused ? C.accent : "rgba(0,0,0,0.08)"}`,
+  boxShadow: focused ? `0 0 0 4px ${C.accent}22` : "none",
   color: C.textMain,
-  fontSize: 13,
+  fontSize: 14,
   outline: "none",
+  transition: "all 200ms ease",
 });
 
-const labelStyle = { display: "block", color: C.textSub, fontSize: 12, marginBottom: 6 };
+const labelStyle = { display: "block", color: C.textSub, fontSize: 12, marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" };
 
 function Toggle({ checked, onChange }) {
   return (
@@ -5687,219 +5705,91 @@ function App() {
       backgroundColor: C.bg,
       minHeight: "100vh",
       color: C.textMain,
-      fontFamily: "system-ui, -apple-system, sans-serif",
-      fontSize: 13,
-      lineHeight: 1.5,
+      fontFamily: "'Inter', sans-serif",
+      fontSize: 14,
+      lineHeight: 1.6,
       overflowX: "hidden",
     }}>
-      {/* Header with user info */}
-      <header style={{
-        position: "fixed", top: 0, left: 0, right: 0, height: 56, zIndex: 50,
-        backgroundColor: C.header, borderBottom: `1px solid ${C.border}`,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: isMobile ? "0 12px" : "0 24px",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {isMobile && (
-            <button onClick={() => setMobileMenuOpen(v => !v)} style={{
-              background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
-              display: "flex", alignItems: "center",
-            }}>
-              <Menu size={22} />
-            </button>
-          )}
-          <Gem size={isMobile ? 18 : 22} color={C.accent} />
-          {!isMobile && <span style={{ color: C.textMain, fontWeight: 600, fontSize: 16, letterSpacing: "0.5px" }}>SPA CRM</span>}
-        </div>
+      <Header 
+        salons={salons} 
+        activeSalonId={activeSalonId} 
+        onSalonChange={handleSalonChange} 
+      />
 
-        {/* Salon switcher */}
-        <div style={{ display: "flex", gap: isMobile ? 4 : 8 }}>
-          {salons.map((salon) => {
-            const isActive = salon.id === activeSalonId;
-            return (
-              <button key={salon.id} onClick={() => handleSalonChange(salon.id)} style={{
-                padding: isMobile ? (isActive ? "6px 12px" : "4px 10px") : (isActive ? "8px 24px" : "6px 16px"), borderRadius: 8,
-                border: isActive ? `2px solid ${C.accent}` : `1px solid ${C.accent}55`,
-                backgroundColor: isActive ? C.accent : "transparent",
-                color: isActive ? C.bg : C.accent,
-                fontWeight: isActive ? 700 : 500, fontSize: isMobile ? 11 : (isActive ? 15 : 13),
-                cursor: "pointer", transition: "all 150ms",
-                boxShadow: isActive ? `0 0 12px ${C.accent}44` : "none",
-              }}>{salon.name}</button>
-            );
-          })}
-        </div>
-
-        {/* User info + logout */}
-        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 12 }}>
-          {!isMobile && (
-            <div style={{ textAlign: "right" }}>
-              <div style={{ color: C.textMain, fontSize: 13, fontWeight: 600 }}>{currentUser.name}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
-                {isAdmin && <Shield size={10} color={C.accent} />}
-                <span style={{ color: C.textSub, fontSize: 11 }}>{isAdmin ? "Админ" : "Работник"}</span>
-              </div>
-            </div>
-          )}
-          <button onClick={handleLogout} title="Выйти" style={{
-            background: "none", border: `1px solid ${C.border}`, borderRadius: 8,
-            padding: "6px 10px", cursor: "pointer", color: C.textSub,
-            display: "flex", alignItems: "center", gap: 4,
-          }}>
-            <LogOut size={14} />
-          </button>
-        </div>
-      </header>
-
-      {/* Tab bar — role-aware */}
-      {isMobile ? (
-        <>
-          {/* Mobile bottom nav */}
-          <nav style={{
-            position: "fixed", bottom: 0, left: 0, right: 0, height: 56, zIndex: 49,
-            backgroundColor: C.header, borderTop: `1px solid ${C.border}`,
-            display: "flex", alignItems: "center", justifyContent: "space-around",
-            paddingBottom: "env(safe-area-inset-bottom, 0px)",
-          }}>
-            {visibleTabs.map(({ id, label, icon: Icon }) => {
-              const isActive = activeTab === id;
-              return (
-                <button key={id} onClick={() => { handleTabChange(id); setMobileMenuOpen(false); }} style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
-                  padding: "4px 0", flex: 1,
-                  background: "none", border: "none",
-                  color: isActive ? C.accent : C.textSub,
-                  fontSize: 9, fontWeight: isActive ? 600 : 400,
-                  cursor: "pointer", transition: "all 150ms",
-                }}>
-                  <Icon size={18} />
-                  <span>{label}</span>
-                </button>
-              );
-            })}
-          </nav>
-          {/* Mobile slide-out menu overlay */}
-          {mobileMenuOpen && (
-            <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(0,0,0,0.5)" }}
-              onClick={() => setMobileMenuOpen(false)}>
-              <div style={{
-                position: "absolute", top: 0, left: 0, bottom: 0, width: 260,
-                backgroundColor: C.card, borderRight: `1px solid ${C.border}`,
-                padding: "72px 16px 24px", display: "flex", flexDirection: "column", gap: 8,
-              }} onClick={e => e.stopPropagation()}>
-                <div style={{ color: C.textMain, fontSize: 14, fontWeight: 600, marginBottom: 8 }}>{currentUser.name}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 16 }}>
-                  {isAdmin && <Shield size={12} color={C.accent} />}
-                  <span style={{ color: C.textSub, fontSize: 12 }}>{isAdmin ? "Админ" : "Работник"}</span>
-                </div>
-                {visibleTabs.map(({ id, label, icon: Icon }) => {
-                  const isActive = activeTab === id;
-                  return (
-                    <button key={id} onClick={() => { handleTabChange(id); setMobileMenuOpen(false); }} style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      padding: "10px 12px", borderRadius: 8,
-                      background: isActive ? `${C.accent}22` : "none", border: "none",
-                      color: isActive ? C.accent : C.textSub,
-                      fontSize: 14, fontWeight: isActive ? 600 : 400,
-                      cursor: "pointer", textAlign: "left", width: "100%",
-                    }}>
-                      <Icon size={18} />
-                      <span>{label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        <nav style={{
-          position: "fixed", top: 56, left: 0, right: 0, height: 44, zIndex: 49,
-          backgroundColor: C.header, borderBottom: `1px solid ${C.border}`,
-          display: "flex", alignItems: "center", padding: "0 24px", gap: 0,
-        }}>
-          {visibleTabs.map(({ id, label, icon: Icon }) => {
-            const isActive = activeTab === id;
-            return (
-              <button key={id} onClick={() => handleTabChange(id)} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "0 16px", height: "100%",
-                background: "none", border: "none",
-                borderBottom: isActive ? `2px solid ${C.accent}` : "2px solid transparent",
-                color: isActive ? C.accent : C.textSub,
-                fontSize: 14, fontWeight: isActive ? 600 : 400,
-                cursor: "pointer", transition: "all 150ms", letterSpacing: "0.3px",
-              }}>
-                <Icon size={15} />
-                <span>{label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      )}
-
-      {/* Content area */}
       <main style={{
-        marginTop: isMobile ? 56 : 100,
-        padding: isMobile ? "12px 8px 72px" : 24,
-        maxWidth: 1400,
-        margin: isMobile ? undefined : "100px auto 0",
-        overflowY: "auto",
+        paddingTop: 100,
+        paddingBottom: 140,
+        paddingLeft: isMobile ? 16 : 40,
+        paddingRight: isMobile ? 16 : 40,
+        maxWidth: 1600,
+        margin: "0 auto",
       }}>
-        {activeTab === "settings" && isAdmin && (
-          <SettingsScreen
-            salons={salons}
-            onSalonsChange={setSalons}
-            onShowToast={showToast}
-            onReset={() => setNeedsOnboarding(true)}
-            onImportComplete={async (importedSalons) => {
-              setSalons(importedSalons);
-              const firstId = importedSalons[0].id;
-              setActiveSalonId(firstId);
-              await loadSalonData(firstId);
-            }}
-            currentUser={currentUser}
-          />
-        )}
-        {activeTab === "services" && isAdmin && (
-          <ServicesScreen
-            procedures={procedures}
-            onProceduresChange={setProcedures}
-            combos={combos}
-            onCombosChange={setCombos}
-            activeSalonId={activeSalonId}
-            salons={salons}
-            onSalonsChange={setSalons}
-            onShowToast={showToast}
-          />
-        )}
-        {activeTab === "schedule" && (
-          <ScheduleScreen
-            activeSalonId={activeSalonId}
-            salons={salons}
-            procedures={procedures}
-            combos={combos}
-            onShowToast={showToast}
-            currentUser={currentUser}
-          />
-        )}
-        {activeTab === "journal" && (
-          <JournalScreen
-            salons={salons}
-            onShowToast={showToast}
-            currentUser={currentUser}
-          />
-        )}
-        {activeTab === "dashboard" && isAdmin && (
-          <DashboardScreen salons={salons} />
-        )}
-        {activeTab === "logs" && isAdmin && (
-          <LogsScreen />
-        )}
-        {activeTab === "workers" && isAdmin && (
-          <WorkersScreen onShowToast={showToast} currentUser={currentUser} />
-        )}
+        {/* Bento Container */}
+        <div style={{
+          backgroundColor: "#fff",
+          borderRadius: C.radius,
+          boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
+          minHeight: "calc(100vh - 240px)",
+          padding: isMobile ? 20 : 40,
+          border: `1px solid ${C.border}`,
+        }}>
+          {activeTab === "settings" && isAdmin && (
+            <SettingsScreen
+              salons={salons}
+              onSalonsChange={setSalons}
+              onShowToast={showToast}
+              onReset={() => setNeedsOnboarding(true)}
+              onImportComplete={async (importedSalons) => {
+                setSalons(importedSalons);
+                const firstId = importedSalons[0].id;
+                setActiveSalonId(firstId);
+                await loadSalonData(firstId);
+              }}
+              currentUser={currentUser}
+            />
+          )}
+          {activeTab === "services" && isAdmin && (
+            <ServicesScreen
+              procedures={procedures}
+              onProceduresChange={setProcedures}
+              combos={combos}
+              onCombosChange={setCombos}
+              activeSalonId={activeSalonId}
+              salons={salons}
+              onSalonsChange={setSalons}
+              onShowToast={showToast}
+            />
+          )}
+          {activeTab === "schedule" && (
+            <ScheduleScreen
+              activeSalonId={activeSalonId}
+              salons={salons}
+              procedures={procedures}
+              combos={combos}
+              onShowToast={showToast}
+              currentUser={currentUser}
+            />
+          )}
+          {activeTab === "journal" && (
+            <JournalScreen
+              salons={salons}
+              onShowToast={showToast}
+              currentUser={currentUser}
+            />
+          )}
+          {activeTab === "dashboard" && isAdmin && (
+            <DashboardScreen salons={salons} />
+          )}
+          {activeTab === "logs" && isAdmin && (
+            <LogsScreen />
+          )}
+          {activeTab === "workers" && isAdmin && (
+            <WorkersScreen onShowToast={showToast} currentUser={currentUser} />
+          )}
+        </div>
       </main>
+
+      <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
 
       {toastMsg && (
         <Toast message={toastMsg} onDone={() => setToastMsg(null)} />

@@ -4,13 +4,40 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SPA CRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0B0F14; -webkit-text-size-adjust: 100%; }
+    body { 
+      background: #FDFCF0; 
+      color: #1A1A1A;
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-text-size-adjust: 100%; 
+      overflow-x: hidden;
+      min-height: 100vh;
+      position: relative;
+    }
+    /* Subtle radial glow */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 140vw;
+      height: 140vh;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, #FFFDE7 0%, rgba(253, 252, 240, 0) 70%);
+      z-index: -1;
+      pointer-events: none;
+    }
     @media (max-width: 767px) {
       body { -webkit-overflow-scrolling: touch; }
       input, select, textarea { font-size: 16px !important; }
     }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 10px; }
   </style>
 </head>
 <body>
