@@ -298,8 +298,8 @@ const currentYearMonth = () => {
 const C = {
   bg:        "#FAF6F0",
   card:      "#1C1C1E",
-  gridBg:    "#252528",
-  border:    "#3A3A3C",
+  gridBg:    "#F0EBE3",
+  border:    "#E0D8CE",
   textMain:  "#FFFFFF",
   textSub:   "#9A9A9E",
   accent:    "#E8A830",
@@ -507,7 +507,7 @@ function LoginScreen({ onLogin }) {
             style={{
               width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 14,
               border: `1px solid ${C.border}`, backgroundColor: C.gridBg,
-              color: C.textMain, outline: "none",
+              color: C.textDark, outline: "none",
             }}
           />
         </div>
@@ -521,7 +521,7 @@ function LoginScreen({ onLogin }) {
               style={{
                 width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, fontSize: 14,
                 border: `1px solid ${C.border}`, backgroundColor: C.gridBg,
-                color: C.textMain, outline: "none",
+                color: C.textDark, outline: "none",
               }}
             />
             <button type="button" onClick={() => setShowPassword(!showPassword)} style={{
@@ -597,7 +597,7 @@ const inputStyle = (focused = false) => ({
   backgroundColor: C.gridBg,
   border: `1px solid ${focused ? C.accent : C.border}`,
   boxShadow: focused ? `0 0 0 3px ${C.accent}33` : "none",
-  color: C.textMain,
+  color: C.textDark,
   fontSize: 14,
   outline: "none",
   transition: "border-color 200ms, box-shadow 200ms",
@@ -1473,7 +1473,7 @@ function PasswordChangeBlock({ currentUser, onShowToast }) {
   const inputStyle = {
     width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 14,
     border: `1px solid ${C.border}`, backgroundColor: C.gridBg,
-    color: C.textMain, outline: "none",
+    color: C.textDark, outline: "none",
   };
 
   const handleChange = async () => {
@@ -1998,10 +1998,10 @@ function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowTo
               <ProcedureFormRow onSave={handleAdd} onCancel={() => setEditing(null)} />
             )}
             {procedures.map((proc, idx) => {
-              const rowBg = idx % 2 === 0 ? C.card : C.gridBg;
+              const rowBg = idx % 2 === 0 ? C.cardLight : C.gridBg;
               const td = (center = false) => ({
                 padding: "10px 14px",
-                color: proc.isActive ? C.textMain : C.textSub,
+                color: proc.isActive ? C.textDark : C.textDarkSub,
                 fontSize: 13, verticalAlign: "middle",
                 borderBottom: `1px solid ${C.border}`,
                 textAlign: center ? "center" : "left",
@@ -2127,7 +2127,7 @@ function SaunaPeelingTab({ salon, onSalonChange, onShowToast }) {
             </div>
             <div style={{
               backgroundColor: C.gridBg, borderRadius: 8, padding: "10px 14px",
-              border: `1px solid ${C.border}`, color: C.textSub, fontSize: 12,
+              border: `1px solid ${C.border}`, color: C.textDarkSub, fontSize: 12,
             }}>
               💡 Макс. людей за сеанс: ({salon.saunaDuration} ÷ {salon.peelingTimePerPerson}) × {salon.peelingMastersMax} мастера
               = <strong style={{ color: C.accent }}>{maxPeeling} чел.</strong>
@@ -2417,10 +2417,10 @@ function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowTo
           </thead>
           <tbody>
             {combos.map((combo, idx) => {
-              const rowBg = idx % 2 === 0 ? C.card : C.gridBg;
+              const rowBg = idx % 2 === 0 ? C.cardLight : C.gridBg;
               const td = (center = false) => ({
                 padding: "10px 14px",
-                color: combo.isActive ? C.textMain : C.textSub,
+                color: combo.isActive ? C.textDark : C.textDarkSub,
                 fontSize: 13, verticalAlign: "middle",
                 borderBottom: `1px solid ${C.border}`,
                 textAlign: center ? "center" : "left",
@@ -3222,7 +3222,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
             <label style={labelStyle}>Кабинка</label>
             {clientCount >= 3 && roomAllocation ? (
               <div style={{ padding: "8px 12px", borderRadius: 8, backgroundColor: C.gridBg,
-                border: `1px solid ${C.border}`, color: C.textMain, fontSize: 13 }}>
+                border: `1px solid ${C.border}`, color: C.textDark, fontSize: 13 }}>
                 {roomAllocation.map((a, i) => (
                   <span key={i}>{i > 0 && " + "}{a.room.name} ({a.count} чел.)</span>
                 ))}
@@ -3267,17 +3267,17 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           display: "flex", gap: 24, flexWrap: "wrap",
         }}>
           <div>
-            <div style={{ color: C.textSub, fontSize: 11, marginBottom: 2 }}>Длительность</div>
-            <div style={{ color: C.textMain, fontSize: 13, fontWeight: 500 }}>
+            <div style={{ color: C.textDarkSub, fontSize: 11, marginBottom: 2 }}>Длительность</div>
+            <div style={{ color: C.textDark, fontSize: 13, fontWeight: 500 }}>
               {effectiveDuration} мин + {salon.bufferMinutes} мин буфер
             </div>
           </div>
           <div>
-            <div style={{ color: C.textSub, fontSize: 11, marginBottom: 2 }}>Мастеров</div>
-            <div style={{ color: C.textMain, fontSize: 13, fontWeight: 500 }}>{therapistCount}</div>
+            <div style={{ color: C.textDarkSub, fontSize: 11, marginBottom: 2 }}>Мастеров</div>
+            <div style={{ color: C.textDark, fontSize: 13, fontWeight: 500 }}>{therapistCount}</div>
           </div>
           <div>
-            <div style={{ color: C.textSub, fontSize: 11, marginBottom: 2 }}>Цена</div>
+            <div style={{ color: C.textDarkSub, fontSize: 11, marginBottom: 2 }}>Цена</div>
             <div style={{ color: C.accent, fontSize: 14, fontWeight: 600 }}>
               {totalPrice.toLocaleString("ru-RU")} ₸
             </div>
@@ -3588,7 +3588,7 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
         {booking.notes && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ color: C.textSub, fontSize: 11, marginBottom: 4, textTransform: "uppercase" }}>Заметки</div>
-            <div style={{ color: C.textMain, fontSize: 13, lineHeight: 1.5, padding: "8px 10px",
+            <div style={{ color: C.textDark, fontSize: 13, lineHeight: 1.5, padding: "8px 10px",
               backgroundColor: C.gridBg, borderRadius: 6, border: `1px solid ${C.border}` }}>
               {booking.notes}
             </div>
