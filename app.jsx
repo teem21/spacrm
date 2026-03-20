@@ -4754,6 +4754,72 @@ function MiniBarChart({ data, barColor, width = 400, height = 180, label }) {
   );
 }
 
+function PremiumAreaChart({ data, width = 600, height = 240, color = C.accent }) {
+  if (!data || !data.length) return <div style={{ color: C.textSub, fontSize: 13, padding: 40, textAlign: "center", fontWeight: 600 }}>Нет данных</div>;
+  
+  const padding = { top: 20, right: 20, bottom: 40, left: 40 };
+  const chartW = width - padding.left - padding.right;
+  const chartH = height - padding.top - padding.bottom;
+  
+  const maxVal = Math.max(...data.map(d => d.value), 1);
+  const points = data.map((d, i) => ({
+    x: padding.left + (i / (data.length - 1 || 1)) * chartW,
+    y: padding.top + chartH - (d.value / maxVal) * chartH,
+    value: d.value,
+    label: d.label
+  }));
+
+  const linePath = points.length > 0 
+    ? `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(" ")
+    : "";
+    
+  const areaPath = points.length > 0
+    ? `${linePath} L ${points[points.length-1].x} ${padding.top + chartH} L ${points[0].x} ${padding.top + chartH} Z`
+    : "";
+
+  return (
+    <div style={{ width: "100%", overflow: "hidden" }}>
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        
+        {/* Grid lines (horizontal) */}
+        {[0, 0.25, 0.5, 0.75, 1].map(v => (
+          <line key={v} x1={padding.left} y1={padding.top + chartH * v} x2={padding.left + chartW} y2={padding.top + chartH * v} 
+                stroke="rgba(0,0,0,0.03)" strokeWidth="1" />
+        ))}
+
+        {/* Area */}
+        <path d={areaPath} fill="url(#areaGradient)" />
+        
+        {/* Line */}
+        <path d={linePath} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        
+        {/* Points & Labels */}
+        {points.map((p, i) => {
+          const showLabel = data.length <= 10 || i % Math.ceil(data.length / 7) === 0 || i === data.length - 1;
+          return (
+            <g key={i}>
+              {showLabel && (
+                <text x={p.x} y={height - 10} textAnchor="middle" fill={C.textSub} fontSize={10} fontWeight={700}>
+                  {p.label}
+                </text>
+              )}
+              <circle cx={p.x} cy={p.y} r="4" fill="#fff" stroke={color} strokeWidth="2">
+                <title>{p.label}: {p.value.toLocaleString()} ₸</title>
+              </circle>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
 function MiniPieChart({ data, width = 240, height = 240 }) {
   const total = data.reduce((a, d) => a + d.value, 0);
   if (!total) return <div style={{ color: C.textSub, fontSize: 13, padding: 40, textAlign: "center", fontWeight: 600 }}>Нет данных</div>;
@@ -4937,11 +5003,27 @@ function DashboardScreen({ salons }) {
 
   const revenueByDay = (() => {
     const map = {};
+    const start = parseLocal(dateRange.from);
+    const end = parseLocal(dateRange.to);
+    
+    // Fill all days in range with 0
+    let curr = new Date(start);
+    while (curr <= end) {
+      const k = toDateStr(curr);
+      map[k] = 0;
+      curr.setDate(curr.getDate() + 1);
+    }
+
     filtered.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "cert_dep").forEach(b => {
-      const k = b.date.slice(5).replace("-", ".");
-      map[k] = (map[k] || 0) + (b.totalPrice || 0);
+      if (map[b.date] !== undefined) {
+        map[b.date] += (b.totalPrice || 0);
+      }
     });
-    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([label, value]) => ({ label, value }));
+
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => {
+      const parts = date.split("-");
+      return { label: `${parts[2]}.${parts[1]}`, value };
+    });
   })();
 
   const typeDist = (() => {
@@ -5085,9 +5167,9 @@ function DashboardScreen({ salons }) {
 
       {/* Charts Grid */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 32 }}>
-        <div style={bentoCard}>
-          <h3 style={{ margin: "0 0 24px 0", fontSize: 16, fontWeight: 800 }}>Выручка по дням</h3>
-          <MiniBarChart data={revenueByDay} barColor={C.accent} label="₸" />
+        <div style={{ ...bentoCard, gridColumn: isMobile ? "span 1" : "span 2" }}>
+          <h3 style={{ margin: "0 0 24px 0", fontSize: 16, fontWeight: 800 }}>Выручка по дням (₸)</h3>
+          <PremiumAreaChart data={revenueByDay} color={C.accent} />
         </div>
         <div style={bentoCard}>
           <h3 style={{ margin: "0 0 24px 0", fontSize: 16, fontWeight: 800 }}>Распределение услуг</h3>
