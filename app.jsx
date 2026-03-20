@@ -1616,6 +1616,7 @@ function PasswordChangeBlock({ currentUser, onShowToast }) {
 }
 
 function SettingsScreen({ salons, onSalonsChange, onShowToast, onReset, onImportComplete, currentUser }) {
+  const isMobile = useIsMobile();
   const isFirstRender = useRef(true);
   const fileInputRef = useRef(null);
   const [confirmModal, setConfirmModal] = useState(null); // { type, message, onConfirm }
@@ -1719,7 +1720,7 @@ function SettingsScreen({ salons, onSalonsChange, onShowToast, onReset, onImport
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(400px, 1fr))", gap: isMobile ? 16 : 32 }}>
         {/* Security */}
         {currentUser && (
           <PasswordChangeBlock currentUser={currentUser} onShowToast={onShowToast} />
@@ -1790,7 +1791,7 @@ function SettingsScreen({ salons, onSalonsChange, onShowToast, onReset, onImport
           padding: 20
         }} onClick={confirmModal.onCancel}>
           <div className="glass" style={{
-            borderRadius: 32, padding: 40, width: 440, maxWidth: "100%",
+            borderRadius: 32, padding: isMobile ? 24 : 40, width: 440, maxWidth: "calc(100% - 32px)",
             boxShadow: "0 20px 80px rgba(0,0,0,0.1)",
           }} onClick={e => e.stopPropagation()}>
             <h3 style={{ margin: "0 0 12px", fontSize: 24, fontWeight: 800, color: C.textMain, fontFamily: "'Poppins', sans-serif" }}>
@@ -2150,222 +2151,6 @@ function SaunaPeelingTab({ salon, onSalonChange, onShowToast }) {
 }
 
 // ─── Combos Tab (STEP-05) ─────────────────────────────────────────────────────
-
-function ComboModal({ combo, procedures, onSave, onClose }) {
-  const activeProcedures = procedures.filter(p => p.isActive);
-
-  const [name, setName] = useState(combo?.name || "");
-  const [steps, setSteps] = useState(combo?.steps ? combo.steps.map(s => ({ ...s })) : []);
-  const [price, setPrice] = useState(combo?.price || 0);
-  const [priceManual, setPriceManual] = useState(!!combo);
-  const [err, setErr] = useState("");
-
-  const totalDuration = steps.reduce((s, step) => s + step.duration, 0);
-  const autoPrice = steps.reduce((s, step) => s + step.price, 0);
-
-  useEffect(() => {
-    if (!priceManual) setPrice(autoPrice);
-  }, [autoPrice, priceManual]);
-
-  const addStep = (procId) => {
-    const proc = activeProcedures.find(p => p.id === procId);
-    if (!proc) return;
-    const newStep = { procId: proc.id, name: proc.name, duration: proc.duration, price: proc.price, category: proc.category };
-
-    if (proc.category === "peeling") {
-      const hasSauna = steps.some(s => s.category === "sauna");
-      if (!hasSauna) { setErr("Пиллинг можно добавить только если сауна уже есть в комбо"); return; }
-    }
-
-    let newSteps = [...steps, newStep];
-
-    if (proc.category === "sauna") {
-      newSteps = [newStep, ...steps];
-    } else if (proc.category === "peeling") {
-      newSteps = steps.filter(s => s.category !== "peeling");
-      const saunaIdx = newSteps.findIndex(s => s.category === "sauna");
-      newSteps.splice(saunaIdx + 1, 0, newStep);
-    }
-
-    setErr("");
-    setSteps(newSteps);
-  };
-
-  const removeStep = (idx) => {
-    const removing = steps[idx];
-    let newSteps = steps.filter((_, i) => i !== idx);
-    if (removing.category === "sauna") {
-      newSteps = newSteps.filter(s => s.category !== "peeling");
-    }
-    setSteps(newSteps);
-  };
-
-  const moveUp = (idx) => {
-    if (idx === 0) return;
-    const s = [...steps];
-    [s[idx - 1], s[idx]] = [s[idx], s[idx - 1]];
-    setSteps(s);
-  };
-
-  const moveDown = (idx) => {
-    if (idx === steps.length - 1) return;
-    const s = [...steps];
-    [s[idx], s[idx + 1]] = [s[idx + 1], s[idx]];
-    setSteps(s);
-  };
-
-  const handleSave = () => {
-    if (!name.trim()) { setErr("Введите название"); return; }
-    if (steps.length < 2) { setErr("Минимум 2 шага в комбо"); return; }
-    setErr("");
-    onSave({ name: name.trim(), steps, totalDuration, price });
-  };
-
-  return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 300,
-      backgroundColor: "rgba(0,0,0,0.6)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 16,
-    }}>
-      <div style={{
-        width: "100%", maxWidth: 520,
-        backgroundColor: C.card, borderRadius: 12, padding: 28,
-        maxHeight: "90vh", overflowY: "auto",
-        boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
-      }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: C.textMain }}>
-            {combo ? "Редактировать комбо" : "Новый комбо-пакет"}
-          </h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4 }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Name */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={labelStyle}>Название</label>
-          <input type="text" value={name} placeholder="Тайский релакс"
-            onChange={e => setName(e.target.value)} style={inputStyle()} />
-        </div>
-
-        {/* Steps list */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>Шаги ({steps.length})</label>
-          {steps.length === 0 && (
-            <div style={{
-              padding: 20, textAlign: "center", color: C.textSub, fontSize: 13,
-              border: `1px dashed ${C.border}`, borderRadius: 8,
-            }}>
-              Добавьте процедуры ниже
-            </div>
-          )}
-          {steps.map((step, idx) => (
-            <div key={idx}>
-              {idx > 0 && (
-                <div style={{ textAlign: "center", color: C.textSub, fontSize: 16, lineHeight: "18px", margin: "2px 0" }}>→</div>
-              )}
-              <div style={{
-                display: "flex", alignItems: "center", gap: 8,
-                backgroundColor: C.gridBg, borderRadius: 8, padding: "10px 12px",
-                border: `1px solid ${C.border}`,
-              }}>
-                <div style={{ flex: 1 }}>
-                  <span style={{ color: C.textMain, fontSize: 13 }}>{CATEGORY_ICONS[step.category]} {step.name}</span>
-                  <span style={{ color: C.textSub, fontSize: 12, marginLeft: 8 }}>{step.duration} мин</span>
-                </div>
-                <button onClick={() => moveUp(idx)} disabled={idx === 0} style={{
-                  background: "none", border: "none", padding: 2,
-                  cursor: idx === 0 ? "default" : "pointer",
-                  color: idx === 0 ? C.border : C.textSub,
-                }}>
-                  <ChevronUp size={14} />
-                </button>
-                <button onClick={() => moveDown(idx)} disabled={idx === steps.length - 1} style={{
-                  background: "none", border: "none", padding: 2,
-                  cursor: idx === steps.length - 1 ? "default" : "pointer",
-                  color: idx === steps.length - 1 ? C.border : C.textSub,
-                }}>
-                  <ChevronDown size={14} />
-                </button>
-                <button onClick={() => removeStep(idx)} style={{
-                  background: "none", border: "none", padding: 2, cursor: "pointer", color: "#EF4444",
-                }}>
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Add step dropdown */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={labelStyle}>Добавить шаг</label>
-          <select defaultValue="" onChange={e => { if (e.target.value) { addStep(e.target.value); e.target.value = ""; } }}
-            style={{ ...inputStyle(), cursor: "pointer" }}>
-            <option value="" style={{ backgroundColor: C.card }}>— выберите процедуру —</option>
-            {activeProcedures.map(p => (
-              <option key={p.id} value={p.id} style={{ backgroundColor: C.card }}>
-                {CATEGORY_ICONS[p.category]} {p.name} ({p.duration} мин)
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Total time + Price */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-          <div>
-            <label style={labelStyle}>Общее время</label>
-            <div style={{ ...inputStyle(), display: "flex", alignItems: "center", color: C.textSub }}>
-              {totalDuration} мин
-            </div>
-          </div>
-          <div>
-            <label style={labelStyle}>Цена (₸)</label>
-            <input type="number" value={price} min={0}
-              onChange={e => { setPriceManual(true); setPrice(parseInt(e.target.value, 10) || 0); }}
-              style={inputStyle()} />
-          </div>
-        </div>
-
-        {priceManual && autoPrice > 0 && price !== autoPrice && (
-          <div style={{ marginBottom: 16, color: C.textSub, fontSize: 12 }}>
-            💡 Сумма процедур: {autoPrice.toLocaleString("ru-RU")} ₸
-            <button onClick={() => { setPriceManual(false); setPrice(autoPrice); }} style={{
-              marginLeft: 8, background: "none", border: "none", color: C.accent, cursor: "pointer", fontSize: 12,
-            }}>Сбросить</button>
-          </div>
-        )}
-
-        {/* Error */}
-        {err && (
-          <div style={{
-            padding: "8px 12px", borderRadius: 6, marginBottom: 16,
-            backgroundColor: "#EF444422", border: "1px solid #EF4444", color: "#F87171", fontSize: 12,
-          }}>
-            {err}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button onClick={onClose} style={{
-            padding: "8px 20px", borderRadius: 8,
-            border: `1px solid ${C.border}`, backgroundColor: "transparent",
-            color: C.textSub, fontSize: 13, cursor: "pointer",
-          }}>Отмена</button>
-          <button onClick={handleSave} style={{
-            padding: "8px 20px", borderRadius: 8,
-            border: "none", backgroundColor: C.accent,
-            color: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer",
-          }}>Сохранить</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ComboModal({ initial, procedures, onSave, onCancel }) {
   const [name, setName] = useState(initial?.name || "");
@@ -2844,6 +2629,7 @@ function validateBooking(booking, existingBookings, salon) {
 // ─── Booking Modal (STEP-07) ───────────────────────────────────────────────
 
 function BookingModal({ salon, procedures, combos, initialDate, initialTime, initialRoomId, onSave, onClose }) {
+  const isMobile = useIsMobile();
   const activeProcedures = procedures.filter(p => p.isActive);
   const bookableProcedures = activeProcedures.filter(p => p.category !== "peeling");
   const activeCombos = combos.filter(c => c.isActive);
@@ -3158,17 +2944,18 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       padding: 16,
     }}>
       <div style={{
-        width: "100%", maxWidth: 520,
-        backgroundColor: C.card, borderRadius: 12, padding: 28,
+        width: "100%", maxWidth: isMobile ? "100%" : 520,
+        backgroundColor: C.card, borderRadius: isMobile ? 16 : 12, padding: isMobile ? 16 : 28,
         maxHeight: "90vh", overflowY: "auto",
         boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+        margin: isMobile ? "0 8px" : 0,
       }}>
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-          <h3 style={{ 
-            margin: 0, 
-            fontSize: 24, 
-            fontWeight: 800, 
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? 16 : 24 }}>
+          <h3 style={{
+            margin: 0,
+            fontSize: isMobile ? 18 : 24,
+            fontWeight: 800,
             color: C.textMain,
             fontFamily: "'Poppins', sans-serif",
             letterSpacing: "-0.02em"
@@ -3191,7 +2978,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
         </div>
 
         {/* Client info */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 12 : 16, marginBottom: 16 }}>
           <div>
             <label style={labelStyle}>Имя клиента *</label>
             <input type="text" value={clientName} placeholder="Иван Иванов"
@@ -3374,7 +3161,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
         )}
 
         {/* Date + Time */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 12 : 16, marginBottom: 16 }}>
           <div>
             <label style={labelStyle}>Дата</label>
             <input type="date" value={date}
@@ -3632,6 +3419,7 @@ function isBookingOverdue(b) {
 }
 
 function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDelete, onClose }) {
+  const isMobile = useIsMobile();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const panelRef = useRef(null);
   const onCloseRef = useRef(onClose);
@@ -3659,18 +3447,18 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
 
   return (
     <div ref={panelRef} className="glass" style={{
-      position: "fixed", top: 0, right: 0, bottom: 0, 
-      width: window.innerWidth < 768 ? "100%" : 400, zIndex: 300,
-      backgroundColor: "rgba(255, 255, 255, 0.8)", 
+      position: "fixed", top: 0, right: 0, bottom: 0,
+      width: isMobile ? "100%" : 400, zIndex: 300,
+      backgroundColor: "rgba(255, 255, 255, 0.8)",
       borderLeft: "1px solid rgba(255,255,255,0.4)",
       display: "flex", flexDirection: "column",
       boxShadow: "-20px 0 50px rgba(0,0,0,0.1)",
       animation: "slideInRight 300ms cubic-bezier(0.4, 0, 0.2, 1)",
       overflowY: "auto",
-      borderRadius: window.innerWidth < 768 ? 0 : "40px 0 0 40px",
+      borderRadius: isMobile ? 0 : "40px 0 0 40px",
     }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "32px 32px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "24px 16px 0" : "32px 32px 0" }}>
         <span style={{ 
           color: C.textSub, 
           fontSize: 12, 
@@ -5263,9 +5051,9 @@ function WorkersScreen({ onShowToast, currentUser }) {
       if (onShowToast) onShowToast("Заполните все поля");
       return;
     }
-    const ok = await UserStorage.registerUser(name.trim(), login.trim(), password.trim(), newRole);
-    if (!ok) {
-      if (onShowToast) onShowToast("Логин уже занят");
+    const result = await UserStorage.createUser(login.trim(), password.trim(), name.trim(), newRole);
+    if (result.error) {
+      if (onShowToast) onShowToast(result.error === "User already registered" ? "Логин уже занят" : result.error);
       return;
     }
     setShowAdd(false); setName(""); setLogin(""); setPassword(""); setNewRole("worker");
@@ -5424,13 +5212,15 @@ function WorkersScreen({ onShowToast, currentUser }) {
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 20 }}>
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: C.textSub, marginBottom: 8, textTransform: "uppercase" }}>Имя</label>
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Имя Фамилия" style={inputStyle} />
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="Имя Фамилия" style={inputStyle()} />
             </div>
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: C.textSub, marginBottom: 8, textTransform: "uppercase" }}>Логин</label>
-              <input value={login} onChange={e => setLogin(e.target.value)} placeholder="worker1" style={inputStyle} />
+              <input value={login} onChange={e => setLogin(e.target.value)} placeholder="worker1" style={inputStyle()} />
             </div>
             <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: C.textSub, marginBottom: 8, textTransform: "uppercase" }}>Пароль</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Пароль" style={inputStyle()} />
             </div>
           </div>
           <div style={{ marginBottom: 12 }}>
@@ -5456,7 +5246,7 @@ function WorkersScreen({ onShowToast, currentUser }) {
           position: "fixed", inset: 0, zIndex: 300, backgroundColor: "rgba(0,0,0,0.6)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          <div style={{ width: "100%", maxWidth: 400, padding: 28, borderRadius: 12, backgroundColor: C.card, border: `1px solid ${C.border}`, margin: "0 16px" }}>
+          <div style={{ width: "100%", maxWidth: 400, padding: isMobile ? 20 : 28, borderRadius: 12, backgroundColor: C.card, border: `1px solid ${C.border}`, margin: "0 16px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: C.textMain }}>Редактировать аккаунт</h3>
               <button onClick={() => setEditingUser(null)} style={{ background: "none", border: "none", cursor: "pointer", color: C.textSub }}><X size={18} /></button>
@@ -5923,9 +5713,10 @@ function App() {
         <>
           {/* Mobile bottom nav */}
           <nav style={{
-            position: "fixed", bottom: 0, left: 0, right: 0, height: 56, zIndex: 49,
+            position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 49,
             backgroundColor: C.header, borderTop: `1px solid ${C.border}`,
             display: "flex", alignItems: "center", justifyContent: "space-around",
+            height: "calc(56px + env(safe-area-inset-bottom, 0px))",
             paddingBottom: "env(safe-area-inset-bottom, 0px)",
           }}>
             {visibleTabs.map(({ id, label, icon: Icon }) => {
@@ -6008,7 +5799,7 @@ function App() {
       {/* Content area */}
       <main style={{
         marginTop: isMobile ? 56 : 100,
-        padding: isMobile ? "12px 8px 72px" : 24,
+        padding: isMobile ? "12px 12px calc(72px + env(safe-area-inset-bottom, 0px))" : 24,
         maxWidth: 1400,
         margin: isMobile ? undefined : "100px auto 0",
         overflowY: "auto",
