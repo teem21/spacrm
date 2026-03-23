@@ -737,7 +737,7 @@ function TimeInput({ value, onChange, label }) {
         onChange={e => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={{ ...inputStyle(focused), colorScheme: "dark" }}
+        style={{ ...inputStyle(focused), colorScheme: "light" }}
       />
     </div>
   );
@@ -1139,7 +1139,8 @@ function OnboardingWizard({ onComplete }) {
     }}>
       <div style={{
         width: "100%", maxWidth: 480,
-        backgroundColor: C.card, borderRadius: 12, padding: 32,
+        backgroundColor: "#fff", borderRadius: 32, padding: 32,
+        boxShadow: "0 10px 40px rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.03)",
       }}>
         {/* Progress bar */}
         <ProgressBar current={step + 1} total={TOTAL_STEPS} />
@@ -1225,27 +1226,6 @@ function OnboardingWizard({ onComplete }) {
   );
 }
 
-function ContentPlaceholder({ tab }) {
-  const labels = {
-    schedule:  "Расписание",
-    services:  "Услуги и цены",
-    dashboard: "Дашборд",
-    journal:   "Журнал клиентов",
-    settings:  "Настройки",
-  };
-  return (
-    <div style={{
-      display: "flex", flexDirection: "column", alignItems: "center",
-      justifyContent: "center", height: "60vh", gap: 12,
-      color: C.textSub,
-    }}>
-      <span style={{ fontSize: 48 }}>🚧</span>
-      <p style={{ margin: 0, fontSize: 16, color: C.textMain }}>{labels[tab]}</p>
-      <p style={{ margin: 0, fontSize: 13 }}>Раздел будет реализован в следующих шагах.</p>
-    </div>
-  );
-}
-
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
 function Toast({ message, onDone }) {
@@ -1258,9 +1238,9 @@ function Toast({ message, onDone }) {
     <div style={{
       position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
       zIndex: 200, display: "flex", alignItems: "center", gap: 8,
-      backgroundColor: C.card, border: `1px solid ${C.accent}`,
-      borderRadius: 8, padding: "10px 18px",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+      backgroundColor: "#fff", border: `1px solid ${C.accent}44`,
+      borderRadius: 20, padding: "12px 20px",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
       animation: "slideUp 200ms ease-out",
     }}>
       <Check size={15} color={C.accent} />
@@ -1622,7 +1602,6 @@ function SettingsScreen({ salons, onSalonsChange, onShowToast, onReset, onImport
   const [confirmModal, setConfirmModal] = useState(null); // { type, message, onConfirm }
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [resetStep, setResetStep] = useState(0); 
 
   // Debounced auto-save
   useEffect(() => {
@@ -2001,7 +1980,7 @@ function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowTo
             {editing === "new" && (
               <ProcedureFormRow onSave={handleAdd} onCancel={() => setEditing(null)} />
             )}
-            {procedures.map((proc, idx) => {
+            {procedures.map((proc) => {
               const td = (center = false, right = false) => ({
                 padding: "16px 20px",
                 color: proc.isActive ? C.textMain : C.textSub,
@@ -2367,7 +2346,7 @@ function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowTo
             </tr>
           </thead>
           <tbody>
-            {combos.map((combo, idx) => {
+            {combos.map((combo) => {
               const td = (center = false) => ({
                 padding: "16px 20px",
                 color: combo.isActive ? C.textMain : C.textSub,
@@ -3166,7 +3145,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
             <label style={labelStyle}>Дата</label>
             <input type="date" value={date}
               onChange={e => { if (e.target.value) { setDate(e.target.value); setErr(""); } }}
-              style={{ ...inputStyle(), colorScheme: "dark", cursor: "pointer" }} />
+              style={{ ...inputStyle(), colorScheme: "light", cursor: "pointer" }} />
             {fieldErrors("date").map((e, i) => (
               <div key={i} style={{ color: "#F87171", fontSize: 12, marginTop: 4 }}>{e.message}</div>
             ))}
@@ -3655,7 +3634,6 @@ const RU_MONTH_NOM = ["Январь","Февраль","Март","Апрель",
 const timeToMins = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
 const minsToTime = (m) => `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
 const toDateStr  = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-const toYM       = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
 const addDays    = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
 const parseLocal = (s) => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
 
@@ -3851,12 +3829,12 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
           <>
             <input type="date" value={customFrom}
               onChange={e => setCustomFrom(e.target.value)}
-              style={{ ...inputStyle(), width: isMobile ? 110 : 140, height: 30, fontSize: 11, colorScheme: "dark" }}
+              style={{ ...inputStyle(), width: isMobile ? 110 : 140, height: 30, fontSize: 11, colorScheme: "light" }}
             />
             <span style={{ color: C.textSub, fontSize: 12 }}>—</span>
             <input type="date" value={customTo}
               onChange={e => setCustomTo(e.target.value)}
-              style={{ ...inputStyle(), width: isMobile ? 110 : 140, height: 30, fontSize: 11, colorScheme: "dark" }}
+              style={{ ...inputStyle(), width: isMobile ? 110 : 140, height: 30, fontSize: 11, colorScheme: "light" }}
             />
           </>
         )}
@@ -3932,8 +3910,6 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                 const active = dayBkgs.filter(b => b.status !== "cancelled_refund" && b.status !== "cancelled_no_refund");
                 const paid = dayBkgs.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "cert_dep");
                 const overdueCount = dayBkgs.filter(b => isBookingOverdue(b)).length;
-                const booked = dayBkgs.filter(b => b.status === "booked" && !isBookingOverdue(b)).length;
-                const completed = dayBkgs.filter(b => b.status === "completed").length;
                 const clients = active.reduce((s, b) => s + (b.clientCount || 1), 0);
                 const revenue = paid.reduce((s, b) => s + (b.totalPrice || 0), 0);
 
@@ -3950,15 +3926,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                 }
                 const roomPct = roomTotal > 0 ? Math.round(roomBusy / roomTotal * 100) : 0;
 
-                // Therapist utilization for this day
-                let therBusy = 0;
-                const therTotal = (((salon.therapists || []).length || salon.therapistCount || 1) + (salon.hasPeeling ? (salon.peelingMastersMax || 2) : 0)) * wMins;
-                for (const b of active) {
-                  for (const seg of (b.segments || [])) {
-                    therBusy += (seg.therapistCount || 0) * (timeToMins(seg.endTime) - timeToMins(seg.startTime));
-                  }
-                }
-                const therPct = therTotal > 0 ? Math.round(therBusy / therTotal * 100) : 0;
+
 
                 return (
                   <div key={ds} style={{ borderBottom: `1px solid ${C.border}22` }}>
@@ -4262,8 +4230,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
 
 const PAGE_SIZE = 25;
 
-function JournalScreen({ salons, onShowToast, currentUser }) {
-  const isMobile = useIsMobile();
+function JournalScreen({ salons, onShowToast }) {
   const [allBookings, setAllBookings] = useState([]);
   const [loadingJ, setLoadingJ] = useState(true);
 
@@ -4646,7 +4613,7 @@ function MiniPieChart({ data, width = 240, height = 240 }) {
   );
 }
 
-function MiniHBarChart({ data, barColor, width = 400, height = 160 }) {
+function MiniHBarChart({ data, barColor, width = 400 }) {
   if (!data.length) return <div style={{ color: C.textSub, fontSize: 13, padding: 40, textAlign: "center", fontWeight: 600 }}>Нет данных</div>;
   const maxVal = Math.max(...data.map(d => d.value), 1);
   const rowH = 44;
@@ -5133,6 +5100,11 @@ function WorkersScreen({ onShowToast, currentUser }) {
   };
 
   if (selectedUser) {
+    const logActionBadge = (action) => ({
+      padding: "4px 12px", borderRadius: 12, fontSize: 11, fontWeight: 800, textTransform: "uppercase",
+      backgroundColor: action === "create" ? "#34D39915" : action === "delete" ? "#EF444415" : "#FBBF2415",
+      color: action === "create" ? "#059669" : action === "delete" ? "#DC2626" : "#A67C00",
+    });
     return (
       <div style={{ animation: "fadeIn 400ms ease-out" }}>
         <button onClick={() => setSelectedUser(null)} style={{
@@ -5142,14 +5114,16 @@ function WorkersScreen({ onShowToast, currentUser }) {
           <ChevronLeft size={18} /> Назад к списку
         </button>
         <div style={{ ...bentoCard, marginBottom: 32 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>👤</div>
-            <div>
-              <h2 style={{ color: C.textMain, fontSize: 24, fontWeight: 900, margin: 0 }}>{selectedUser.name}</h2>
-              <div style={{ color: C.textSub, fontSize: 13, fontWeight: 600 }}>Логин: {selectedUser.login} · Создан: {new Date(selectedUser.createdAt).toLocaleDateString("ru-RU")}</div>
+          <div style={{ display: "flex", alignItems: isMobile ? "flex-start" : "center", gap: 16, flexDirection: isMobile ? "column" : "row" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>👤</div>
+              <div>
+                <h2 style={{ color: C.textMain, fontSize: isMobile ? 20 : 24, fontWeight: 900, margin: 0 }}>{selectedUser.name}</h2>
+                <div style={{ color: C.textSub, fontSize: 12, fontWeight: 600 }}>@{selectedUser.login} · {new Date(selectedUser.createdAt).toLocaleDateString("ru-RU")}</div>
+              </div>
             </div>
             <span style={{
-              marginLeft: "auto", padding: "6px 16px", borderRadius: 20, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em",
+              marginLeft: isMobile ? 0 : "auto", padding: "6px 16px", borderRadius: 20, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em",
               backgroundColor: selectedUser.role === "admin" ? "#222" : "#d4c5ab",
               color: selectedUser.role === "admin" ? "#fff" : "#1b1c15",
             }}>{selectedUser.role === "admin" ? "Админ" : "Работник"}</span>
@@ -5159,6 +5133,20 @@ function WorkersScreen({ onShowToast, currentUser }) {
         <h3 style={{ color: C.textMain, fontSize: 18, fontWeight: 800, marginBottom: 20 }}>Логи действий ({userLogs.length})</h3>
         {userLogs.length === 0 ? (
           <div style={bentoCard}>Нет действий</div>
+        ) : isMobile ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {userLogs.map(log => (
+              <div key={log.id} style={{ ...bentoCard, padding: 16, gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={logActionBadge(log.action)}>
+                    {log.action === "create" ? "Создание" : log.action === "delete" ? "Удаление" : "Изменение"}
+                  </span>
+                  <span style={{ fontSize: 12, color: C.textSub, fontWeight: 600 }}>{new Date(log.timestamp).toLocaleString("ru-RU")}</span>
+                </div>
+                <div style={{ fontSize: 13, color: C.textSub, fontWeight: 500, marginTop: 4 }}>{log.details || "—"}</div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div style={{ ...bentoCard, padding: 0, overflow: "hidden" }}>
             <div style={{ overflowX: "auto" }}>
@@ -5175,11 +5163,9 @@ function WorkersScreen({ onShowToast, currentUser }) {
                     <tr key={log.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.03)" }}>
                       <td style={{ padding: "16px 32px", fontSize: 14, fontWeight: 600 }}>{new Date(log.timestamp).toLocaleString("ru-RU")}</td>
                       <td style={{ padding: "16px 32px" }}>
-                        <span style={{
-                          padding: "4px 12px", borderRadius: 12, fontSize: 11, fontWeight: 800, textTransform: "uppercase",
-                          backgroundColor: log.action === "create" ? "#34D39915" : log.action === "delete" ? "#EF444415" : "#FBBF2415",
-                          color: log.action === "create" ? "#059669" : log.action === "delete" ? "#DC2626" : "#A67C00",
-                        }}>{log.action === "create" ? "Создание" : log.action === "delete" ? "Удаление" : "Изменение"}</span>
+                        <span style={logActionBadge(log.action)}>
+                          {log.action === "create" ? "Создание" : log.action === "delete" ? "Удаление" : "Изменение"}
+                        </span>
                       </td>
                       <td style={{ padding: "16px 32px", fontSize: 13, color: C.textSub, fontWeight: 500 }}>{log.details || "—"}</td>
                     </tr>
@@ -5195,15 +5181,16 @@ function WorkersScreen({ onShowToast, currentUser }) {
 
   return (
     <div style={{ animation: "fadeIn 400ms ease-out" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
-        <h2 style={{ color: C.textMain, fontSize: 28, fontWeight: 900, margin: 0 }}>Персонал</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? 20 : 32, gap: 12 }}>
+        <h2 style={{ color: C.textMain, fontSize: isMobile ? 22 : 28, fontWeight: 900, margin: 0 }}>Персонал</h2>
         <button onClick={() => setShowAdd(!showAdd)} style={{
-          display: "flex", alignItems: "center", gap: 10, padding: "14px 28px", borderRadius: 32,
+          display: "flex", alignItems: "center", gap: isMobile ? 6 : 10,
+          padding: isMobile ? "10px 16px" : "14px 28px", borderRadius: 32,
           border: "none", backgroundColor: C.accent, color: "#1b1c15",
-          fontSize: 14, fontWeight: 800, cursor: "pointer", transition: "all 300ms",
-          boxShadow: `0 10px 20px ${C.accent}44`,
+          fontSize: isMobile ? 13 : 14, fontWeight: 800, cursor: "pointer", transition: "all 300ms",
+          boxShadow: `0 10px 20px ${C.accent}44`, flexShrink: 0,
         }}>
-          <UserPlus size={18} /> Добавить
+          <UserPlus size={isMobile ? 16 : 18} /> Добавить
         </button>
       </div>
 
@@ -5212,29 +5199,30 @@ function WorkersScreen({ onShowToast, currentUser }) {
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 20 }}>
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: C.textSub, marginBottom: 8, textTransform: "uppercase" }}>Имя</label>
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Имя Фамилия" style={inputStyle()} />
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="Имя Фамилия" style={inputStyle} />
             </div>
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: C.textSub, marginBottom: 8, textTransform: "uppercase" }}>Логин</label>
-              <input value={login} onChange={e => setLogin(e.target.value)} placeholder="worker1" style={inputStyle()} />
+              <input value={login} onChange={e => setLogin(e.target.value)} placeholder="worker1" style={inputStyle} />
             </div>
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: C.textSub, marginBottom: 8, textTransform: "uppercase" }}>Пароль</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Пароль" style={inputStyle()} />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Пароль" style={inputStyle} />
             </div>
           </div>
           <div style={{ marginBottom: 12 }}>
             <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 4 }}>Роль</label>
             {roleToggle(newRole, setNewRole)}
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 10, flexDirection: isMobile ? "column" : "row" }}>
             <button onClick={handleAdd} style={{
-              padding: "8px 20px", borderRadius: 8, border: "none",
-              backgroundColor: C.accent, color: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer",
+              padding: "12px 24px", borderRadius: 20, border: "none",
+              backgroundColor: C.accent, color: "#1b1c15", fontSize: 14, fontWeight: 700, cursor: "pointer",
+              boxShadow: `0 8px 16px ${C.accent}33`,
             }}>Сохранить</button>
             <button onClick={() => { setShowAdd(false); setName(""); setLogin(""); setPassword(""); setNewRole("worker"); }} style={{
-              padding: "8px 20px", borderRadius: 8, border: `1px solid ${C.border}`,
-              backgroundColor: "transparent", color: C.textSub, fontSize: 13, cursor: "pointer",
+              padding: "12px 24px", borderRadius: 20, border: "none",
+              backgroundColor: "rgba(0,0,0,0.05)", color: C.textSub, fontSize: 14, fontWeight: 600, cursor: "pointer",
             }}>Отмена</button>
           </div>
         </div>
@@ -5246,21 +5234,28 @@ function WorkersScreen({ onShowToast, currentUser }) {
           position: "fixed", inset: 0, zIndex: 300, backgroundColor: "rgba(0,0,0,0.6)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          <div style={{ width: "100%", maxWidth: 400, padding: isMobile ? 20 : 28, borderRadius: 12, backgroundColor: C.card, border: `1px solid ${C.border}`, margin: "0 16px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: C.textMain }}>Редактировать аккаунт</h3>
-              <button onClick={() => setEditingUser(null)} style={{ background: "none", border: "none", cursor: "pointer", color: C.textSub }}><X size={18} /></button>
+          <div className="glass" style={{
+            width: "100%", maxWidth: 420, padding: isMobile ? 24 : 32, borderRadius: 32,
+            backgroundColor: "rgba(255,255,255,0.85)", border: "1px solid rgba(0,0,0,0.03)",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.08)", margin: "0 16px",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: C.textMain }}>Редактировать аккаунт</h3>
+              <button onClick={() => setEditingUser(null)} style={{
+                background: "rgba(0,0,0,0.05)", border: "none", cursor: "pointer", color: C.textSub,
+                width: 32, height: 32, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center",
+              }}><X size={18} /></button>
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 4 }}>Логин (не меняется)</label>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.textSub, marginBottom: 6, textTransform: "uppercase" }}>Логин (не меняется)</label>
               <input disabled value={editingUser.login} style={{ ...inputStyle, opacity: 0.5, cursor: "not-allowed" }} />
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 4 }}>Имя</label>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.textSub, marginBottom: 6, textTransform: "uppercase" }}>Имя</label>
               <input value={editName} onChange={e => setEditName(e.target.value)} style={inputStyle} />
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 4 }}>Пароль</label>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.textSub, marginBottom: 6, textTransform: "uppercase" }}>Пароль</label>
               <div style={{ position: "relative" }}>
                 <input
                   type={showEditPwd ? "text" : "password"}
@@ -5269,25 +5264,26 @@ function WorkersScreen({ onShowToast, currentUser }) {
                   style={{ ...inputStyle, paddingRight: 40 }}
                 />
                 <button type="button" onClick={() => setShowEditPwd(!showEditPwd)} style={{
-                  position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+                  position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
                   background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
                 }}>
                   {showEditPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 12, color: C.textSub, marginBottom: 4 }}>Роль</label>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.textSub, marginBottom: 6, textTransform: "uppercase" }}>Роль</label>
               {roleToggle(editRole, setEditRole)}
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 10 }}>
               <button onClick={handleSaveEdit} style={{
-                flex: 1, padding: "10px 0", borderRadius: 8, border: "none",
-                backgroundColor: C.accent, color: C.bg, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                flex: 1, padding: "12px 0", borderRadius: 20, border: "none",
+                backgroundColor: C.accent, color: "#1b1c15", fontSize: 14, fontWeight: 700, cursor: "pointer",
+                boxShadow: `0 8px 16px ${C.accent}33`,
               }}>Сохранить</button>
               <button onClick={() => setEditingUser(null)} style={{
-                flex: 1, padding: "10px 0", borderRadius: 8, border: `1px solid ${C.border}`,
-                backgroundColor: "transparent", color: C.textSub, fontSize: 13, cursor: "pointer",
+                flex: 1, padding: "12px 0", borderRadius: 20, border: "none",
+                backgroundColor: "rgba(0,0,0,0.05)", color: C.textSub, fontSize: 14, fontWeight: 600, cursor: "pointer",
               }}>Отмена</button>
             </div>
           </div>
@@ -5305,15 +5301,18 @@ function WorkersScreen({ onShowToast, currentUser }) {
             const isSelf = currentUser && w.id === currentUser.id;
             return (
               <div key={w.id} style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "14px 18px", borderRadius: 10,
-                backgroundColor: C.card, border: `1px solid ${isSelf ? C.accent + "66" : C.border}`,
-                cursor: "pointer",
+                display: "flex", alignItems: isMobile ? "flex-start" : "center",
+                flexDirection: isMobile ? "column" : "row",
+                justifyContent: "space-between",
+                padding: isMobile ? "12px 14px" : "14px 18px", borderRadius: 20,
+                backgroundColor: "#fff", border: `1px solid ${isSelf ? C.accent + "66" : "rgba(0,0,0,0.03)"}`,
+                cursor: "pointer", boxShadow: "0 4px 12px rgba(0,0,0,0.02)",
+                gap: isMobile ? 10 : 0,
               }} onClick={() => openUserLogs(w)}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: C.textMain, fontWeight: 600, fontSize: 14 }}>{w.name}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ color: C.textMain, fontWeight: 600, fontSize: isMobile ? 13 : 14 }}>{w.name}</span>
                       <span style={{
                         padding: "1px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600,
                         backgroundColor: w.role === "admin" ? `${C.accent}22` : "#34D39922",
@@ -5321,12 +5320,13 @@ function WorkersScreen({ onShowToast, currentUser }) {
                       }}>{w.role === "admin" ? "Админ" : "Работник"}</span>
                       {isSelf && <span style={{ fontSize: 11, color: C.textSub }}>(вы)</span>}
                     </div>
-                    <div style={{ color: C.textSub, fontSize: 12 }}>@{w.login} · {new Date(w.createdAt).toLocaleDateString("ru-RU")}</div>
+                    <div style={{ color: C.textSub, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>@{w.login} · {new Date(w.createdAt).toLocaleDateString("ru-RU")}</div>
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, alignSelf: isMobile ? "flex-end" : "center" }}>
                   <button onClick={(e) => { e.stopPropagation(); startEdit(w); }} style={{
-                    background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
+                    background: "rgba(0,0,0,0.04)", border: "none", cursor: "pointer", color: C.textSub,
+                    padding: 6, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
                   }} title="Редактировать">
                     <Settings size={14} />
                   </button>
@@ -5334,17 +5334,18 @@ function WorkersScreen({ onShowToast, currentUser }) {
                     <>
                       <span style={{ color: C.textSub, fontSize: 12 }}>Удалить?</span>
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(w.id); }} style={{
-                        padding: "4px 12px", borderRadius: 6, border: "none",
+                        padding: "4px 12px", borderRadius: 8, border: "none",
                         backgroundColor: "#EF4444", color: "#fff", fontSize: 12, cursor: "pointer",
                       }}>Да</button>
                       <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }} style={{
-                        padding: "4px 12px", borderRadius: 6, border: `1px solid ${C.border}`,
-                        backgroundColor: "transparent", color: C.textSub, fontSize: 12, cursor: "pointer",
+                        padding: "4px 12px", borderRadius: 8, border: "none",
+                        backgroundColor: "rgba(0,0,0,0.05)", color: C.textSub, fontSize: 12, cursor: "pointer",
                       }}>Нет</button>
                     </>
                   ) : (
                     <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(w.id); }} style={{
-                      background: "none", border: "none", cursor: "pointer", color: C.textSub, padding: 4,
+                      background: "rgba(0,0,0,0.04)", border: "none", cursor: "pointer", color: C.textSub,
+                      padding: 6, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
                     }} title="Удалить">
                       <Trash2 size={14} />
                     </button>
@@ -5484,7 +5485,7 @@ function App() {
   const [activeSalonId, setActiveSalonId] = useState("salon-1");
   const [procedures, setProcedures] = useState([]);
   const [combos, setCombos] = useState([]);
-  const [bookings, setBookings] = useState([]);
+  const [, setBookings] = useState([]);
 
   const isAdmin = currentUser?.role === "admin";
   const defaultTab = isAdmin ? "schedule" : "schedule";
@@ -5848,7 +5849,6 @@ function App() {
           <JournalScreen
             salons={salons}
             onShowToast={showToast}
-            currentUser={currentUser}
           />
         )}
         {activeTab === "dashboard" && isAdmin && (
