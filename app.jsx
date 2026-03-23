@@ -1840,7 +1840,7 @@ function SubTabBar({ tabs, active, onChange }) {
 
 const EMPTY_PROC = { name: "", category: "massage", duration: 60, therapistsRequired: 1, price: 5000 };
 
-function ProcedureFormRow({ initial, onSave, onCancel }) {
+function ProcedureFormRow({ initial, onSave, onCancel, isMobile }) {
   const [form, setForm] = useState(initial || EMPTY_PROC);
   const [err, setErr] = useState("");
   const patch = (p) => setForm(f => ({ ...f, ...p }));
@@ -1851,6 +1851,63 @@ function ProcedureFormRow({ initial, onSave, onCancel }) {
     setErr("");
     onSave(form);
   };
+
+  if (isMobile) {
+    const mInp = { ...inputStyle(), height: 44, borderRadius: 14, fontSize: 15 };
+    return (
+      <div className="glass" style={{
+        backgroundColor: "rgba(253,192,3,0.06)", borderRadius: 20, padding: 20,
+        display: "flex", flexDirection: "column", gap: 14,
+        border: "1px solid rgba(253,192,3,0.15)"
+      }}>
+        <div>
+          <label style={labelStyle}>Название</label>
+          <input type="text" value={form.name} placeholder="Тайский массаж 1ч"
+            onChange={e => patch({ name: e.target.value })} style={mInp} />
+        </div>
+        <div>
+          <label style={labelStyle}>Категория</label>
+          <select value={form.category} onChange={e => patch({ category: e.target.value })}
+            style={{ ...mInp, cursor: "pointer" }}>
+            {CATEGORY_OPTIONS.map(o => (
+              <option key={o.value} value={o.value} style={{ backgroundColor: "#fff" }}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div>
+            <label style={labelStyle}>Длит. (мин)</label>
+            <input type="number" value={form.duration} min={5} max={480}
+              onChange={e => patch({ duration: parseInt(e.target.value, 10) || 0 })} style={mInp} />
+          </div>
+          <div>
+            <label style={labelStyle}>Мастеров</label>
+            <input type="number" value={form.therapistsRequired} min={0} max={4}
+              onChange={e => patch({ therapistsRequired: parseInt(e.target.value, 10) || 0 })} style={mInp} />
+          </div>
+        </div>
+        <div>
+          <label style={labelStyle}>Цена (₸)</label>
+          <input type="number" value={form.price} min={0}
+            onChange={e => patch({ price: parseInt(e.target.value, 10) || 0 })} style={mInp} />
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+          <button onClick={handleSave} style={{
+            flex: 1, padding: "14px 0", borderRadius: 14, border: "none",
+            backgroundColor: C.accent, color: "#1b1c15",
+            fontWeight: 700, fontSize: 14, cursor: "pointer",
+            boxShadow: `0 4px 12px ${C.accent}44`
+          }}>Сохранить</button>
+          <button onClick={onCancel} style={{
+            flex: 1, padding: "14px 0", borderRadius: 14,
+            border: "1px solid rgba(0,0,0,0.05)", backgroundColor: "#fff",
+            color: C.textSub, fontSize: 14, fontWeight: 600, cursor: "pointer",
+          }}>Отмена</button>
+        </div>
+        {err && <div style={{ color: "#EF4444", fontSize: 12, fontWeight: 600 }}>{err}</div>}
+      </div>
+    );
+  }
 
   const inCell = { padding: "16px 8px", verticalAlign: "middle" };
 
@@ -1916,7 +1973,8 @@ function ProcedureFormRow({ initial, onSave, onCancel }) {
 }
 
 function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowToast }) {
-  const [editing, setEditing] = useState(null); 
+  const [editing, setEditing] = useState(null);
+  const isMobile = useIsMobile();
 
   const persist = async (updated) => {
     onProceduresChange(updated);
@@ -1946,6 +2004,74 @@ function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowTo
     borderBottom: "1px solid rgba(0,0,0,0.05)",
     backgroundColor: "rgba(0,0,0,0.02)",
   };
+
+  if (isMobile) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <button
+          onClick={() => setEditing(editing === "new" ? null : "new")}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            padding: "14px 24px", borderRadius: 20, width: "100%",
+            border: "none", backgroundColor: C.accent,
+            color: "#1b1c15", fontSize: 14, fontWeight: 700, cursor: "pointer",
+            boxShadow: `0 8px 20px ${C.accent}44`
+          }}
+        >
+          <Plus size={16} /> Добавить процедуру
+        </button>
+
+        {editing === "new" && (
+          <ProcedureFormRow isMobile onSave={handleAdd} onCancel={() => setEditing(null)} />
+        )}
+
+        {procedures.map(proc => {
+          if (editing === proc.id) {
+            return (
+              <ProcedureFormRow key={proc.id} isMobile
+                initial={{ name: proc.name, category: proc.category, duration: proc.duration, therapistsRequired: proc.therapistsRequired, price: proc.price }}
+                onSave={(form) => handleEdit(proc.id, form)}
+                onCancel={() => setEditing(null)}
+              />
+            );
+          }
+          return (
+            <div key={proc.id} onClick={() => setEditing(proc.id)} className="glass"
+              style={{ borderRadius: 20, padding: 16, cursor: "pointer", opacity: proc.isActive ? 1 : 0.6, transition: "all 200ms" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontWeight: 600, fontSize: 15, color: proc.isActive ? C.textMain : C.textSub }}>{proc.name}</span>
+                <div onClick={e => { e.stopPropagation(); handleToggle(proc.id); }}>
+                  <Toggle checked={proc.isActive} onChange={() => handleToggle(proc.id)} />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
+                <span style={{
+                  padding: "4px 10px", borderRadius: 10,
+                  backgroundColor: proc.category === "massage" ? "rgba(253,192,3,0.1)" : "rgba(0,0,0,0.05)",
+                  fontSize: 12, fontWeight: 700
+                }}>
+                  {CATEGORY_ICONS[proc.category]} {CATEGORY_LABEL[proc.category]}
+                </span>
+                <span style={{ fontSize: 13, color: C.textSub }}>{proc.duration} мин</span>
+                <span style={{ fontSize: 13, color: C.textSub }}>{proc.therapistsRequired} маст.</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.textMain, marginLeft: "auto" }}>
+                  {proc.price.toLocaleString("ru-RU")} ₸
+                </span>
+              </div>
+            </div>
+          );
+        })}
+
+        {procedures.length === 0 && editing !== "new" && (
+          <div style={{ padding: 64, textAlign: "center", color: C.textSub }}>
+            <p style={{ margin: 0, fontSize: 40 }}>✨</p>
+            <p style={{ margin: "16px 0 0", fontSize: 16, fontWeight: 600 }}>Нет процедур</p>
+            <p style={{ margin: "4px 0 0", fontSize: 14 }}>Добавьте свою первую услугу</p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -2008,10 +2134,10 @@ function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowTo
                 >
                   <td style={{ ...td(), paddingLeft: 32, fontWeight: 600 }}>{proc.name}</td>
                   <td style={td()}>
-                    <span style={{ 
-                      padding: "4px 10px", borderRadius: 10, 
+                    <span style={{
+                      padding: "4px 10px", borderRadius: 10,
                       backgroundColor: proc.category === "massage" ? "rgba(253, 192, 3, 0.1)" : "rgba(0,0,0,0.05)",
-                      fontSize: 12, fontWeight: 700 
+                      fontSize: 12, fontWeight: 700
                     }}>
                       {CATEGORY_ICONS[proc.category]} {CATEGORY_LABEL[proc.category]}
                     </span>
@@ -2291,6 +2417,7 @@ function ComboModal({ initial, procedures, onSave, onCancel }) {
 function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowToast }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCombo, setEditingCombo] = useState(null);
+  const isMobile = useIsMobile();
 
   const persist = async (updated) => {
     onCombosChange(updated);
@@ -2320,6 +2447,72 @@ function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowTo
     borderBottom: "1px solid rgba(0,0,0,0.05)",
     backgroundColor: "rgba(0,0,0,0.02)",
   };
+
+  const comboCard = (combo) => (
+    <div key={combo.id}
+      onClick={() => { setEditingCombo(combo); setModalOpen(true); }}
+      className="glass"
+      style={{ borderRadius: 20, padding: 16, cursor: "pointer", opacity: combo.isActive ? 1 : 0.6, transition: "all 200ms" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontWeight: 600, fontSize: 15, color: combo.isActive ? C.textMain : C.textSub }}>{combo.name}</span>
+        <div onClick={e => { e.stopPropagation(); handleToggle(combo.id); }}>
+          <Toggle checked={combo.isActive} onChange={() => handleToggle(combo.id)} />
+        </div>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+        {(combo.items || []).map((step, sidx) => {
+          const p = procedures.find(x => x.id === step.procedureId);
+          return (
+            <React.Fragment key={step.procedureId}>
+              <span style={{ padding: "4px 8px", borderRadius: 6, backgroundColor: "rgba(0,0,0,0.05)", fontSize: 11, fontWeight: 700 }}>
+                {p ? p.name : "???"}
+              </span>
+              {sidx < combo.items.length - 1 && <span style={{ color: C.accent }}>→</span>}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div style={{ marginTop: 8, fontSize: 14, fontWeight: 700, color: C.textMain }}>
+        {combo.price.toLocaleString("ru-RU")} ₸
+      </div>
+    </div>
+  );
+
+  const emptyState = combos.length === 0 && (
+    <div style={{ padding: 64, textAlign: "center", color: C.textSub }}>
+      <p style={{ margin: 0, fontSize: 40 }}>📦</p>
+      <p style={{ margin: "16px 0 0", fontSize: 16, fontWeight: 600 }}>Нет комбо-пакетов</p>
+      <p style={{ margin: "4px 0 0", fontSize: 14 }}>Создайте выгодное предложение</p>
+    </div>
+  );
+
+  const modal = modalOpen && (
+    <ComboModal
+      initial={editingCombo}
+      procedures={procedures}
+      onSave={handleSave}
+      onCancel={() => { setModalOpen(false); setEditingCombo(null); }}
+    />
+  );
+
+  if (isMobile) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <button onClick={() => { setEditingCombo(null); setModalOpen(true); }} style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          padding: "14px 24px", borderRadius: 20, width: "100%",
+          border: "none", backgroundColor: C.accent,
+          color: "#1b1c15", fontSize: 14, fontWeight: 700, cursor: "pointer",
+          boxShadow: `0 8px 20px ${C.accent}44`
+        }}>
+          <Plus size={16} /> Создать комбо
+        </button>
+        {combos.map(comboCard)}
+        {emptyState}
+        {modal}
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -2388,23 +2581,9 @@ function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowTo
             })}
           </tbody>
         </table>
-        {combos.length === 0 && (
-          <div style={{ padding: 64, textAlign: "center", color: C.textSub }}>
-            <p style={{ margin: 0, fontSize: 40 }}>📦</p>
-            <p style={{ margin: "16px 0 0", fontSize: 16, fontWeight: 600 }}>Нет комбо-пакетов</p>
-            <p style={{ margin: "4px 0 0", fontSize: 14 }}>Создайте выгодное предложение</p>
-          </div>
-        )}
+        {emptyState}
       </div>
-
-      {modalOpen && (
-        <ComboModal
-          initial={editingCombo}
-          procedures={procedures}
-          onSave={handleSave}
-          onCancel={() => { setModalOpen(false); setEditingCombo(null); }}
-        />
-      )}
+      {modal}
     </div>
   );
 }
