@@ -2795,7 +2795,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const [comboId, setComboId] = useState(activeCombos[0]?.id || "");
   const [date, setDate] = useState(initialDate || toDateStr(new Date()));
   const [startTime, setStartTime] = useState(initialTime || "");
-  const [roomId, setRoomId] = useState(initialRoomId || "");
+  const [roomId, setRoomId] = useState("");
   const [peelingCount, setPeelingCount] = useState(1);
   const [withPeeling, setWithPeeling] = useState(false);
   const [notes, setNotes] = useState("");
