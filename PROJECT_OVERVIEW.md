@@ -3,7 +3,7 @@
 Comprehensive documentation of the SPA CRM system for managing Thai massage salons.
 
 ## 📌 Project Concept
-A specialized CRM for two spa salons (e.g., "Main Salon" and "City Salon") designed to automate the booking process, manage resources (rooms and therapists), and provide real-time business analytics.
+A specialized CRM for 3 spa salons (e.g., "Main Salon", "City Salon" and "One more in Chunzha") designed to automate the booking process, manage resources (rooms and therapists), and provide real-time business analytics. Current users had to use papers to make track of everything or excel sheets which was very inconvenient especially for such task as tracking bookings and revenue. Also it's hard to navigate through excel, since it's just a grid of cells, not something that has a great visual representation and ease of use for people who are not so close to the technology. Now they can use it on any device with an adaptive interface, also all data will be tracked in the dashboard. 
 
 ---
 

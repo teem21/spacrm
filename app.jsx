@@ -2755,27 +2755,22 @@ function validateBooking(booking, existingBookings, salon) {
     }
   }
 
-  // 8. Master (named therapist) conflict — prevent double-booking the same person
-  const bookingMasters = booking.masterName ? booking.masterName.split(", ").filter(m => m) : [];
-  if (bookingMasters.length > 0) {
-    const activeOthers = others.filter(ob => ob.status !== "cancelled_refund" && ob.status !== "cancelled_no_refund");
+  // 8. Master conflict — prevent double-booking the same master via segment.masterIds
+  const activeOthers = others.filter(ob => ob.status !== "cancelled_refund" && ob.status !== "cancelled_no_refund");
+  for (const seg of booking.segments) {
+    if (!Array.isArray(seg.masterIds) || seg.masterIds.length === 0) continue;
     for (const ob of activeOthers) {
-      if (!ob.masterName) continue;
-      const obMasters = ob.masterName.split(", ").filter(m => m);
-      const common = bookingMasters.filter(m => obMasters.includes(m));
-      if (common.length === 0) continue;
-      for (const seg of booking.segments) {
-        if ((seg.therapistCount || 0) === 0) continue;
-        for (const os of ob.segments) {
-          if ((os.therapistCount || 0) === 0) continue;
-          if (seg.startTime < os.endTime && seg.endTime > os.startTime) {
-            for (const name of common) {
-              errors.push({ field: "master", message: `${name} уже занят(а) с ${os.startTime} до ${os.endTime}` });
-            }
-            break;
+      for (const os of ob.segments) {
+        if (!Array.isArray(os.masterIds) || os.masterIds.length === 0) continue;
+        const commonIds = seg.masterIds.filter(id => os.masterIds.includes(id));
+        if (commonIds.length === 0) continue;
+        if (seg.startTime < os.endTime && seg.endTime > os.startTime) {
+          for (const id of commonIds) {
+            const master = (salon.therapists || []).find(t => t.id === id);
+            errors.push({ field: "master", message: `${master?.name || id} уже занят(а) с ${os.startTime} до ${os.endTime}` });
           }
+          break;
         }
-        if (errors.some(e => e.field === "master")) break;
       }
       if (errors.some(e => e.field === "master")) break;
     }
@@ -2786,7 +2781,7 @@ function validateBooking(booking, existingBookings, salon) {
 
 // ─── Booking Modal (STEP-07) ───────────────────────────────────────────────
 
-function BookingModal({ salon, procedures, combos, initialDate, initialTime, initialRoomId, onSave, onClose }) {
+function BookingModal({ salon, procedures, combos, initialDate, initialTime, initialMasterId, onSave, onClose }) {
   const isMobile = useIsMobile();
   const activeProcedures = procedures.filter(p => p.isActive);
   const bookableProcedures = activeProcedures.filter(p => p.category !== "peeling");
@@ -2930,11 +2925,15 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     return max;
   })();
 
-  // Resize masters array when count changes
+  // Resize masters array when count changes; pre-populate first slot from initialMasterId
   useEffect(() => {
     setMasters(prev => {
       if (prev.length === massageMasterCount) return prev;
-      if (prev.length < massageMasterCount) return [...prev, ...Array(massageMasterCount - prev.length).fill("")];
+      if (prev.length < massageMasterCount) {
+        const additions = Array(massageMasterCount - prev.length).fill("");
+        if (prev.length === 0 && initialMasterId && additions.length > 0) additions[0] = initialMasterId;
+        return [...prev, ...additions];
+      }
       return prev.slice(0, massageMasterCount);
     });
   }, [massageMasterCount]);
@@ -2968,12 +2967,14 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       if (!selectedProc) return null;
       const endM = startM + selectedProc.duration;
       const isSauna = selectedProc.category === "sauna";
+      const assignedMasterIds = masters.filter(m => m);
       const segs = [{
         procedureId: selectedProc.id, procedureName: selectedProc.name,
         startTime: validStartTime, endTime: minsToTime(endM),
         roomId: isSauna ? null : effectiveRoom,
         therapistCount: clientCount * selectedProc.therapistsRequired,
         resourceType: isSauna ? "sauna" : "room",
+        masterIds: isSauna ? [] : assignedMasterIds,
       }];
       // Add peeling segment if sauna + peeling checkbox
       if (isSauna && withPeeling && salon.hasPeeling) {
@@ -3025,6 +3026,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
         roomId: isSauna ? null : effectiveRoom,
         therapistCount: isSauna ? 0 : clientCount * (proc.therapistsRequired || 1),
         resourceType: isSauna ? "sauna" : "room",
+        masterIds: isSauna ? [] : masters.filter(m => m),
       });
       currentM = endM;
     }
@@ -3042,7 +3044,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     if (!segResult) return [];
     const tempBooking = {
       id: "__new__", date, clientCount,
-      masterName: masters.filter(m => m).join(", "),
+      masterName: masters.filter(m => m).map(id => (salon.therapists || []).find(t => t.id === id)?.name || id).join(", "),
       segments: segResult.segments,
       totalStartTime: segResult.totalStartTime,
       totalEndTime: segResult.totalEndTime,
@@ -3085,7 +3087,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       status: "booked",
       createdAt: new Date().toISOString(),
       notes: notes.trim(),
-      masterName: masters.filter(m => m).join(", "),
+      masterName: masters.filter(m => m).map(id => (salon.therapists || []).find(t => t.id === id)?.name || id).join(", "),
       paymentMethod,
     };
     const updated = [...existing, booking];
@@ -3164,8 +3166,8 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
                   setMasters(updated);
                 }} style={{ ...inputStyle(), cursor: "pointer" }}>
                   <option value="" style={{ backgroundColor: C.card }}>— Не назначен —</option>
-                  {(salon.therapists || []).filter(t => !masters.includes(t.name) || t.name === m).map(t => (
-                    <option key={t.id} value={t.name} style={{ backgroundColor: C.card }}>{t.name}</option>
+                  {(salon.therapists || []).filter(t => !masters.includes(t.id) || t.id === m).map(t => (
+                    <option key={t.id} value={t.id} style={{ backgroundColor: C.card }}>{t.name}</option>
                   ))}
                 </select>
               </div>
@@ -3954,7 +3956,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
   const totalGridW = slotCount * cellW;
 
   const rows = [
-    ...salon.rooms.map(r => ({ id: r.id, label: r.name, type: "room" })),
+    ...(salon.therapists || []).map(t => ({ id: t.id, label: t.name, type: "master" })),
     ...(salon.hasSauna ? [{ id: "__sauna__", label: "Сауна", type: "sauna" }] : []),
   ];
 
@@ -4021,7 +4023,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
         <div style={{ flex: 1 }} />
 
         <button
-          onClick={() => setBookingModal({ initialTime: null, initialRoomId: null })}
+          onClick={() => setBookingModal({ initialTime: null, initialMasterId: null })}
           style={{
             display: "flex", alignItems: "center", gap: 6,
             padding: isMobile ? "8px 10px" : "8px 16px", borderRadius: 8,
@@ -4092,18 +4094,18 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                 const clients = active.reduce((s, b) => s + (b.clientCount || 1), 0);
                 const revenue = paid.reduce((s, b) => s + (b.totalPrice || 0), 0);
 
-                // Room utilization for this day
-                let roomBusy = 0;
+                // Master utilization for this day
+                let masterBusy = 0;
                 const wMins = wEndM - wStartM;
-                const roomTotal = salon.rooms.length * wMins;
+                const masterTotal = (salon.therapists || []).length * wMins;
                 for (const b of active) {
                   for (const seg of (b.segments || [])) {
-                    if (seg.resourceType === "room" && seg.roomId) {
-                      roomBusy += timeToMins(seg.endTime) - timeToMins(seg.startTime);
+                    if (Array.isArray(seg.masterIds) && seg.masterIds.length > 0) {
+                      masterBusy += (timeToMins(seg.endTime) - timeToMins(seg.startTime)) * seg.masterIds.length;
                     }
                   }
                 }
-                const roomPct = roomTotal > 0 ? Math.round(roomBusy / roomTotal * 100) : 0;
+                const roomPct = masterTotal > 0 ? Math.round(masterBusy / masterTotal * 100) : 0;
 
 
 
@@ -4181,28 +4183,14 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                       const nowM = _now.getHours() * 60 + _now.getMinutes();
                       const nowLeft = (isT && nowM >= wStartM && nowM <= wEndM) ? (nowM - wStartM) / 30 * cellW : null;
 
-                      const therapistUsage = slots.map(sStart => {
-                        const sEnd = sStart + 30;
-                        const sStartStr = minsToTime(sStart);
-                        const sEndStr   = minsToTime(sEnd);
-                        let used = 0;
-                        for (const bk of dayBookings) {
-                          if (!Array.isArray(bk.segments)) continue;
-                          for (const seg of bk.segments) {
-                            if (seg.startTime < sEndStr && seg.endTime > sStartStr) used += (seg.therapistCount || 0);
-                          }
-                        }
-                        return { used, total: (salon.therapists || []).length || salon.therapistCount || 1 };
-                      });
-
-                      const getRowSegments = (row) => {
+const getRowSegments = (row) => {
                         const out = [];
                         for (const bk of dayBookings) {
                           if (!Array.isArray(bk.segments)) continue;
                           for (const seg of bk.segments) {
                             const match = row.type === "sauna"
                               ? seg.resourceType === "sauna"
-                              : (seg.resourceType === "room" && seg.roomId === row.id);
+                              : (Array.isArray(seg.masterIds) && seg.masterIds.includes(row.id));
                             if (match) out.push({ ...seg, booking: bk });
                           }
                         }
@@ -4231,11 +4219,6 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                                   fontFamily: "'Inter', sans-serif"
                                 }}>{row.label}</div>
                               ))}
-                              <div style={{
-                                borderTop: `1px solid rgba(0,0,0,0.05)`, height: 44,
-                                display: "flex", alignItems: "center", padding: "0 16px",
-                                color: C.textSub, fontSize: 11, fontWeight: 600,
-                              }}>Мастера</div>
                             </div>
 
                             {/* Scrollable grid */}
@@ -4275,7 +4258,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                                           onClick={() => setBookingModal({
                                             initialDate: ds,
                                             initialTime: minsToTime(s),
-                                            initialRoomId: row.type === "room" ? row.id : null,
+                                            initialMasterId: row.type === "master" ? row.id : null,
                                           })}
                                         />
                                       ))}
@@ -4320,31 +4303,6 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
                                   );
                                 })}
 
-                                {/* Therapist indicator */}
-                                <div style={{ display: "flex", height: 44, borderTop: `1px solid rgba(0,0,0,0.05)`, backgroundColor: "transparent" }}>
-                                  {therapistUsage.map((u, i) => {
-                                    const isFull = u.used >= u.total && u.total > 0;
-                                    return (
-                                      <div key={i} style={{
-                                        width: cellW, flexShrink: 0, display: "flex", flexDirection: "column",
-                                        alignItems: "center", justifyContent: "center", gap: 3,
-                                        borderRight: `1px solid rgba(0,0,0,0.05)`,
-                                      }}>
-                                        <div style={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center", maxWidth: cellW - 8 }}>
-                                          {Array.from({ length: Math.min(u.total, 8) }).map((_, j) => (
-                                            <div key={j} style={{
-                                              width: 5, height: 5, borderRadius: 2,
-                                              backgroundColor: j < u.used ? C.accent : "rgba(0,0,0,0.1)",
-                                            }} />
-                                          ))}
-                                        </div>
-                                        <span style={{ fontSize: 9, fontWeight: 800, color: isFull ? "#F87171" : C.textSub, fontFamily: "'Poppins', sans-serif" }}>
-                                          {u.used}/{u.total}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
 
                                 {/* Current time line */}
                                 {nowLeft !== null && (
@@ -4376,7 +4334,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
           combos={combos || []}
           initialDate={bookingModal.initialDate || toDateStr(new Date())}
           initialTime={bookingModal.initialTime}
-          initialRoomId={bookingModal.initialRoomId}
+          initialMasterId={bookingModal.initialMasterId}
           onSave={handleBookingCreated}
           onClose={() => setBookingModal(null)}
         />
