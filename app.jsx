@@ -3807,7 +3807,8 @@ const COL_W  = 120;  // px for fixed left label column
 const SEG_COLORS = { massage: "#2D6A4F", sauna: "#B85C38", peeling: "#7B68AE" };
 
 // Up to 6 rooms — distinct, accessible palette
-const ROOM_COLORS = ["#3B82F6","#F59E0B","#EC4899","#10B981","#8B5CF6","#F97316"];
+// Muted, warm-toned palette — harmonises with the app's gold accent and dark backgrounds
+const ROOM_COLORS = ["#5B8CDB","#E07B54","#6DB8A2","#C97BB2","#A89160","#7E9E6F"];
 
 const JS_DAY_KEY = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
 const RU_WEEKDAY = ["Воскресенье","Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"];
@@ -4349,9 +4350,9 @@ const getRowSegments = (row) => {
                                             {/* Room color stripe */}
                                             {roomColor && (
                                               <div style={{
-                                                width: isMobile ? 3 : 4, flexShrink: 0,
+                                                width: isMobile ? 5 : 7, flexShrink: 0,
                                                 backgroundColor: roomColor,
-                                                opacity: 0.9,
+                                                opacity: 1,
                                               }} title={roomName} />
                                             )}
                                             {/* Text content */}
