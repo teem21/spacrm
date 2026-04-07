@@ -4244,33 +4244,6 @@ const getRowSegments = (row) => {
                                   fontFamily: "'Inter', sans-serif"
                                 }}>{row.label}</div>
                               ))}
-                              {/* Rooms summary label rows */}
-                              {salon.rooms.length > 0 && (
-                                <>
-                                  <div style={{
-                                    borderTop: `1px solid rgba(0,0,0,0.05)`,
-                                    height: 28,
-                                    display: "flex", alignItems: "center",
-                                    padding: isMobile ? "0 8px" : "0 16px",
-                                    color: C.textSub, fontSize: 10, fontWeight: 800,
-                                    textTransform: "uppercase", letterSpacing: "0.06em",
-                                  }}>Кабинки</div>
-                                  {salon.rooms.map((room, ri) => (
-                                    <div key={room.id} style={{
-                                      height: isMobile ? 28 : 32,
-                                      display: "flex", alignItems: "center",
-                                      padding: isMobile ? "0 8px" : "0 12px",
-                                      gap: 6,
-                                      borderTop: `1px solid rgba(0,0,0,0.04)`,
-                                    }}>
-                                      <div style={{ width: isMobile ? 6 : 8, height: isMobile ? 6 : 8, borderRadius: 2, flexShrink: 0, backgroundColor: ROOM_COLORS[ri % ROOM_COLORS.length] }} />
-                                      <span style={{ color: C.textSub, fontSize: isMobile ? 10 : 11, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-                                        {room.name}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </>
-                              )}
                             </div>
 
                             {/* Scrollable grid */}
@@ -4372,67 +4345,6 @@ const getRowSegments = (row) => {
                                 })}
 
 
-                                {/* Rooms summary rows */}
-                                {salon.rooms.length > 0 && (
-                                  <>
-                                    {/* Section divider / header */}
-                                    <div style={{ height: 28, borderTop: `1px solid rgba(0,0,0,0.05)`, display: "flex" }}>
-                                      {slots.map(s => (
-                                        <div key={s} style={{ width: cellW, flexShrink: 0, borderRight: `1px solid rgba(0,0,0,0.05)` }} />
-                                      ))}
-                                    </div>
-                                    {salon.rooms.map((room, ri) => {
-                                      const roomColor = ROOM_COLORS[ri % ROOM_COLORS.length];
-                                      const rowHeight = isMobile ? 28 : 32;
-                                      return (
-                                        <div key={room.id} style={{ height: rowHeight, display: "flex", borderTop: `1px solid rgba(0,0,0,0.04)`, position: "relative" }}>
-                                          {slots.map(sStart => {
-                                            const sEnd = sStart + 30;
-                                            const sStartStr = minsToTime(sStart);
-                                            const sEndStr   = minsToTime(sEnd);
-                                            // Check if any active booking occupies this room in this slot
-                                            let busy = false;
-                                            let clientsHere = 0;
-                                            for (const bk of dayBookings) {
-                                              if (bk.status === "cancelled_refund" || bk.status === "cancelled_no_refund") continue;
-                                              for (const seg of (bk.segments || [])) {
-                                                if (seg.roomId === room.id && seg.startTime < sEndStr && seg.endTime > sStartStr) {
-                                                  busy = true;
-                                                  clientsHere += (seg.clientsInRoom || bk.clientCount || 1);
-                                                }
-                                              }
-                                            }
-                                            return (
-                                              <div key={sStart} style={{
-                                                width: cellW, flexShrink: 0,
-                                                height: rowHeight,
-                                                borderRight: `1px solid rgba(0,0,0,0.05)`,
-                                                backgroundColor: busy ? `${roomColor}30` : "transparent",
-                                                display: "flex", alignItems: "center", justifyContent: "center",
-                                                transition: "background-color 200ms",
-                                              }}>
-                                                {busy && (
-                                                  <div style={{
-                                                    width: isMobile ? cellW - 6 : cellW - 10,
-                                                    height: isMobile ? 14 : 18,
-                                                    borderRadius: 4,
-                                                    backgroundColor: roomColor,
-                                                    opacity: 0.85,
-                                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                                  }}>
-                                                    {!isMobile && clientsHere > 0 && (
-                                                      <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{clientsHere}</span>
-                                                    )}
-                                                  </div>
-                                                )}
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      );
-                                    })}
-                                  </>
-                                )}
 
                                 {/* Current time line */}
                                 {nowLeft !== null && (
@@ -4446,6 +4358,145 @@ const getRowSegments = (row) => {
                             </div>
                           </div>
                         </div>
+
+                        {/* ── Rooms Gantt chart ── */}
+                        {salon.rooms.length > 0 && (() => {
+                          // Collect all room segments across bookings for this day
+                          const roomSegments = [];
+                          for (const bk of dayBookings) {
+                            if (bk.status === "cancelled_refund" || bk.status === "cancelled_no_refund") continue;
+                            for (const seg of (bk.segments || [])) {
+                              if (seg.resourceType === "room" && seg.roomId) {
+                                roomSegments.push({ ...seg, booking: bk });
+                              }
+                            }
+                          }
+                          const ganttRowH = isMobile ? 36 : 44;
+                          return (
+                            <div style={{
+                              borderRadius: 32,
+                              backgroundColor: "rgba(255,255,255,0.4)",
+                              backdropFilter: "blur(10px)",
+                              border: `1px solid rgba(0,0,0,0.03)`,
+                              overflow: "hidden",
+                              margin: isMobile ? "8px 0 16px" : "8px 0 16px",
+                              boxShadow: "inset 0 2px 4px rgba(0,0,0,0.02)",
+                            }}>
+                              <div style={{ display: "flex" }}>
+                                {/* Fixed left labels */}
+                                <div style={{ width: colW, flexShrink: 0, borderRight: `1px solid rgba(0,0,0,0.05)` }}>
+                                  {/* Header spacer */}
+                                  <div style={{ height: 32, borderBottom: `1px solid rgba(0,0,0,0.05)`, display: "flex", alignItems: "center", padding: isMobile ? "0 8px" : "0 16px" }}>
+                                    <span style={{ fontSize: 10, fontWeight: 800, color: C.textSub, textTransform: "uppercase", letterSpacing: "0.06em" }}>Кабинки</span>
+                                  </div>
+                                  {salon.rooms.map((room, ri) => (
+                                    <div key={room.id} style={{
+                                      height: ganttRowH,
+                                      display: "flex", alignItems: "center",
+                                      padding: isMobile ? "0 8px" : "0 12px",
+                                      gap: 6,
+                                      borderTop: `1px solid rgba(0,0,0,0.04)`,
+                                    }}>
+                                      <div style={{ width: isMobile ? 6 : 8, height: isMobile ? 6 : 8, borderRadius: 2, flexShrink: 0, backgroundColor: ROOM_COLORS[ri % ROOM_COLORS.length] }} />
+                                      <span style={{ color: C.textSub, fontSize: isMobile ? 10 : 11, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                                        {room.name}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Scrollable Gantt area */}
+                                <div style={{ overflowX: "auto", flex: 1, WebkitOverflowScrolling: "touch" }}>
+                                  <div style={{ width: totalGridW, position: "relative", minWidth: "100%" }}>
+                                    {/* Time header */}
+                                    <div style={{ display: "flex", height: 32, borderBottom: `1px solid rgba(0,0,0,0.05)` }}>
+                                      {slots.map(s => (
+                                        <div key={s} style={{
+                                          width: cellW, flexShrink: 0, display: "flex", alignItems: "center",
+                                          paddingLeft: isMobile ? 4 : 10,
+                                          color: C.textSub, fontSize: isMobile ? 10 : 11, fontWeight: 600,
+                                          borderRight: `1px solid rgba(0,0,0,0.05)`,
+                                        }}>{minsToTime(s)}</div>
+                                      ))}
+                                    </div>
+
+                                    {/* One row per room */}
+                                    {salon.rooms.map((room, ri) => {
+                                      const roomColor = ROOM_COLORS[ri % ROOM_COLORS.length];
+                                      const segsForRoom = roomSegments.filter(rs => rs.roomId === room.id);
+                                      return (
+                                        <div key={room.id} style={{
+                                          height: ganttRowH, position: "relative",
+                                          borderTop: `1px solid rgba(0,0,0,0.04)`,
+                                          backgroundColor: `${roomColor}08`,
+                                        }}>
+                                          {/* Grid lines */}
+                                          {slots.map(s => (
+                                            <div key={s} style={{
+                                              position: "absolute",
+                                              left: (s - wStartM) / 30 * cellW, top: 0,
+                                              width: cellW, height: ganttRowH,
+                                              borderRight: `1px solid rgba(0,0,0,0.05)`,
+                                              pointerEvents: "none",
+                                            }} />
+                                          ))}
+                                          {/* Gantt bars */}
+                                          {segsForRoom.map((rs, rsi) => {
+                                            const lx = segLeft(rs.startTime);
+                                            const wd = Math.max(segWidth(rs.startTime, rs.endTime) - 6, 20);
+                                            const isCompleted = rs.booking.status === "completed";
+                                            const isOverdue = isBookingOverdue(rs.booking);
+                                            const barColor = isCompleted ? "#6DB8A2" : isOverdue ? "#F97316" : roomColor;
+                                            return (
+                                              <div key={rsi} style={{
+                                                position: "absolute",
+                                                left: lx + 3, top: 5,
+                                                width: wd, height: ganttRowH - 10,
+                                                borderRadius: 8,
+                                                backgroundColor: `${barColor}dd`,
+                                                border: `1px solid ${barColor}88`,
+                                                display: "flex", alignItems: "center",
+                                                padding: isMobile ? "0 5px" : "0 8px",
+                                                overflow: "hidden",
+                                                cursor: "pointer",
+                                                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                                                transition: "all 200ms",
+                                                zIndex: 2,
+                                              }}
+                                                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.18)"; }}
+                                                onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)"; }}
+                                                onClick={(e) => { e.stopPropagation(); setSelectedBookingId(rs.booking.id); }}
+                                              >
+                                                <span style={{
+                                                  fontSize: isMobile ? 10 : 11, fontWeight: 700,
+                                                  color: "#fff", whiteSpace: "nowrap",
+                                                  overflow: "hidden", textOverflow: "ellipsis",
+                                                }}>
+                                                  {rs.booking.clientName}
+                                                  {!isMobile && ` · ${rs.startTime}–${rs.endTime}`}
+                                                </span>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    })}
+
+                                    {/* Current time line */}
+                                    {nowLeft !== null && (
+                                      <div style={{
+                                        position: "absolute", left: nowLeft, top: 0, bottom: 0,
+                                        width: 2, backgroundColor: "#EF4444", opacity: 0.7,
+                                        zIndex: 20, pointerEvents: "none",
+                                      }} />
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
                         </div>
                       );
                     })()}
