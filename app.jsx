@@ -3806,6 +3806,9 @@ const COL_W  = 120;  // px for fixed left label column
 
 const SEG_COLORS = { massage: "#2D6A4F", sauna: "#B85C38", peeling: "#7B68AE" };
 
+// Up to 6 rooms — distinct, accessible palette
+const ROOM_COLORS = ["#3B82F6","#F59E0B","#EC4899","#10B981","#8B5CF6","#F97316"];
+
 const JS_DAY_KEY = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
 const RU_WEEKDAY = ["Воскресенье","Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"];
 const RU_WEEKDAY_SHORT = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
@@ -4198,12 +4201,33 @@ const getRowSegments = (row) => {
                       };
 
                       return (
-                        <div style={{ 
-                          borderRadius: 32, 
+                        <div>
+                        {/* Room legend */}
+                        {salon.rooms.length > 0 && (
+                          <div style={{
+                            display: "flex", flexWrap: "wrap", gap: isMobile ? 6 : 8,
+                            padding: isMobile ? "8px 4px 4px" : "8px 8px 4px",
+                          }}>
+                            {salon.rooms.map((room, ri) => (
+                              <div key={room.id} style={{
+                                display: "flex", alignItems: "center", gap: 5,
+                                padding: isMobile ? "3px 8px" : "4px 10px",
+                                borderRadius: 20,
+                                backgroundColor: `${ROOM_COLORS[ri % ROOM_COLORS.length]}18`,
+                                border: `1px solid ${ROOM_COLORS[ri % ROOM_COLORS.length]}44`,
+                              }}>
+                                <div style={{ width: isMobile ? 6 : 8, height: isMobile ? 6 : 8, borderRadius: 2, backgroundColor: ROOM_COLORS[ri % ROOM_COLORS.length], flexShrink: 0 }} />
+                                <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: ROOM_COLORS[ri % ROOM_COLORS.length] }}>{room.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div style={{
+                          borderRadius: 32,
                           backgroundColor: "rgba(255,255,255,0.4)",
                           backdropFilter: "blur(10px)",
-                          border: `1px solid rgba(0,0,0,0.03)`, 
-                          overflow: "hidden", 
+                          border: `1px solid rgba(0,0,0,0.03)`,
+                          overflow: "hidden",
                           margin: isMobile ? "4px 0 16px" : "4px 0 16px",
                           boxShadow: "inset 0 2px 4px rgba(0,0,0,0.02)"
                         }}>
@@ -4219,6 +4243,33 @@ const getRowSegments = (row) => {
                                   fontFamily: "'Inter', sans-serif"
                                 }}>{row.label}</div>
                               ))}
+                              {/* Rooms summary label rows */}
+                              {salon.rooms.length > 0 && (
+                                <>
+                                  <div style={{
+                                    borderTop: `1px solid rgba(0,0,0,0.05)`,
+                                    height: 28,
+                                    display: "flex", alignItems: "center",
+                                    padding: isMobile ? "0 8px" : "0 16px",
+                                    color: C.textSub, fontSize: 10, fontWeight: 800,
+                                    textTransform: "uppercase", letterSpacing: "0.06em",
+                                  }}>Кабинки</div>
+                                  {salon.rooms.map((room, ri) => (
+                                    <div key={room.id} style={{
+                                      height: isMobile ? 28 : 32,
+                                      display: "flex", alignItems: "center",
+                                      padding: isMobile ? "0 8px" : "0 12px",
+                                      gap: 6,
+                                      borderTop: `1px solid rgba(0,0,0,0.04)`,
+                                    }}>
+                                      <div style={{ width: isMobile ? 6 : 8, height: isMobile ? 6 : 8, borderRadius: 2, flexShrink: 0, backgroundColor: ROOM_COLORS[ri % ROOM_COLORS.length] }} />
+                                      <span style={{ color: C.textSub, fontSize: isMobile ? 10 : 11, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                                        {room.name}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </>
+                              )}
                             </div>
 
                             {/* Scrollable grid */}
@@ -4270,31 +4321,47 @@ const getRowSegments = (row) => {
                                         const status = seg.booking.status;
                                         const isCompleted = status === "completed";
                                         const isOverdue = isBookingOverdue(seg.booking);
-                                        
+
+                                        // Room color indicator
+                                        const roomIdx = seg.roomId ? salon.rooms.findIndex(r => r.id === seg.roomId) : -1;
+                                        const roomColor = roomIdx >= 0 ? ROOM_COLORS[roomIdx % ROOM_COLORS.length] : null;
+                                        const roomName = roomIdx >= 0 ? salon.rooms[roomIdx].name : null;
+
                                         const lx = segLeft(seg.startTime);
                                         const wd = Math.max(segWidth(seg.startTime, seg.endTime) - 6, 24);
                                         return (
                                           <div key={si} className="glass" style={{
                                             position: "absolute", left: lx + 3, top: 6,
                                             width: wd, height: rowH - 12,
-                                            backgroundColor: isCompleted ? "#c5dfd4dd" : (isOverdue ? "#f97316dd" : `${color}dd`), 
+                                            backgroundColor: isCompleted ? "#c5dfd4dd" : (isOverdue ? "#f97316dd" : `${color}dd`),
                                             borderRadius: 12,
                                             border: isCombo ? `1px dashed rgba(255,255,255,0.4)` : "1px solid rgba(255,255,255,0.2)",
                                             overflow: "hidden", cursor: "pointer",
                                             transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
-                                            zIndex: 2, padding: "6px 10px",
-                                            display: "flex", flexDirection: "column", justifyContent: "center",
+                                            zIndex: 2,
+                                            display: "flex", flexDirection: "row",
                                             boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                                           }}
                                             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 16px rgba(0,0,0,0.15)"; }}
                                             onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"; }}
                                             onClick={(e) => { e.stopPropagation(); setSelectedBookingId(seg.booking.id); }}
                                           >
-                                            <div style={{ fontSize: 12, fontWeight: 800, color: isCompleted ? "#2D6A4F" : "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", lineHeight: 1.2 }}>
-                                              {seg.booking.clientName}
-                                            </div>
-                                            <div style={{ fontSize: 10, fontWeight: 500, color: isCompleted ? "#2D6A4Fcc" : "rgba(255,255,255,0.85)", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-                                              {seg.procedureName}
+                                            {/* Room color stripe */}
+                                            {roomColor && (
+                                              <div style={{
+                                                width: isMobile ? 3 : 4, flexShrink: 0,
+                                                backgroundColor: roomColor,
+                                                opacity: 0.9,
+                                              }} title={roomName} />
+                                            )}
+                                            {/* Text content */}
+                                            <div style={{ flex: 1, padding: isMobile ? "4px 6px" : "6px 10px", display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0 }}>
+                                              <div style={{ fontSize: 12, fontWeight: 800, color: isCompleted ? "#2D6A4F" : "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", lineHeight: 1.2 }}>
+                                                {seg.booking.clientName}
+                                              </div>
+                                              <div style={{ fontSize: 10, fontWeight: 500, color: isCompleted ? "#2D6A4Fcc" : "rgba(255,255,255,0.85)", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                                                {roomName && !isMobile ? `${roomName} · ` : ""}{seg.procedureName}
+                                              </div>
                                             </div>
                                           </div>
                                         );
@@ -4303,6 +4370,68 @@ const getRowSegments = (row) => {
                                   );
                                 })}
 
+
+                                {/* Rooms summary rows */}
+                                {salon.rooms.length > 0 && (
+                                  <>
+                                    {/* Section divider / header */}
+                                    <div style={{ height: 28, borderTop: `1px solid rgba(0,0,0,0.05)`, display: "flex" }}>
+                                      {slots.map(s => (
+                                        <div key={s} style={{ width: cellW, flexShrink: 0, borderRight: `1px solid rgba(0,0,0,0.05)` }} />
+                                      ))}
+                                    </div>
+                                    {salon.rooms.map((room, ri) => {
+                                      const roomColor = ROOM_COLORS[ri % ROOM_COLORS.length];
+                                      const rowHeight = isMobile ? 28 : 32;
+                                      return (
+                                        <div key={room.id} style={{ height: rowHeight, display: "flex", borderTop: `1px solid rgba(0,0,0,0.04)`, position: "relative" }}>
+                                          {slots.map(sStart => {
+                                            const sEnd = sStart + 30;
+                                            const sStartStr = minsToTime(sStart);
+                                            const sEndStr   = minsToTime(sEnd);
+                                            // Check if any active booking occupies this room in this slot
+                                            let busy = false;
+                                            let clientsHere = 0;
+                                            for (const bk of dayBookings) {
+                                              if (bk.status === "cancelled_refund" || bk.status === "cancelled_no_refund") continue;
+                                              for (const seg of (bk.segments || [])) {
+                                                if (seg.roomId === room.id && seg.startTime < sEndStr && seg.endTime > sStartStr) {
+                                                  busy = true;
+                                                  clientsHere += (seg.clientsInRoom || bk.clientCount || 1);
+                                                }
+                                              }
+                                            }
+                                            return (
+                                              <div key={sStart} style={{
+                                                width: cellW, flexShrink: 0,
+                                                height: rowHeight,
+                                                borderRight: `1px solid rgba(0,0,0,0.05)`,
+                                                backgroundColor: busy ? `${roomColor}30` : "transparent",
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                transition: "background-color 200ms",
+                                              }}>
+                                                {busy && (
+                                                  <div style={{
+                                                    width: isMobile ? cellW - 6 : cellW - 10,
+                                                    height: isMobile ? 14 : 18,
+                                                    borderRadius: 4,
+                                                    backgroundColor: roomColor,
+                                                    opacity: 0.85,
+                                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                                  }}>
+                                                    {!isMobile && clientsHere > 0 && (
+                                                      <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{clientsHere}</span>
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    })}
+                                  </>
+                                )}
 
                                 {/* Current time line */}
                                 {nowLeft !== null && (
@@ -4315,6 +4444,7 @@ const getRowSegments = (row) => {
                               </div>
                             </div>
                           </div>
+                        </div>
                         </div>
                       );
                     })()}
