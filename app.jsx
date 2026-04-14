@@ -1005,8 +1005,8 @@ function OnboardingWizard({ onComplete }) {
 
   const validate = () => {
     if (step === 0 && !s1.name.trim()) return "Введите название салона";
-    if (step === 1 && (s1.rooms.length < 1 || s1.rooms.length > 6))
-      return "Кол-во кабинок должно быть от 1 до 6";
+    if (step === 1 && s1.rooms.length < 1)
+      return "Добавьте хотя бы одну кабинку";
     if (step === 1 && s1.rooms.some(r => !r.name.trim()))
       return "Укажите название каждой кабинки";
     if (step === 2 && (!s1.therapists || s1.therapists.length < 1 || s1.therapists.length > 15))
@@ -1613,7 +1613,7 @@ function SettingsScreen({ salons, onSalonsChange, onShowToast, onReset, onImport
       // Validate before saving
       for (const s of salons) {
         if (!s.name.trim()) return;
-        if (s.rooms.length < 1 || s.rooms.length > 6) return;
+        if (s.rooms.length < 1) return;
         if (!s.therapists || s.therapists.length < 1 || s.therapists.length > 15) return;
         if (s.bufferMinutes < 5 || s.bufferMinutes > 60) return;
         if (s.workStart >= s.workEnd) return;
