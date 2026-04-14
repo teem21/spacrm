@@ -182,7 +182,7 @@ const UserStorage = {
  * @typedef {Object} Room
  * @property {string} id
  * @property {string} name
- * @property {1|2} beds
+ * @property {1|2|3} beds
  */
 
 /**
@@ -798,7 +798,7 @@ function RoomsEditor({ rooms, onChange }) {
             />
           </div>
           <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-            {[1, 2].map(b => (
+            {[1, 2, 3].map(b => (
               <button
                 key={b}
                 onClick={() => updateRoom(idx, { beds: b })}
@@ -1331,7 +1331,7 @@ function SalonSettingsCard({ salon, onChange }) {
                     style={{ flex: 1, fontSize: 13, height: 36, borderRadius: 12, padding: "0 12px" }}
                   />
                   <div style={{ display: "flex", gap: 4, backgroundColor: "rgba(0,0,0,0.03)", padding: 4, borderRadius: 12 }}>
-                    {[1, 2].map(b => (
+                    {[1, 2, 3].map(b => (
                       <button
                         key={b}
                         onClick={() => updateRoom(idx, { beds: b })}
@@ -5866,6 +5866,18 @@ function App() {
           await Storage.set(KEYS.combos("salon-3"), []);
         }
       }
+      // Migrate: copy procedures from salon-1 to all other salons (one-time sync)
+      if (savedSalons && savedSalons.length > 1 && !(await Storage.get("spa-crm:migrations:services-sync-v1"))) {
+        const sourceProcedures = await Storage.get(KEYS.procedures("salon-1"));
+        if (sourceProcedures && sourceProcedures.length > 0) {
+          for (const salon of savedSalons) {
+            if (salon.id === "salon-1") continue;
+            const copied = sourceProcedures.map(p => ({ ...p, id: makeId(), salonId: salon.id }));
+            await Storage.set(KEYS.procedures(salon.id), copied);
+          }
+          await Storage.set("spa-crm:migrations:services-sync-v1", true);
+        }
+      }
       if (!savedSalons || savedSalons.length === 0) {
         setNeedsOnboarding(true);
       } else {
@@ -5900,6 +5912,18 @@ function App() {
         if (ok) {
           await Storage.set(KEYS.procedures("salon-3"), makeDefaultProcedures("salon-3"));
           await Storage.set(KEYS.combos("salon-3"), []);
+        }
+      }
+      // Migrate: copy procedures from salon-1 to all other salons (one-time sync)
+      if (savedSalons.length > 1 && !(await Storage.get("spa-crm:migrations:services-sync-v1"))) {
+        const sourceProcedures = await Storage.get(KEYS.procedures("salon-1"));
+        if (sourceProcedures && sourceProcedures.length > 0) {
+          for (const salon of savedSalons) {
+            if (salon.id === "salon-1") continue;
+            const copied = sourceProcedures.map(p => ({ ...p, id: makeId(), salonId: salon.id }));
+            await Storage.set(KEYS.procedures(salon.id), copied);
+          }
+          await Storage.set("spa-crm:migrations:services-sync-v1", true);
         }
       }
       setSalons(savedSalons);
