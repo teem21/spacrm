@@ -1988,7 +1988,7 @@ function ProcedureFormRow({ initial, onSave, onCancel, isMobile }) {
   );
 }
 
-function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowToast }) {
+function ProceduresTab({ procedures, activeSalonId, salons, onProceduresChange, onShowToast }) {
   const [editing, setEditing] = useState(null);
   const isMobile = useIsMobile();
 
@@ -1999,8 +1999,17 @@ function ProceduresTab({ procedures, activeSalonId, onProceduresChange, onShowTo
 
   const handleAdd = async (form) => {
     await persist([...procedures, { id: makeId(), salonId: activeSalonId, ...form, isActive: true }]);
+    // Sync new procedure to all other salons
+    const otherSalons = (salons || []).filter(s => s.id !== activeSalonId);
+    for (const salon of otherSalons) {
+      const existing = (await Storage.get(KEYS.procedures(salon.id))) || [];
+      await Storage.set(KEYS.procedures(salon.id), [
+        ...existing,
+        { id: makeId(), salonId: salon.id, ...form, isActive: true },
+      ]);
+    }
     setEditing(null);
-    onShowToast("Процедура добавлена");
+    onShowToast(otherSalons.length > 0 ? "Процедура добавлена во все локации" : "Процедура добавлена");
   };
 
   const handleEdit = async (id, form) => {
@@ -2629,6 +2638,7 @@ function ServicesScreen({ procedures, onProceduresChange, combos, onCombosChange
         <ProceduresTab
           procedures={procedures}
           activeSalonId={activeSalonId}
+          salons={salons}
           onProceduresChange={onProceduresChange}
           onShowToast={onShowToast}
         />
