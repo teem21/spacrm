@@ -787,7 +787,6 @@ function RoomsEditor({ rooms, onChange }) {
     onChange(next);
   };
   const addRoom = () => {
-    if (rooms.length >= 6) return;
     const n = rooms.length + 1;
     const salonId = rooms[0]?.id.split("-room-")[0] || "salon-1";
     onChange([...rooms, { id: `${salonId}-room-${n}`, name: `Кабинка ${n}`, beds: 2 }]);
@@ -813,22 +812,15 @@ function RoomsEditor({ rooms, onChange }) {
               style={{ ...inputStyle(), height: 32, fontSize: 13 }}
             />
           </div>
-          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-            {[1, 2, 3].map(b => (
-              <button
-                key={b}
-                onClick={() => updateRoom(idx, { beds: b })}
-                style={{
-                  padding: "4px 12px", borderRadius: 6, fontSize: 12,
-                  border: `1px solid ${room.beds === b ? C.accent : C.border}`,
-                  backgroundColor: room.beds === b ? C.accent : "transparent",
-                  color: room.beds === b ? C.bg : C.textSub,
-                  cursor: "pointer",
-                }}
-              >
-                {b} кр.
-              </button>
-            ))}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <input
+              type="number" min={1} value={room.beds}
+              onChange={e => updateRoom(idx, { beds: Math.max(1, parseInt(e.target.value) || 1) })}
+              style={{
+                ...inputStyle(), width: 64, height: 32, fontSize: 13, textAlign: "center",
+              }}
+            />
+            <span style={{ fontSize: 12, color: C.textSub }}>кр.</span>
           </div>
           {rooms.length > 1 && (
             <button
@@ -840,18 +832,16 @@ function RoomsEditor({ rooms, onChange }) {
           )}
         </div>
       ))}
-      {rooms.length < 6 && (
-        <button
-          onClick={addRoom}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            padding: "8px", borderRadius: 8, border: `1px dashed ${C.border}`,
-            background: "none", color: C.textSub, fontSize: 13, cursor: "pointer",
-          }}
-        >
-          <Plus size={14} /> Добавить кабинку
-        </button>
-      )}
+      <button
+        onClick={addRoom}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          padding: "8px", borderRadius: 8, border: `1px dashed ${C.border}`,
+          background: "none", color: C.textSub, fontSize: 13, cursor: "pointer",
+        }}
+      >
+        <Plus size={14} /> Добавить кабинку
+      </button>
     </div>
   );
 }
@@ -1283,23 +1273,15 @@ const TIME_OPTIONS = (() => {
 const BUFFER_OPTIONS = [5, 10, 15, 20, 30, 45, 60].map(v => ({ value: v, label: `${v} мин` }));
 
 function SalonSettingsCard({ salon, onChange }) {
-  const roomCount = salon.rooms.length;
+  const addRoom = () => {
+    const n = salon.rooms.length + 1;
+    const extra = { id: `${salon.id}-room-${n}-${makeId()}`, name: `Кабинка ${n}`, beds: 2 };
+    onChange({ rooms: [...salon.rooms, extra] });
+  };
 
-  const handleRoomCountChange = (newCount) => {
-    const clamped = Math.max(1, Math.min(6, newCount));
-    if (clamped === roomCount) return;
-    let rooms;
-    if (clamped > roomCount) {
-      const extra = Array.from({ length: clamped - roomCount }, (_, i) => ({
-        id: `${salon.id}-room-${roomCount + i + 1}-${makeId()}`,
-        name: `Кабинка ${roomCount + i + 1}`,
-        beds: 2,
-      }));
-      rooms = [...salon.rooms, ...extra];
-    } else {
-      rooms = salon.rooms.slice(0, clamped);
-    }
-    onChange({ rooms });
+  const removeRoom = (idx) => {
+    if (salon.rooms.length <= 1) return;
+    onChange({ rooms: salon.rooms.filter((_, i) => i !== idx) });
   };
 
   const updateRoom = (idx, patch) => {
@@ -1328,12 +1310,7 @@ function SalonSettingsCard({ salon, onChange }) {
 
         {/* Кабинки */}
         <Row label="Управление кабинками">
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: C.textSub }}>Количество:</span>
-              <InlineNumber value={roomCount} min={1} max={6} onChange={handleRoomCountChange} />
-            </div>
-            
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
               {salon.rooms.map((room, idx) => (
                 <div key={room.id} style={{
@@ -1346,29 +1323,39 @@ function SalonSettingsCard({ salon, onChange }) {
                     onChange={v => updateRoom(idx, { name: v })}
                     style={{ flex: 1, fontSize: 13, height: 36, borderRadius: 12, padding: "0 12px" }}
                   />
-                  <div style={{ display: "flex", gap: 4, backgroundColor: "rgba(0,0,0,0.03)", padding: 4, borderRadius: 12 }}>
-                    {[1, 2, 3].map(b => (
-                      <button
-                        key={b}
-                        onClick={() => updateRoom(idx, { beds: b })}
-                        style={{
-                          padding: "6px 12px", borderRadius: 8, fontSize: 11,
-                          border: "none",
-                          backgroundColor: room.beds === b ? "#fff" : "transparent",
-                          color: room.beds === b ? C.textMain : C.textSub,
-                          fontWeight: room.beds === b ? 700 : 500,
-                          cursor: "pointer",
-                          transition: "all 200ms",
-                          boxShadow: room.beds === b ? "0 2px 8px rgba(0,0,0,0.05)" : "none",
-                        }}
-                      >
-                        {b} кр.
-                      </button>
-                    ))}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <input
+                      type="number" min={1} value={room.beds}
+                      onChange={e => updateRoom(idx, { beds: Math.max(1, parseInt(e.target.value) || 1) })}
+                      style={{
+                        width: 64, height: 36, fontSize: 13, textAlign: "center",
+                        borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)",
+                        background: "#fff", outline: "none",
+                      }}
+                    />
+                    <span style={{ fontSize: 12, color: C.textSub }}>кр.</span>
                   </div>
+                  {salon.rooms.length > 1 && (
+                    <button
+                      onClick={() => removeRoom(idx)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", padding: 4, display: "flex", alignItems: "center" }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
+            <button
+              onClick={addRoom}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                padding: "10px", borderRadius: 12, border: "1px dashed rgba(0,0,0,0.15)",
+                background: "none", color: C.textSub, fontSize: 13, cursor: "pointer",
+              }}
+            >
+              <Plus size={14} /> Добавить кабинку
+            </button>
           </div>
         </Row>
 
