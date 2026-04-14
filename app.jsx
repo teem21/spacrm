@@ -265,21 +265,37 @@ const UserStorage = {
 const makeId = () => Math.random().toString(36).slice(2, 10);
 
 const makeDefaultProcedures = (salonId) => [
-  // Тайский массаж
-  { id: makeId(), salonId, name: "Тайский массаж 1ч",    category: "massage", duration: 60,  price: 5000, therapistsRequired: 1, isActive: true },
-  { id: makeId(), salonId, name: "Тайский массаж 1.5ч",  category: "massage", duration: 90,  price: 7000, therapistsRequired: 1, isActive: true },
-  { id: makeId(), salonId, name: "Тайский массаж 2ч",    category: "massage", duration: 120, price: 9000, therapistsRequired: 1, isActive: true },
-  // Ойл массаж
-  { id: makeId(), salonId, name: "Ойл массаж 1ч",        category: "massage", duration: 60,  price: 5000, therapistsRequired: 1, isActive: true },
-  { id: makeId(), salonId, name: "Ойл массаж 1.5ч",      category: "massage", duration: 90,  price: 7000, therapistsRequired: 1, isActive: true },
-  { id: makeId(), salonId, name: "Ойл массаж 2ч",        category: "massage", duration: 120, price: 9000, therapistsRequired: 1, isActive: true },
-  // Массаж в 4 руки
-  { id: makeId(), salonId, name: "Массаж в 4 руки 1ч",   category: "massage", duration: 60,  price: 9000,  therapistsRequired: 2, isActive: true },
-  { id: makeId(), salonId, name: "Массаж в 4 руки 1.5ч", category: "massage", duration: 90,  price: 13000, therapistsRequired: 2, isActive: true },
-  { id: makeId(), salonId, name: "Массаж в 4 руки 2ч",   category: "massage", duration: 120, price: 17000, therapistsRequired: 2, isActive: true },
+  // Массаж
+  { id: makeId(), salonId, name: "Ойл массаж, Арома массаж 1 час",                      category: "massage", duration: 60,  price: 15000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Ойл массаж, Арома массаж 1,5 часа",                   category: "massage", duration: 90,  price: 20000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Ойл массаж, Арома массаж 2 часа",                     category: "massage", duration: 120, price: 25000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Детский Ойл/Арома массаж 1 час",                      category: "massage", duration: 60,  price: 12000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Детский массаж ног 1 час",                             category: "massage", duration: 60,  price: 12000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Массаж горячими травяными шарами 30 мин",              category: "massage", duration: 30,  price: 10000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Массаж горячими травяными шарами 1 час",               category: "massage", duration: 60,  price: 15000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Массаж горячими травяными шарами 1,5 часа",            category: "massage", duration: 90,  price: 20000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Массаж горячими травяными шарами 2 часа",              category: "massage", duration: 120, price: 25000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Детский массаж горячими травяными шарами 1 час",       category: "massage", duration: 60,  price: 12000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Стоун массаж 1 час",                                  category: "massage", duration: 60,  price: 15000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Стоун массаж 1,5 часа",                               category: "massage", duration: 90,  price: 20000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Стоун массаж 2 часа",                                 category: "massage", duration: 120, price: 25000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Тайский традиционный массаж 1 час",                   category: "massage", duration: 60,  price: 15000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Тайский традиционный массаж 1,5 часа",                category: "massage", duration: 90,  price: 20000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Тайский традиционный массаж 2 часа",                  category: "massage", duration: 120, price: 25000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Детский тайский традиционный массаж 1 час",           category: "massage", duration: 60,  price: 12000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Массаж головы 30 мин",                                category: "massage", duration: 30,  price: 10000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Массаж ног 30 мин",                                   category: "massage", duration: 30,  price: 10000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Массаж ног 1 час",                                    category: "massage", duration: 60,  price: 15000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Массаж спины/Шейно-воротниковый 30 мин",              category: "massage", duration: 30,  price: 10000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Массаж спины/Шейно-воротниковый 1 час",               category: "massage", duration: 60,  price: 15000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Коррекция фигуры 30 мин",                             category: "massage", duration: 30,  price: 10000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Коррекция фигуры 1 час",                              category: "massage", duration: 60,  price: 15000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "АзияМикс",                                             category: "massage", duration: 120, price: 25000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Энергетический массаж",                               category: "massage", duration: 120, price: 25000, therapistsRequired: 1, isActive: true },
   // Сауна и пиллинг
-  { id: makeId(), salonId, name: "Сауна",                 category: "sauna",   duration: 60,  price: 3000, therapistsRequired: 0, isActive: true },
-  { id: makeId(), salonId, name: "Пиллинг",               category: "peeling", duration: 30,  price: 2000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Парение в Хаммам 30 мин",                             category: "sauna",   duration: 30,  price: 5000,  therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Парение в хаммам 1 час",                              category: "sauna",   duration: 60,  price: 7000,  therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Пилинг в хаммаме",                                    category: "peeling", duration: 60,  price: 15000, therapistsRequired: 1, isActive: true },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -5878,6 +5894,13 @@ function App() {
           await Storage.set("spa-crm:migrations:services-sync-v1", true);
         }
       }
+      // Migrate: replace all salons' procedures with the new canonical service list
+      if (savedSalons && savedSalons.length > 0 && !(await Storage.get("spa-crm:migrations:services-sync-v2"))) {
+        for (const salon of savedSalons) {
+          await Storage.set(KEYS.procedures(salon.id), makeDefaultProcedures(salon.id));
+        }
+        await Storage.set("spa-crm:migrations:services-sync-v2", true);
+      }
       if (!savedSalons || savedSalons.length === 0) {
         setNeedsOnboarding(true);
       } else {
@@ -5925,6 +5948,13 @@ function App() {
           }
           await Storage.set("spa-crm:migrations:services-sync-v1", true);
         }
+      }
+      // Migrate: replace all salons' procedures with the new canonical service list
+      if (savedSalons.length > 0 && !(await Storage.get("spa-crm:migrations:services-sync-v2"))) {
+        for (const salon of savedSalons) {
+          await Storage.set(KEYS.procedures(salon.id), makeDefaultProcedures(salon.id));
+        }
+        await Storage.set("spa-crm:migrations:services-sync-v2", true);
       }
       setSalons(savedSalons);
       const firstId = savedSalons[0].id;
