@@ -2022,6 +2022,12 @@ function ProceduresTab({ procedures, activeSalonId, salons, onProceduresChange, 
     persist(procedures.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p));
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm("Удалить процедуру?")) return;
+    await persist(procedures.filter(p => p.id !== id));
+    onShowToast("Процедура удалена");
+  };
+
   const thStyle = {
     padding: "16px 20px", textAlign: "left",
     color: C.textSub, fontSize: 11, fontWeight: 800,
@@ -2065,8 +2071,16 @@ function ProceduresTab({ procedures, activeSalonId, salons, onProceduresChange, 
               style={{ borderRadius: 20, padding: 16, cursor: "pointer", opacity: proc.isActive ? 1 : 0.6, transition: "all 200ms" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontWeight: 600, fontSize: 15, color: proc.isActive ? C.textMain : C.textSub }}>{proc.name}</span>
-                <div onClick={e => { e.stopPropagation(); handleToggle(proc.id); }}>
-                  <Toggle checked={proc.isActive} onChange={() => handleToggle(proc.id)} />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button onClick={e => { e.stopPropagation(); handleDelete(proc.id); }} style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "#C0392B", padding: 4, display: "flex", alignItems: "center",
+                  }}>
+                    <Trash2 size={15} />
+                  </button>
+                  <div onClick={e => { e.stopPropagation(); handleToggle(proc.id); }}>
+                    <Toggle checked={proc.isActive} onChange={() => handleToggle(proc.id)} />
+                  </div>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
@@ -2124,7 +2138,8 @@ function ProceduresTab({ procedures, activeSalonId, salons, onProceduresChange, 
               <th style={{ ...thStyle, width: 110 }}>Длит.</th>
               <th style={{ ...thStyle, width: 100 }}>Мастеров</th>
               <th style={{ ...thStyle, width: 130 }}>Цена</th>
-              <th style={{ ...thStyle, width: 100, textAlign: "center", paddingRight: 32 }}>Активна</th>
+              <th style={{ ...thStyle, width: 100, textAlign: "center" }}>Активна</th>
+              <th style={{ ...thStyle, width: 56, paddingRight: 24 }} />
             </tr>
           </thead>
           <tbody>
@@ -2170,10 +2185,18 @@ function ProceduresTab({ procedures, activeSalonId, salons, onProceduresChange, 
                   <td style={td()}>{proc.duration} мин</td>
                   <td style={td(true)}>{proc.therapistsRequired}</td>
                   <td style={td()}>{proc.price.toLocaleString("ru-RU")} ₸</td>
-                  <td style={{ ...td(true), paddingRight: 32 }} onClick={e => { e.stopPropagation(); handleToggle(proc.id); }}>
+                  <td style={{ ...td(true) }} onClick={e => { e.stopPropagation(); handleToggle(proc.id); }}>
                     <div style={{ display: "flex", justifyContent: "center" }}>
                       <Toggle checked={proc.isActive} onChange={() => handleToggle(proc.id)} />
                     </div>
+                  </td>
+                  <td style={{ ...td(true), paddingRight: 24 }} onClick={e => e.stopPropagation()}>
+                    <button onClick={() => handleDelete(proc.id)} style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      color: "#C0392B", padding: 6, borderRadius: 8, display: "flex", alignItems: "center",
+                    }}>
+                      <Trash2 size={15} />
+                    </button>
                   </td>
                 </tr>
               );
