@@ -2296,8 +2296,9 @@ function ComboModal({ initial, procedures, onSave, onCancel }) {
   const [name, setName] = useState(initial?.name || "");
   const [selected, setSelected] = useState(initial?.items || []);
   const [step, setStep] = useState(1); // 1: Name & Procs, 2: Price/Meta
+  const [price, setPrice] = useState(initial?.price != null ? String(initial.price) : "");
 
-  const totalPrice = selected.reduce((sum, item) => {
+  const autoPrice = selected.reduce((sum, item) => {
     const p = procedures.find(x => x.id === item.procedureId);
     return sum + (p ? p.price : 0);
   }, 0);
@@ -2317,7 +2318,8 @@ function ComboModal({ initial, procedures, onSave, onCancel }) {
   const handleSave = () => {
     if (!name.trim()) return;
     if (selected.length < 2) return;
-    onSave({ name, items: selected, price: totalPrice });
+    const finalPrice = parseInt(price, 10) || autoPrice;
+    onSave({ name, items: selected, price: finalPrice });
   };
 
   return (
@@ -2404,9 +2406,20 @@ function ComboModal({ initial, procedures, onSave, onCancel }) {
               </div>
 
               <div className="glass" style={{ padding: 24, borderRadius: 24, backgroundColor: "rgba(253, 192, 3, 0.05)", border: `1px solid ${C.accent}33` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: C.textMain }}>Итоговая стоимость</span>
-                  <span style={{ fontSize: 24, fontWeight: 900, color: C.accent }}>{totalPrice.toLocaleString()} ₸</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: C.textMain }}>Цена комбо-пакета</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <input
+                      type="number" min={0} value={price}
+                      onChange={e => setPrice(e.target.value)}
+                      placeholder={autoPrice.toLocaleString()}
+                      style={{ ...inputStyle(), flex: 1, height: 48, fontSize: 18, fontWeight: 800, borderRadius: 12, textAlign: "right" }}
+                    />
+                    <span style={{ fontSize: 18, fontWeight: 800, color: C.accent }}>₸</span>
+                  </div>
+                  <span style={{ fontSize: 12, color: C.textSub }}>
+                    Сумма услуг: {autoPrice.toLocaleString()} ₸ — можете указать другую цену
+                  </span>
                 </div>
               </div>
             </div>
