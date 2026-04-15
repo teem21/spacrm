@@ -2294,7 +2294,10 @@ function SaunaPeelingTab({ salon, onSalonChange, onShowToast }) {
 
 function ComboModal({ initial, procedures, onSave, onCancel }) {
   const [name, setName] = useState(initial?.name || "");
-  const [selected, setSelected] = useState(initial?.items || []);
+  // selected: [{ procedureId, offsetMinutes }] — internal format for UI
+  const [selected, setSelected] = useState(
+    (initial?.steps || []).map(s => ({ procedureId: s.procId, offsetMinutes: s.offsetMinutes || 0 }))
+  );
   const [step, setStep] = useState(1); // 1: Name & Procs, 2: Price/Meta
   const [price, setPrice] = useState(initial?.price != null ? String(initial.price) : "");
 
@@ -2319,7 +2322,12 @@ function ComboModal({ initial, procedures, onSave, onCancel }) {
     if (!name.trim()) return;
     if (selected.length < 2) return;
     const finalPrice = parseInt(price, 10) || autoPrice;
-    onSave({ name, items: selected, price: finalPrice });
+    // Save steps with procId + category so booking code can work without extra lookups
+    const steps = selected.map(s => {
+      const p = procedures.find(x => x.id === s.procedureId);
+      return { procId: s.procedureId, category: p?.category || "massage", offsetMinutes: s.offsetMinutes || 0 };
+    });
+    onSave({ name, steps, price: finalPrice });
   };
 
   return (
@@ -2508,14 +2516,14 @@ function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowTo
         </div>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-        {(combo.items || []).map((step, sidx) => {
-          const p = procedures.find(x => x.id === step.procedureId);
+        {(combo.steps || []).map((step, sidx) => {
+          const p = procedures.find(x => x.id === step.procId);
           return (
-            <React.Fragment key={step.procedureId}>
+            <React.Fragment key={step.procId}>
               <span style={{ padding: "4px 8px", borderRadius: 6, backgroundColor: "rgba(0,0,0,0.05)", fontSize: 11, fontWeight: 700 }}>
                 {p ? p.name : "???"}
               </span>
-              {sidx < combo.items.length - 1 && <span style={{ color: C.accent }}>→</span>}
+              {sidx < combo.steps.length - 1 && <span style={{ color: C.accent }}>→</span>}
             </React.Fragment>
           );
         })}
@@ -2605,14 +2613,14 @@ function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowTo
                   <td style={{ ...td(), paddingLeft: 32, fontWeight: 600 }}>{combo.name}</td>
                   <td style={td()}>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {(combo.items || []).map((step, sidx) => {
-                        const p = procedures.find(x => x.id === step.procedureId);
+                      {(combo.steps || []).map((step, sidx) => {
+                        const p = procedures.find(x => x.id === step.procId);
                         return (
-                          <React.Fragment key={step.procedureId}>
+                          <React.Fragment key={step.procId}>
                             <span style={{ padding: "4px 8px", borderRadius: 6, backgroundColor: "rgba(0,0,0,0.05)", fontSize: 11, fontWeight: 700 }}>
                               {p ? p.name : "???"}
                             </span>
-                            {sidx < combo.items.length - 1 && <span style={{ color: C.accent }}>→</span>}
+                            {sidx < combo.steps.length - 1 && <span style={{ color: C.accent }}>→</span>}
                           </React.Fragment>
                         );
                       })}
@@ -2999,13 +3007,15 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const comboTimeline = (() => {
     if (!selectedCombo) return [];
     let currentM = timeToMins(validStartTime);
-    return selectedCombo.steps.map(step => {
-      if (step.category === "peeling") return { ...step, label: step.name, parallel: true };
-      const endM = currentM + step.duration;
-      const item = { ...step, label: `${step.name} (${minsToTime(currentM)}–${minsToTime(endM)})`, parallel: false };
+    return (selectedCombo.steps || []).map(step => {
+      const proc = activeProcedures.find(p => p.id === step.procId);
+      if (!proc) return null;
+      if (proc.category === "peeling") return { ...proc, ...step, label: proc.name, parallel: true };
+      const endM = currentM + proc.duration;
+      const item = { ...proc, ...step, label: `${proc.name} (${minsToTime(currentM)}–${minsToTime(endM)})`, parallel: false };
       currentM = endM;
       return item;
-    });
+    }).filter(Boolean);
   })();
 
   const generateSegments = () => {
