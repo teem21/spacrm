@@ -2480,12 +2480,18 @@ function CombosTab({ combos, activeSalonId, salons, onCombosChange, procedures, 
     await Storage.set(KEYS.combos(activeSalonId), updated);
   };
 
+  const calcDuration = (steps, procs) =>
+    (steps || []).reduce((sum, s) => sum + (procs.find(p => p.id === s.procId)?.duration || 0), 0);
+
   const handleSave = async (form) => {
+    const totalDuration = calcDuration(form.steps, procedures);
     if (editingCombo) {
-      await persist(combos.map(c => c.id === editingCombo.id ? { ...editingCombo, ...form } : c));
+      await persist(combos.map(c => c.id === editingCombo.id
+        ? { ...editingCombo, ...form, totalDuration }
+        : c));
       onShowToast("Обновлено");
     } else {
-      await persist([...combos, { id: makeId(), salonId: activeSalonId, ...form, isActive: true }]);
+      await persist([...combos, { id: makeId(), salonId: activeSalonId, ...form, totalDuration, isActive: true }]);
       // Sync new combo to all other salons, remapping procIds to match each salon's procedure IDs
       const otherSalons = (salons || []).filter(s => s.id !== activeSalonId);
       for (const salon of otherSalons) {
@@ -2495,10 +2501,11 @@ function CombosTab({ combos, activeSalonId, salons, onCombosChange, procedures, 
           const targetProc = srcProc ? otherProcs.find(p => p.name === srcProc.name) : null;
           return { ...step, procId: targetProc ? targetProc.id : step.procId };
         });
+        const otherDuration = calcDuration(mappedSteps, otherProcs);
         const existing = (await Storage.get(KEYS.combos(salon.id))) || [];
         await Storage.set(KEYS.combos(salon.id), [
           ...existing,
-          { id: makeId(), salonId: salon.id, ...form, steps: mappedSteps, isActive: true },
+          { id: makeId(), salonId: salon.id, ...form, steps: mappedSteps, totalDuration: otherDuration, isActive: true },
         ]);
       }
       onShowToast(otherSalons.length > 0 ? "Комбо добавлено во все локации" : "Комбо добавлено");
