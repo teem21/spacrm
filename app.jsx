@@ -2470,7 +2470,7 @@ function ComboModal({ initial, procedures, onSave, onCancel }) {
   );
 }
 
-function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowToast }) {
+function CombosTab({ combos, activeSalonId, salons, onCombosChange, procedures, onShowToast }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCombo, setEditingCombo] = useState(null);
   const isMobile = useIsMobile();
@@ -2486,7 +2486,16 @@ function CombosTab({ combos, activeSalonId, onCombosChange, procedures, onShowTo
       onShowToast("Обновлено");
     } else {
       await persist([...combos, { id: makeId(), salonId: activeSalonId, ...form, isActive: true }]);
-      onShowToast("Комбо добавлено");
+      // Sync new combo to all other salons
+      const otherSalons = (salons || []).filter(s => s.id !== activeSalonId);
+      for (const salon of otherSalons) {
+        const existing = (await Storage.get(KEYS.combos(salon.id))) || [];
+        await Storage.set(KEYS.combos(salon.id), [
+          ...existing,
+          { id: makeId(), salonId: salon.id, ...form, isActive: true },
+        ]);
+      }
+      onShowToast(otherSalons.length > 0 ? "Комбо добавлено во все локации" : "Комбо добавлено");
     }
     setModalOpen(false);
     setEditingCombo(null);
@@ -2679,6 +2688,7 @@ function ServicesScreen({ procedures, onProceduresChange, combos, onCombosChange
         <CombosTab
           combos={combos}
           activeSalonId={activeSalonId}
+          salons={salons}
           onCombosChange={onCombosChange}
           procedures={procedures}
           onShowToast={onShowToast}
