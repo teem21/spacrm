@@ -2486,13 +2486,19 @@ function CombosTab({ combos, activeSalonId, salons, onCombosChange, procedures, 
       onShowToast("Обновлено");
     } else {
       await persist([...combos, { id: makeId(), salonId: activeSalonId, ...form, isActive: true }]);
-      // Sync new combo to all other salons
+      // Sync new combo to all other salons, remapping procIds to match each salon's procedure IDs
       const otherSalons = (salons || []).filter(s => s.id !== activeSalonId);
       for (const salon of otherSalons) {
+        const otherProcs = (await Storage.get(KEYS.procedures(salon.id))) || [];
+        const mappedSteps = (form.steps || []).map(step => {
+          const srcProc = procedures.find(p => p.id === step.procId);
+          const targetProc = srcProc ? otherProcs.find(p => p.name === srcProc.name) : null;
+          return { ...step, procId: targetProc ? targetProc.id : step.procId };
+        });
         const existing = (await Storage.get(KEYS.combos(salon.id))) || [];
         await Storage.set(KEYS.combos(salon.id), [
           ...existing,
-          { id: makeId(), salonId: salon.id, ...form, isActive: true },
+          { id: makeId(), salonId: salon.id, ...form, steps: mappedSteps, isActive: true },
         ]);
       }
       onShowToast(otherSalons.length > 0 ? "Комбо добавлено во все локации" : "Комбо добавлено");
