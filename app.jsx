@@ -2321,7 +2321,7 @@ function ComboModal({ initial, procedures, onSave, onCancel }) {
   const handleSave = () => {
     if (!name.trim()) return;
     if (selected.length < 2) return;
-    const finalPrice = parseInt(price, 10) || autoPrice;
+    const finalPrice = price !== "" ? (parseInt(price, 10) || 0) : autoPrice;
     // Save steps with procId + category so booking code can work without extra lookups
     const steps = selected.map(s => {
       const p = procedures.find(x => x.id === s.procedureId);
@@ -2418,9 +2418,9 @@ function ComboModal({ initial, procedures, onSave, onCancel }) {
                   <span style={{ fontSize: 14, fontWeight: 700, color: C.textMain }}>Цена комбо-пакета</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <input
-                      type="number" min={0} value={price}
-                      onChange={e => setPrice(e.target.value)}
-                      placeholder={autoPrice.toLocaleString()}
+                      type="text" inputMode="numeric" value={price}
+                      onChange={e => setPrice(e.target.value.replace(/\D/g, ""))}
+                      placeholder={String(autoPrice)}
                       style={{ ...inputStyle(), flex: 1, height: 48, fontSize: 18, fontWeight: 800, borderRadius: 12, textAlign: "right" }}
                     />
                     <span style={{ fontSize: 18, fontWeight: 800, color: C.accent }}>₸</span>
