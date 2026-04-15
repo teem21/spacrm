@@ -3027,12 +3027,14 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       }];
       // Add peeling segment if sauna + peeling checkbox
       if (isSauna && withPeeling && salon.hasPeeling) {
-        const pEndM = startM + peelingCount * (salon.peelingTimePerPerson || 30);
+        const pMasters = Math.min(peelingCount, salon.peelingMastersMax || 2);
+        const pDuration = Math.ceil(peelingCount / pMasters) * (salon.peelingTimePerPerson || 30);
+        const pEndM = startM + pDuration;
         segs.push({
           procedureId: "__peeling__", procedureName: "Пиллинг",
           startTime: validStartTime, endTime: minsToTime(pEndM),
           roomId: null,
-          therapistCount: Math.min(peelingCount, salon.peelingMastersMax || 2),
+          therapistCount: pMasters,
           resourceType: "peeling",
         });
       }
@@ -3054,11 +3056,13 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
 
       if (proc.category === "peeling") {
         if (saunaStartM !== null) {
-          const pEndM = saunaStartM + peelingCount * (salon.peelingTimePerPerson || 30);
+          const pMasters = Math.min(peelingCount, salon.peelingMastersMax || 2);
+          const pDuration = Math.ceil(peelingCount / pMasters) * (salon.peelingTimePerPerson || 30);
+          const pEndM = saunaStartM + pDuration;
           segments.push({
             procedureId: proc.id, procedureName: proc.name,
             startTime: minsToTime(saunaStartM), endTime: minsToTime(pEndM),
-            roomId: null, therapistCount: Math.min(peelingCount, salon.peelingMastersMax || 2),
+            roomId: null, therapistCount: pMasters,
             resourceType: "peeling",
           });
         }
@@ -3302,7 +3306,11 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
                 </select>
                 {peelingProc && (
                   <div style={{ marginTop: 6, color: C.textSub, fontSize: 12 }}>
-                    +{(peelingProc.price * peelingCount).toLocaleString("ru-RU")} ₸ · {peelingCount * (salon.peelingTimePerPerson || 30)} мин
+                    {(() => {
+                      const pm = Math.min(peelingCount, salon.peelingMastersMax || 2);
+                      const pd = Math.ceil(peelingCount / pm) * (salon.peelingTimePerPerson || 30);
+                      return `+${(peelingProc.price * peelingCount).toLocaleString("ru-RU")} ₸ · ${pd} мин · ${pm} маст.`;
+                    })()}
                   </div>
                 )}
               </div>
