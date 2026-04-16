@@ -2878,6 +2878,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const [bookingType, setBookingType] = useState("single");
   const [procedureId, setProcedureId] = useState(bookableProcedures[0]?.id || "");
   const [comboId, setComboId] = useState(activeCombos[0]?.id || "");
+  const [clientProcedureIds, setClientProcedureIds] = useState([]);
   const [date, setDate] = useState(initialDate || toDateStr(new Date()));
   const [startTime, setStartTime] = useState(initialTime || "");
   const [roomId, setRoomId] = useState("");
@@ -2919,6 +2920,16 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     if (bookingType !== "single" || selectedProc?.category !== "sauna") setWithPeeling(false);
   }, [bookingType, selectedProc]);
 
+  // Keep clientProcedureIds in sync with clientCount (always, for single bookings)
+  useEffect(() => {
+    setClientProcedureIds(prev => {
+      if (prev.length === clientCount) return prev;
+      if (prev.length < clientCount)
+        return [...prev, ...Array(clientCount - prev.length).fill(procedureId || bookableProcedures[0]?.id || "")];
+      return prev.slice(0, clientCount);
+    });
+  }, [clientCount, procedureId]);
+
   // Load existing bookings for validation
   useEffect(() => {
     let cancelled = false;
@@ -2930,9 +2941,18 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     return () => { cancelled = true; };
   }, [date, salon.id]);
 
+  // Per-client procedures — active whenever 2+ clients in single booking
+  const perClientProcs = bookingType === "single" && clientCount > 1 && clientProcedureIds.length === clientCount
+    ? clientProcedureIds.map(id => bookableProcedures.find(p => p.id === id) || bookableProcedures[0])
+    : null;
+
   // Effective duration — peeling is parallel to sauna, doesn't add time
   const effectiveDuration = (() => {
-    if (bookingType === "single") return selectedProc?.duration || 0;
+    if (bookingType === "single") {
+      if (perClientProcs && perClientProcs.length > 0)
+        return Math.max(...perClientProcs.map(p => p?.duration || 0));
+      return selectedProc?.duration || 0;
+    }
     if (!selectedCombo) return 0;
     return (selectedCombo.steps || [])
       .filter(s => s.category !== "peeling")
@@ -2980,7 +3000,11 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   // Therapist count
   const therapistCount = (() => {
     if (bookingType === "single") {
-      let t = clientCount * (selectedProc?.therapistsRequired || 0);
+      let t;
+      if (perClientProcs && perClientProcs.length > 0)
+        t = perClientProcs.reduce((sum, p) => sum + (p?.therapistsRequired || 0), 0);
+      else
+        t = clientCount * (selectedProc?.therapistsRequired || 0);
       if (withPeeling && selectedProc?.category === "sauna" && salon.hasPeeling)
         t += Math.min(peelingCount, salon.peelingMastersMax || 2);
       return t;
@@ -3000,6 +3024,9 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   // Number of massage master slots (excluding peeling masters)
   const massageMasterCount = (() => {
     if (bookingType === "single") {
+      if (perClientProcs && perClientProcs.length > 0)
+        return perClientProcs.filter(p => p && p.category !== "sauna" && p.category !== "peeling")
+          .reduce((sum, p) => sum + (p.therapistsRequired || 0), 0);
       if (!selectedProc || selectedProc.category === "sauna" || selectedProc.category === "peeling") return 0;
       return clientCount * (selectedProc.therapistsRequired || 0);
     }
@@ -3031,7 +3058,9 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const peelingExtra = (withPeeling && bookingType === "single" && selectedProc?.category === "sauna" && salon.hasPeeling)
     ? (peelingProc?.price || 0) * peelingCount : 0;
   const totalPrice = bookingType === "single"
-    ? (selectedProc?.price || 0) * clientCount + peelingExtra
+    ? (perClientProcs && perClientProcs.length > 0
+        ? perClientProcs.reduce((sum, p) => sum + (p?.price || 0), 0)
+        : (selectedProc?.price || 0) * clientCount) + peelingExtra
     : (selectedCombo?.price || 0) * clientCount;
 
   // Combo timeline with actual times
@@ -3054,6 +3083,33 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     const effectiveRoom = clientCount >= 3 ? (roomAllocation?.[0]?.room.id || "") : validRoomId;
 
     if (bookingType === "single") {
+      if (perClientProcs && perClientProcs.length > 0) {
+        // Per-client mode: different procedures per person, same room/time block
+        const maxDuration = Math.max(...perClientProcs.map(p => p?.duration || 0));
+        const endM = startM + maxDuration;
+        const allSauna = perClientProcs.every(p => p?.category === "sauna");
+        const anySauna = perClientProcs.some(p => p?.category === "sauna");
+        const uniqueNames = [...new Set(perClientProcs.map(p => p?.name).filter(Boolean))];
+        const procedureName = uniqueNames.join(" + ");
+        const assignedMasterIds = masters.filter(m => m);
+        const totalTherapists = perClientProcs.reduce((sum, p) => sum + (p?.therapistsRequired || 0), 0);
+        const segs = [{
+          procedureId: perClientProcs[0]?.id || null,
+          procedureName,
+          startTime: validStartTime, endTime: minsToTime(endM),
+          roomId: allSauna ? null : effectiveRoom,
+          therapistCount: totalTherapists,
+          resourceType: allSauna ? "sauna" : "room",
+          masterIds: anySauna && allSauna ? [] : assignedMasterIds,
+          clientProcedureIds: clientProcedureIds.slice(0, clientCount),
+        }];
+        return {
+          segments: segs,
+          totalStartTime: validStartTime,
+          totalEndTime: minsToTime(endM + salon.bufferMinutes),
+        };
+      }
+
       if (!selectedProc) return null;
       const endM = startM + selectedProc.duration;
       const isSauna = selectedProc.category === "sauna";
@@ -3172,7 +3228,8 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       id: makeId(), salonId: salon.id, date,
       clientName: clientName.trim(), clientPhone: clientPhone.trim(), clientCount,
       bookingType: bookingType === "single" ? "single_procedure" : "combo",
-      procedureId: bookingType === "single" ? (selectedProc?.id || null) : null,
+      procedureId: bookingType === "single" && clientCount === 1 ? (selectedProc?.id || null) : null,
+      clientProcedureIds: bookingType === "single" && clientCount > 1 ? clientProcedureIds.slice(0, clientCount) : undefined,
       comboId:     bookingType === "combo"  ? (selectedCombo?.id || null) : null,
       segments: segResult.segments,
       totalStartTime: segResult.totalStartTime,
@@ -3245,6 +3302,17 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           </div>
         </div>
 
+        {/* Client count */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Кол-во клиентов</label>
+          <select value={clientCount} onChange={e => setClientCount(Number(e.target.value))}
+            style={{ ...inputStyle(), width: "auto", minWidth: 100, cursor: "pointer" }}>
+            {Array.from({ length: maxClients }, (_, i) => i + 1).map(n => (
+              <option key={n} value={n} style={{ backgroundColor: C.card }}>{n}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Booking type */}
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>Тип записи</label>
@@ -3274,13 +3342,48 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           </div>
         </div>
 
-        {/* Procedure selector */}
+        {/* Procedure selector — per-client when 2+ clients, single otherwise */}
         {bookingType === "single" && (
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Процедура</label>
+            <label style={labelStyle}>
+              {clientCount > 1 ? "Процедуры" : "Процедура"}
+            </label>
             {bookableProcedures.length === 0 ? (
               <div style={{ color: "#F87171", fontSize: 12 }}>Нет активных процедур</div>
+            ) : clientCount > 1 ? (
+              /* Per-client selectors — shown automatically */
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {Array.from({ length: clientCount }, (_, i) => {
+                  const cProc = bookableProcedures.find(p => p.id === clientProcedureIds[i]) || bookableProcedures[0];
+                  return (
+                    <div key={i}>
+                      <div style={{ fontSize: 11, color: C.textSub, marginBottom: 4 }}>Клиент {i + 1}</div>
+                      <select
+                        value={clientProcedureIds[i] || ""}
+                        onChange={e => {
+                          const updated = [...clientProcedureIds];
+                          updated[i] = e.target.value;
+                          setClientProcedureIds(updated);
+                        }}
+                        style={{ ...inputStyle(), cursor: "pointer" }}
+                      >
+                        {bookableProcedures.map(p => (
+                          <option key={p.id} value={p.id} style={{ backgroundColor: C.card }}>
+                            {CATEGORY_ICONS[p.category]} {p.name} ({p.duration} мин · {p.price.toLocaleString("ru-RU")} ₸)
+                          </option>
+                        ))}
+                      </select>
+                      {cProc?.therapistsRequired >= 2 && (
+                        <div style={{ marginTop: 4, color: C.accent, fontSize: 11 }}>
+                          ⚠ {cProc.therapistsRequired} мастера
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
+              /* Single client — one procedure */
               <>
                 <select value={selectedProc?.id || ""} onChange={e => setProcedureId(e.target.value)}
                   style={{ ...inputStyle(), cursor: "pointer" }}>
@@ -3403,38 +3506,44 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           </div>
         )}
 
-        {/* Client count */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>Кол-во клиентов</label>
-          <select value={clientCount} onChange={e => setClientCount(Number(e.target.value))}
-            style={{ ...inputStyle(), width: "auto", minWidth: 100, cursor: "pointer" }}>
-            {Array.from({ length: maxClients }, (_, i) => i + 1).map(n => (
-              <option key={n} value={n} style={{ backgroundColor: C.card }}>{n}</option>
-            ))}
-          </select>
-        </div>
-
         {/* Master (therapist) selectors — one per required therapist */}
         {massageMasterCount > 0 && (
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>{massageMasterCount > 1 ? "Мастера" : "Мастер"}</label>
-            {masters.map((m, idx) => (
-              <div key={idx} style={{ marginBottom: idx < masters.length - 1 ? 8 : 0 }}>
-                {massageMasterCount > 1 && (
-                  <div style={{ fontSize: 11, color: C.textSub, marginBottom: 2 }}>Мастер {idx + 1}</div>
-                )}
-                <select value={m} onChange={e => {
-                  const updated = [...masters];
-                  updated[idx] = e.target.value;
-                  setMasters(updated);
-                }} style={{ ...inputStyle(), cursor: "pointer" }}>
-                  <option value="" style={{ backgroundColor: C.card }}>— Не назначен —</option>
-                  {(salon.therapists || []).filter(t => !masters.includes(t.id) || t.id === m).map(t => (
-                    <option key={t.id} value={t.id} style={{ backgroundColor: C.card }}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-            ))}
+            {masters.map((m, idx) => {
+              // When 2+ clients, label each master slot by client
+              let slotLabel = massageMasterCount > 1 ? `Мастер ${idx + 1}` : null;
+              if (perClientProcs && perClientProcs.length > 0) {
+                let slotIdx = 0;
+                for (let ci = 0; ci < perClientProcs.length; ci++) {
+                  const needed = perClientProcs[ci]?.therapistsRequired || 0;
+                  if (idx < slotIdx + needed) {
+                    const cProc = perClientProcs[ci];
+                    const masterNum = needed > 1 ? ` (мастер ${idx - slotIdx + 1})` : "";
+                    slotLabel = `Клиент ${ci + 1} — ${cProc?.name || "процедура"}${masterNum}`;
+                    break;
+                  }
+                  slotIdx += needed;
+                }
+              }
+              return (
+                <div key={idx} style={{ marginBottom: idx < masters.length - 1 ? 8 : 0 }}>
+                  {slotLabel && (
+                    <div style={{ fontSize: 11, color: C.textSub, marginBottom: 2 }}>{slotLabel}</div>
+                  )}
+                  <select value={m} onChange={e => {
+                    const updated = [...masters];
+                    updated[idx] = e.target.value;
+                    setMasters(updated);
+                  }} style={{ ...inputStyle(), cursor: "pointer" }}>
+                    <option value="" style={{ backgroundColor: C.card }}>— Не назначен —</option>
+                    {(salon.therapists || []).filter(t => !masters.includes(t.id) || t.id === m).map(t => (
+                      <option key={t.id} value={t.id} style={{ backgroundColor: C.card }}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })}
           </div>
         )}
 
