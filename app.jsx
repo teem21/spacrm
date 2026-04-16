@@ -3232,7 +3232,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
         </div>
 
         {/* Client info */}
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 12 : 16, marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 12 : 16, marginBottom: 20 }}>
           <div>
             <label style={labelStyle}>Имя клиента *</label>
             <input type="text" value={clientName} placeholder="Иван Иванов"
@@ -3245,52 +3245,32 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           </div>
         </div>
 
-        {/* Master (therapist) selectors — one per required therapist */}
-        {massageMasterCount > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>{massageMasterCount > 1 ? "Мастера" : "Мастер"}</label>
-            {masters.map((m, idx) => (
-              <div key={idx} style={{ marginBottom: idx < masters.length - 1 ? 8 : 0 }}>
-                {massageMasterCount > 1 && (
-                  <div style={{ fontSize: 11, color: C.textSub, marginBottom: 2 }}>Мастер {idx + 1}</div>
-                )}
-                <select value={m} onChange={e => {
-                  const updated = [...masters];
-                  updated[idx] = e.target.value;
-                  setMasters(updated);
-                }} style={{ ...inputStyle(), cursor: "pointer" }}>
-                  <option value="" style={{ backgroundColor: C.card }}>— Не назначен —</option>
-                  {(salon.therapists || []).filter(t => !masters.includes(t.id) || t.id === m).map(t => (
-                    <option key={t.id} value={t.id} style={{ backgroundColor: C.card }}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Client count */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>Кол-во клиентов</label>
-          <select value={clientCount} onChange={e => setClientCount(Number(e.target.value))}
-            style={{ ...inputStyle(), width: "auto", minWidth: 100, cursor: "pointer" }}>
-            {Array.from({ length: maxClients }, (_, i) => i + 1).map(n => (
-              <option key={n} value={n} style={{ backgroundColor: C.card }}>{n}</option>
-            ))}
-          </select>
-        </div>
-
         {/* Booking type */}
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>Тип записи</label>
-          <div style={{ display: "flex", gap: 20 }}>
-            {[["single", "Одна процедура"], ["combo", "Комбо-пакет"]].map(([val, lbl]) => (
-              <label key={val} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: C.textMain, fontSize: 13 }}>
-                <input type="radio" name="btype" value={val} checked={bookingType === val}
-                  onChange={() => setBookingType(val)} style={{ accentColor: C.accent }} />
-                {lbl}
-              </label>
-            ))}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {[
+              ["single", "Процедура", "Одна услуга"],
+              ["combo", "Комбо-пакет", "Несколько услуг"],
+            ].map(([val, title, sub]) => {
+              const active = bookingType === val;
+              return (
+                <button key={val} onClick={() => setBookingType(val)} style={{
+                  background: active ? `${C.accent}22` : C.gridBg,
+                  border: `2px solid ${active ? C.accent : C.border}`,
+                  borderRadius: 12, padding: "12px 14px",
+                  cursor: "pointer", textAlign: "left",
+                  transition: "all 0.15s",
+                }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: active ? C.accent : C.textMain, marginBottom: 2 }}>
+                    {title}
+                  </div>
+                  <div style={{ fontSize: 11, color: active ? C.accent : C.textSub }}>
+                    {sub}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -3415,6 +3395,41 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
                 )}
               </>
             )}
+          </div>
+        )}
+
+        {/* Client count */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Кол-во клиентов</label>
+          <select value={clientCount} onChange={e => setClientCount(Number(e.target.value))}
+            style={{ ...inputStyle(), width: "auto", minWidth: 100, cursor: "pointer" }}>
+            {Array.from({ length: maxClients }, (_, i) => i + 1).map(n => (
+              <option key={n} value={n} style={{ backgroundColor: C.card }}>{n}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Master (therapist) selectors — one per required therapist */}
+        {massageMasterCount > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>{massageMasterCount > 1 ? "Мастера" : "Мастер"}</label>
+            {masters.map((m, idx) => (
+              <div key={idx} style={{ marginBottom: idx < masters.length - 1 ? 8 : 0 }}>
+                {massageMasterCount > 1 && (
+                  <div style={{ fontSize: 11, color: C.textSub, marginBottom: 2 }}>Мастер {idx + 1}</div>
+                )}
+                <select value={m} onChange={e => {
+                  const updated = [...masters];
+                  updated[idx] = e.target.value;
+                  setMasters(updated);
+                }} style={{ ...inputStyle(), cursor: "pointer" }}>
+                  <option value="" style={{ backgroundColor: C.card }}>— Не назначен —</option>
+                  {(salon.therapists || []).filter(t => !masters.includes(t.id) || t.id === m).map(t => (
+                    <option key={t.id} value={t.id} style={{ backgroundColor: C.card }}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
           </div>
         )}
 
