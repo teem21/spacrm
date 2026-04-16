@@ -3344,7 +3344,12 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>Комбо-пакет</label>
             {activeCombos.length === 0 ? (
-              <div style={{ color: "#F87171", fontSize: 12 }}>Нет активных комбо-пакетов</div>
+              <div style={{ padding: "12px 16px", borderRadius: 10, backgroundColor: "#EF444411", border: "1px solid #EF4444" }}>
+                <div style={{ color: "#F87171", fontSize: 13, fontWeight: 600 }}>Нет активных комбо-пакетов</div>
+                <div style={{ color: "#F87171", fontSize: 11, marginTop: 4, opacity: 0.8 }}>
+                  Создайте комбо в разделе Услуги → Комбо-пакеты
+                </div>
+              </div>
             ) : (
               <>
                 <select value={selectedCombo?.id || ""} onChange={e => setComboId(e.target.value)}
