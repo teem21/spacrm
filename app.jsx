@@ -2475,13 +2475,18 @@ function CombosTab({ combos, activeSalonId, salons, onCombosChange, procedures, 
   const [editingCombo, setEditingCombo] = useState(null);
   const isMobile = useIsMobile();
 
-  const persist = async (updated) => {
-    onCombosChange(updated);
-    await Storage.set(KEYS.combos(activeSalonId), updated);
-  };
-
   const calcDuration = (steps, procs) =>
     (steps || []).reduce((sum, s) => sum + (procs.find(p => p.id === s.procId)?.duration || 0), 0);
+
+  const persist = async (updated) => {
+    // Ensure every combo has a valid totalDuration before saving to Supabase
+    const withDuration = updated.map(c => ({
+      ...c,
+      totalDuration: (c.totalDuration > 0) ? c.totalDuration : calcDuration(c.steps || [], procedures),
+    }));
+    onCombosChange(withDuration);
+    await Storage.set(KEYS.combos(activeSalonId), withDuration);
+  };
 
   const handleSave = async (form) => {
     const totalDuration = calcDuration(form.steps, procedures);
@@ -2891,10 +2896,10 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
 
   const hasSaunaInSelection = bookingType === "single"
     ? selectedProc?.category === "sauna"
-    : selectedCombo?.steps.some(s => s.category === "sauna");
+    : selectedCombo?.steps?.some(s => s.category === "sauna");
 
   const hasPeelingInCombo = bookingType === "combo"
-    && selectedCombo?.steps.some(s => s.category === "peeling");
+    && selectedCombo?.steps?.some(s => s.category === "peeling");
 
   const totalBeds = salon.rooms.reduce((sum, r) => sum + r.beds, 0);
   const saunaOnly = bookingType === "single" && selectedProc?.category === "sauna";
@@ -2929,9 +2934,12 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const effectiveDuration = (() => {
     if (bookingType === "single") return selectedProc?.duration || 0;
     if (!selectedCombo) return 0;
-    return selectedCombo.steps
+    return (selectedCombo.steps || [])
       .filter(s => s.category !== "peeling")
-      .reduce((acc, s) => acc + s.duration, 0);
+      .reduce((acc, s) => {
+        const proc = activeProcedures.find(p => p.id === s.procId);
+        return acc + (proc?.duration || 0);
+      }, 0);
   })();
 
   const wStartM = timeToMins(salon.workStart);
@@ -2951,7 +2959,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   // Eligible rooms
   const needsRoom = bookingType === "single"
     ? selectedProc?.category !== "sauna"
-    : selectedCombo?.steps.some(s => s.category !== "sauna" && s.category !== "peeling");
+    : selectedCombo?.steps?.some(s => s.category !== "sauna" && s.category !== "peeling");
   const eligibleRooms = clientCount >= 2 ? salon.rooms.filter(r => r.beds >= 2) : salon.rooms;
   const validRoomId = eligibleRooms.find(r => r.id === roomId)?.id || eligibleRooms[0]?.id || "";
 
@@ -2979,7 +2987,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     }
     if (!selectedCombo) return 0;
     let total = 0;
-    for (const step of selectedCombo.steps) {
+    for (const step of (selectedCombo.steps || [])) {
       const proc = activeProcedures.find(p => p.id === step.procId);
       if (!proc) continue;
       if (proc.category === "sauna") continue;
@@ -2997,7 +3005,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     }
     if (!selectedCombo) return 0;
     let max = 0;
-    for (const step of selectedCombo.steps) {
+    for (const step of (selectedCombo.steps || [])) {
       const proc = activeProcedures.find(p => p.id === step.procId);
       if (!proc || proc.category === "sauna" || proc.category === "peeling") continue;
       max = Math.max(max, clientCount * (proc.therapistsRequired || 1));
@@ -3083,7 +3091,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     const segments = [];
     let saunaStartM = null;
 
-    for (const step of selectedCombo.steps) {
+    for (const step of (selectedCombo.steps || [])) {
       const proc = activeProcedures.find(p => p.id === step.procId);
       if (!proc) continue;
 
