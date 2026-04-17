@@ -5364,6 +5364,8 @@ function DashboardScreen({ salons }) {
       keptCount: bks.filter(b => b.status === "cancelled_no_refund").reduce((a, b) => a + (b.clientCount || 1), 0),
       certDepCount: certDep.length,
       certDepOriginalPrice: certDep.reduce((a, b) => a + (b.totalPrice || 0), 0),
+      totalDiscount: bks.filter(b => b.discount > 0).reduce((a, b) => a + (b.discount || 0), 0),
+      discountCount: bks.filter(b => b.discount > 0).length,
       pmBreakdown,
       overdueBookings: active.filter(b => isBookingOverdue(b)).length
     };
@@ -5388,6 +5390,8 @@ function DashboardScreen({ salons }) {
       overdueBookings: perSalon.reduce((a, k) => a + k.overdueBookings, 0),
       certDepCount: perSalon.reduce((a, k) => a + k.certDepCount, 0),
       certDepOriginalPrice: perSalon.reduce((a, k) => a + k.certDepOriginalPrice, 0),
+      totalDiscount: perSalon.reduce((a, k) => a + k.totalDiscount, 0),
+      discountCount: perSalon.reduce((a, k) => a + k.discountCount, 0),
       pmBreakdown: mergedPM,
     };
   })();
@@ -5541,7 +5545,7 @@ function DashboardScreen({ salons }) {
       )}
 
       {/* Secondary KPIs Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 24 }}>
         <div style={bentoCard}>
           <div style={{ fontSize: 20, fontWeight: 900, color: "#e03131" }}>{kpi.refunded.toLocaleString()} ₸</div>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.textSub }}>Возвраты ({kpi.refundedCount})</div>
@@ -5553,6 +5557,10 @@ function DashboardScreen({ salons }) {
         <div style={bentoCard}>
           <div style={{ fontSize: 20, fontWeight: 900, color: "#f08c00" }}>{kpi.certDepCount} шт.</div>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.textSub }}>Серт/Деп ({kpi.certDepOriginalPrice.toLocaleString()} ₸)</div>
+        </div>
+        <div style={bentoCard}>
+          <div style={{ fontSize: 20, fontWeight: 900, color: "#7B68AE" }}>{kpi.totalDiscount.toLocaleString()} ₸</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.textSub }}>Скидки ({kpi.discountCount})</div>
         </div>
       </div>
 
