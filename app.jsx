@@ -3748,9 +3748,9 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           <label style={labelStyle}>Скидка (₸)</label>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <input
-              type="number" min="0" inputMode="numeric"
+              type="text" inputMode="numeric"
               value={discount || ""}
-              onChange={e => { const v = parseInt(e.target.value, 10); setDiscount(isNaN(v) ? 0 : v); }}
+              onChange={e => { const v = parseInt(e.target.value.replace(/\D/g, ""), 10); setDiscount(isNaN(v) ? 0 : v); }}
               placeholder="0"
               style={{ ...inputStyle(), flex: 1 }}
             />
