@@ -3258,8 +3258,9 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       segments: segResult.segments,
       totalStartTime: segResult.totalStartTime,
       totalEndTime: segResult.totalEndTime,
+      basePrice,
+      discount: discount || 0,
       totalPrice,
-      discount: discount > 0 ? discount : undefined,
       status: "booked",
       createdAt: new Date().toISOString(),
       notes: notes.trim(),
@@ -4022,9 +4023,9 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
         {divider}
 
         {/* Price + Payment method */}
-        {booking.discount > 0 && (
+        {(booking.discount || 0) > 0 && (
           <div style={{ fontSize: 13, color: C.textSub, marginBottom: 2 }}>
-            <s>{((booking.totalPrice || 0) + booking.discount).toLocaleString("ru-RU")} ₸</s>
+            <s>{(booking.basePrice || (booking.totalPrice + booking.discount) || 0).toLocaleString("ru-RU")} ₸</s>
             <span style={{ marginLeft: 8, color: "#7B68AE", fontWeight: 700 }}>−{booking.discount.toLocaleString("ru-RU")} ₸ скидка</span>
           </div>
         )}
@@ -5067,7 +5068,7 @@ function JournalScreen({ salons, onShowToast }) {
                     </td>
                     <td style={{ padding: "16px 20px" }}>
                       <div style={{ fontSize: 14, fontWeight: 900, color: C.textMain }}>{b.totalPrice.toLocaleString()} ₸</div>
-                      {b.discount > 0 && (
+                      {(b.discount || 0) > 0 && (
                         <div style={{ fontSize: 10, color: "#7B68AE", fontWeight: 800 }}>−{b.discount.toLocaleString()} ₸ скидка</div>
                       )}
                       <div style={{ fontSize: 10, color: C.textSub, fontWeight: 800 }}>{PAYMENT_LABEL[b.paymentMethod] || "НАЛ"}</div>
@@ -5338,6 +5339,8 @@ function DashboardScreen({ salons }) {
     const totalClients = active.reduce((a, b) => a + (b.clientCount || 1), 0);
     const revenue = paid.reduce((a, b) => a + (b.totalPrice || 0), 0);
     const avgCheck = paid.length > 0 ? Math.round(revenue / paid.length) : 0;
+    const totalDiscount = bks.reduce((a, b) => a + (b.discount || 0), 0);
+    const discountCount = bks.filter(b => (b.discount || 0) > 0).length;
 
     const targetSalons = salonFilter ? salons.filter(s => s.id === salonFilter) : salons;
     let roomBusyMins = 0, roomTotalMins = 0;
@@ -5373,8 +5376,8 @@ function DashboardScreen({ salons }) {
       keptCount: bks.filter(b => b.status === "cancelled_no_refund").reduce((a, b) => a + (b.clientCount || 1), 0),
       certDepCount: certDep.length,
       certDepOriginalPrice: certDep.reduce((a, b) => a + (b.totalPrice || 0), 0),
-      totalDiscount: bks.filter(b => b.discount > 0).reduce((a, b) => a + (b.discount || 0), 0),
-      discountCount: bks.filter(b => b.discount > 0).length,
+      totalDiscount,
+      discountCount,
       pmBreakdown,
       overdueBookings: active.filter(b => isBookingOverdue(b)).length
     };
