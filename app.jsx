@@ -4022,6 +4022,12 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
         {divider}
 
         {/* Price + Payment method */}
+        {booking.discount > 0 && (
+          <div style={{ fontSize: 13, color: C.textSub, marginBottom: 2 }}>
+            <s>{((booking.totalPrice || 0) + booking.discount).toLocaleString("ru-RU")} ₸</s>
+            <span style={{ marginLeft: 8, color: "#7B68AE", fontWeight: 700 }}>−{booking.discount.toLocaleString("ru-RU")} ₸ скидка</span>
+          </div>
+        )}
         <div style={{ fontSize: 18, fontWeight: 700, color: booking.paymentMethod === "cert_dep" ? C.textSub : C.accent, marginBottom: 4 }}>
           {booking.paymentMethod === "cert_dep"
             ? <><s>{(booking.totalPrice || 0).toLocaleString("ru-RU")} ₸</s> <span style={{ fontSize: 13, color: "#FBBF24" }}>СЕРТ / ДЕП</span></>
@@ -5061,6 +5067,9 @@ function JournalScreen({ salons, onShowToast }) {
                     </td>
                     <td style={{ padding: "16px 20px" }}>
                       <div style={{ fontSize: 14, fontWeight: 900, color: C.textMain }}>{b.totalPrice.toLocaleString()} ₸</div>
+                      {b.discount > 0 && (
+                        <div style={{ fontSize: 10, color: "#7B68AE", fontWeight: 800 }}>−{b.discount.toLocaleString()} ₸ скидка</div>
+                      )}
                       <div style={{ fontSize: 10, color: C.textSub, fontWeight: 800 }}>{PAYMENT_LABEL[b.paymentMethod] || "НАЛ"}</div>
                     </td>
                     <td style={{ padding: "16px 20px" }}>
