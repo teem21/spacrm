@@ -3578,8 +3578,6 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
               if (!stepSlots || stepSlots.length === 0) return null;
               const proc = activeProcedures.find(p => p.id === step.procId);
               const procName = proc?.name || `Шаг ${stepIdx + 1}`;
-              // All masters assigned so far (for deduplication)
-              const allChosen = comboStepMasters.flat();
               return (
                 <div key={stepIdx} style={{ marginBottom: stepIdx < (selectedCombo.steps.length - 1) ? 12 : 0 }}>
                   <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.04em" }}>
@@ -3599,7 +3597,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
                           setComboStepMasters(updated);
                         }} style={{ ...inputStyle(), cursor: "pointer" }}>
                           <option value="" style={{ backgroundColor: C.card }}>— Не назначен —</option>
-                          {(salon.therapists || []).filter(t => !allChosen.includes(t.id) || t.id === m).map(t => (
+                          {(salon.therapists || []).map(t => (
                             <option key={t.id} value={t.id} style={{ backgroundColor: C.card }}>{t.name}</option>
                           ))}
                         </select>
