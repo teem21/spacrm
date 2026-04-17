@@ -2885,6 +2885,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const [peelingCount, setPeelingCount] = useState(1);
   const [withPeeling, setWithPeeling] = useState(false);
   const [notes, setNotes] = useState("");
+  const [discount, setDiscount] = useState(0);
   const [masters, setMasters] = useState([]);
   const [comboStepMasters, setComboStepMasters] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("cash");
@@ -3072,11 +3073,12 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const peelingProc = activeProcedures.find(p => p.category === "peeling");
   const peelingExtra = (withPeeling && bookingType === "single" && selectedProc?.category === "sauna" && salon.hasPeeling)
     ? (peelingProc?.price || 0) * peelingCount : 0;
-  const totalPrice = bookingType === "single"
+  const basePrice = bookingType === "single"
     ? (perClientProcs && perClientProcs.length > 0
         ? perClientProcs.reduce((sum, p) => sum + (p?.price || 0), 0)
         : (selectedProc?.price || 0) * clientCount) + peelingExtra
     : (selectedCombo?.price || 0) * clientCount;
+  const totalPrice = Math.max(0, basePrice - (discount || 0));
 
   // Combo timeline with actual times
   const comboTimeline = (() => {
@@ -3257,6 +3259,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       totalStartTime: segResult.totalStartTime,
       totalEndTime: segResult.totalEndTime,
       totalPrice,
+      discount: discount > 0 ? discount : undefined,
       status: "booked",
       createdAt: new Date().toISOString(),
       notes: notes.trim(),
@@ -3740,6 +3743,25 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           />
         </div>
 
+        {/* Discount */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Скидка (₸)</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <input
+              type="number" min="0" inputMode="numeric"
+              value={discount || ""}
+              onChange={e => { const v = parseInt(e.target.value, 10); setDiscount(isNaN(v) ? 0 : v); }}
+              placeholder="0"
+              style={{ ...inputStyle(), flex: 1 }}
+            />
+            {discount > 0 && (
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.accent, whiteSpace: "nowrap" }}>
+                Итого: {totalPrice.toLocaleString("ru-RU")} ₸
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Error */}
         {err && (
           <div style={{
@@ -3811,9 +3833,14 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
             <div style={{ fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 500 }}>
               {date} в {startTime || segResult?.totalStartTime}
             </div>
-            <div style={{ fontSize: 13, color: C.textSub, marginBottom: 24, fontWeight: 500 }}>
-              {bookingType === "single" ? selectedProc?.name : selectedCombo?.name} • {totalPrice.toLocaleString("ru-RU")} ₸
+            <div style={{ fontSize: 13, color: C.textSub, marginBottom: discount > 0 ? 8 : 24, fontWeight: 500 }}>
+              {bookingType === "single" ? selectedProc?.name : selectedCombo?.name} • {discount > 0 ? <s>{basePrice.toLocaleString("ru-RU")} ₸</s> : `${totalPrice.toLocaleString("ru-RU")} ₸`}
             </div>
+            {discount > 0 && (
+              <div style={{ fontSize: 15, color: C.accent, fontWeight: 700, marginBottom: 24 }}>
+                Скидка −{discount.toLocaleString("ru-RU")} ₸ → {totalPrice.toLocaleString("ru-RU")} ₸
+              </div>
+            )}
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
               <button onClick={() => setShowConfirm(false)} style={{
                 padding: "10px 20px", borderRadius: 20,
