@@ -5306,7 +5306,9 @@ function DashboardScreen({ salons }) {
     setLoadingD(true);
     const keys = await Storage.list("spa-crm:bookings:");
     const arrays = await Promise.all(keys.map(k => Storage.get(k)));
-    setAllBookings(arrays.flat().filter(Boolean));
+    const all = arrays.flat().filter(Boolean);
+    console.log("[Dashboard] loaded bookings:", all.length, "with discounts:", all.filter(b => b.discount > 0).map(b => ({ id: b.id, date: b.date, discount: b.discount, totalPrice: b.totalPrice, basePrice: b.basePrice })));
+    setAllBookings(all);
     setLoadingD(false);
   }, []);
   useEffect(() => { loadAll(); }, [loadAll]);
