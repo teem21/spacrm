@@ -3168,17 +3168,17 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       if (!proc) continue;
 
       if (proc.category === "peeling") {
-        if (saunaStartM !== null) {
-          const pMasters = Math.min(peelingCount, salon.peelingMastersMax || 2);
-          const pDuration = Math.ceil(peelingCount / pMasters) * (salon.peelingTimePerPerson || 30);
-          const pEndM = saunaStartM + pDuration;
-          segments.push({
-            procedureId: proc.id, procedureName: proc.name,
-            startTime: minsToTime(saunaStartM), endTime: minsToTime(pEndM),
-            roomId: null, therapistCount: pMasters,
-            resourceType: "peeling",
-          });
-        }
+        const pStart = saunaStartM !== null ? saunaStartM : currentM;
+        const pMasters = Math.min(peelingCount, salon.peelingMastersMax || 2);
+        const pDuration = Math.ceil(peelingCount / pMasters) * (salon.peelingTimePerPerson || 30);
+        const pEndM = pStart + pDuration;
+        segments.push({
+          procedureId: proc.id, procedureName: proc.name,
+          startTime: minsToTime(pStart), endTime: minsToTime(pEndM),
+          roomId: null, therapistCount: pMasters,
+          resourceType: "peeling",
+        });
+        if (saunaStartM === null) currentM = pEndM;
         continue;
       }
 
