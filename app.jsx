@@ -4483,7 +4483,7 @@ const getRowSegments = (row) => {
                           if (!Array.isArray(bk.segments)) continue;
                           for (const seg of bk.segments) {
                             const match = row.type === "sauna"
-                              ? seg.resourceType === "sauna"
+                              ? (seg.resourceType === "sauna" || seg.resourceType === "peeling")
                               : (Array.isArray(seg.masterIds) && seg.masterIds.includes(row.id));
                             if (match) out.push({ ...seg, booking: bk });
                           }
