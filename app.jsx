@@ -1846,7 +1846,11 @@ const EMPTY_PROC = { name: "", category: "massage", duration: 60, therapistsRequ
 function ProcedureFormRow({ initial, onSave, onCancel, isMobile }) {
   const [form, setForm] = useState(initial || EMPTY_PROC);
   const [err, setErr] = useState("");
-  const patch = (p) => setForm(f => ({ ...f, ...p }));
+  const patch = (p) => setForm(f => {
+    const next = { ...f, ...p };
+    if (next.category === "sauna" || next.category === "peeling") next.therapistsRequired = 0;
+    return next;
+  });
 
   const handleSave = () => {
     if (!form.name.trim())  { setErr("Введите название"); return; }
@@ -1877,17 +1881,19 @@ function ProcedureFormRow({ initial, onSave, onCancel, isMobile }) {
             ))}
           </select>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: (form.category === "sauna" || form.category === "peeling") ? "1fr" : "1fr 1fr", gap: 12 }}>
           <div>
             <label style={labelStyle}>Длит. (мин)</label>
             <input type="number" value={form.duration} min={5} max={480}
               onChange={e => patch({ duration: parseInt(e.target.value, 10) || 0 })} style={mInp} />
           </div>
+          {form.category !== "sauna" && form.category !== "peeling" && (
           <div>
             <label style={labelStyle}>Мастеров</label>
             <input type="number" value={form.therapistsRequired} min={0} max={4}
               onChange={e => patch({ therapistsRequired: parseInt(e.target.value, 10) || 0 })} style={mInp} />
           </div>
+          )}
         </div>
         <div>
           <label style={labelStyle}>Цена (₸)</label>
@@ -1938,12 +1944,14 @@ function ProcedureFormRow({ initial, onSave, onCancel, isMobile }) {
             onChange={e => patch({ duration: parseInt(e.target.value, 10) || 0 })}
             style={{ ...inputStyle(), height: 40, borderRadius: 12 }} />
         </td>
+        {form.category !== "sauna" && form.category !== "peeling" && (
         <td style={inCell}>
           <label style={labelStyle}>Мастеров</label>
           <input type="number" value={form.therapistsRequired} min={0} max={4}
             onChange={e => patch({ therapistsRequired: parseInt(e.target.value, 10) || 0 })}
             style={{ ...inputStyle(), height: 40, borderRadius: 12 }} />
         </td>
+        )}
         <td style={inCell}>
           <label style={labelStyle}>Цена (₸)</label>
           <input type="number" value={form.price} min={0}
@@ -2079,7 +2087,9 @@ function ProceduresTab({ procedures, activeSalonId, salons, onProceduresChange, 
                   {CATEGORY_ICONS[proc.category]} {CATEGORY_LABEL[proc.category]}
                 </span>
                 <span style={{ fontSize: 13, color: C.textSub }}>{proc.duration} мин</span>
+                {proc.category !== "sauna" && proc.category !== "peeling" && (
                 <span style={{ fontSize: 13, color: C.textSub }}>{proc.therapistsRequired} маст.</span>
+                )}
                 <span style={{ fontSize: 14, fontWeight: 700, color: C.textMain, marginLeft: "auto" }}>
                   {proc.price.toLocaleString("ru-RU")} ₸
                 </span>
@@ -2170,7 +2180,7 @@ function ProceduresTab({ procedures, activeSalonId, salons, onProceduresChange, 
                     </span>
                   </td>
                   <td style={td()}>{proc.duration} мин</td>
-                  <td style={td(true)}>{proc.therapistsRequired}</td>
+                  <td style={td(true)}>{(proc.category === "sauna" || proc.category === "peeling") ? "—" : proc.therapistsRequired}</td>
                   <td style={td()}>{proc.price.toLocaleString("ru-RU")} ₸</td>
                   <td style={{ ...td(true) }} onClick={e => { e.stopPropagation(); handleToggle(proc.id); }}>
                     <div style={{ display: "flex", justifyContent: "center" }}>
@@ -3038,10 +3048,10 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const therapistCount = (() => {
     if (bookingType === "single") {
       let t;
-      if (selectedProc?.category === "sauna") {
+      if (selectedProc?.category === "sauna" || selectedProc?.category === "peeling") {
         t = 0;
       } else if (perClientProcs && perClientProcs.length > 0)
-        t = perClientProcs.filter(p => p && p.category !== "sauna").reduce((sum, p) => sum + (p?.therapistsRequired || 0), 0);
+        t = perClientProcs.filter(p => p && p.category !== "sauna" && p.category !== "peeling").reduce((sum, p) => sum + (p?.therapistsRequired || 0), 0);
       else
         t = clientCount * (selectedProc?.therapistsRequired || 0);
       if (withPeeling && selectedProc?.category === "sauna" && salon.hasPeeling)
@@ -3126,7 +3136,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
         const uniqueNames = [...new Set(perClientProcs.map(p => p?.name).filter(Boolean))];
         const procedureName = uniqueNames.join(" + ");
         const assignedMasterIds = masters.filter(m => m);
-        const totalTherapists = perClientProcs.reduce((sum, p) => sum + (p?.therapistsRequired || 0), 0);
+        const totalTherapists = perClientProcs.filter(p => p && p.category !== "sauna" && p.category !== "peeling").reduce((sum, p) => sum + (p?.therapistsRequired || 0), 0);
         const segs = [{
           procedureId: perClientProcs[0]?.id || null,
           procedureName,
@@ -6277,7 +6287,7 @@ function App() {
       Storage.get(KEYS.combos(salonId)),
       Storage.get(KEYS.bookings(salonId, ym)),
     ]);
-    setProcedures(procs || []);
+    setProcedures((procs || []).map(p => (p.category === "sauna" || p.category === "peeling") ? { ...p, therapistsRequired: 0 } : p));
     setCombos(cmbs || []);
     setBookings(bkgs || []);
   }, []);
