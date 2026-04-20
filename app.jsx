@@ -293,9 +293,9 @@ const makeDefaultProcedures = (salonId) => [
   { id: makeId(), salonId, name: "АзияМикс",                                             category: "massage", duration: 120, price: 25000, therapistsRequired: 1, isActive: true },
   { id: makeId(), salonId, name: "Энергетический массаж",                               category: "massage", duration: 120, price: 25000, therapistsRequired: 1, isActive: true },
   // Сауна и пиллинг
-  { id: makeId(), salonId, name: "Парение в Хаммам 30 мин",                             category: "sauna",   duration: 30,  price: 5000,  therapistsRequired: 1, isActive: true },
-  { id: makeId(), salonId, name: "Парение в хаммам 1 час",                              category: "sauna",   duration: 60,  price: 7000,  therapistsRequired: 1, isActive: true },
-  { id: makeId(), salonId, name: "Пилинг в хаммаме",                                    category: "peeling", duration: 60,  price: 15000, therapistsRequired: 1, isActive: true },
+  { id: makeId(), salonId, name: "Парение в Хаммам 30 мин",                             category: "sauna",   duration: 30,  price: 5000,  therapistsRequired: 0, isActive: true },
+  { id: makeId(), salonId, name: "Парение в хаммам 1 час",                              category: "sauna",   duration: 60,  price: 7000,  therapistsRequired: 0, isActive: true },
+  { id: makeId(), salonId, name: "Пилинг в хаммаме",                                    category: "peeling", duration: 60,  price: 15000, therapistsRequired: 0, isActive: true },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -2795,9 +2795,10 @@ function validateBooking(booking, existingBookings, salon) {
     for (let m = minM; m < maxM; m += 15) {
       const slotS = minsToTime(m);
       const slotE = minsToTime(m + 15);
-      // Load from new booking
+      // Load from new booking (sauna/peeling don't use massage therapists)
       let newLoad = 0;
       for (const s of booking.segments) {
+        if (s.resourceType === "sauna" || s.resourceType === "peeling") continue;
         if (s.startTime < slotE && s.endTime > slotS) newLoad += (s.therapistCount || 0);
       }
       if (newLoad === 0) continue;
@@ -2805,6 +2806,7 @@ function validateBooking(booking, existingBookings, salon) {
       let existingLoad = 0;
       for (const ob of others) {
         for (const os of ob.segments) {
+          if (os.resourceType === "sauna" || os.resourceType === "peeling") continue;
           if (os.startTime < slotE && os.endTime > slotS) existingLoad += (os.therapistCount || 0);
         }
       }
@@ -3036,8 +3038,10 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const therapistCount = (() => {
     if (bookingType === "single") {
       let t;
-      if (perClientProcs && perClientProcs.length > 0)
-        t = perClientProcs.reduce((sum, p) => sum + (p?.therapistsRequired || 0), 0);
+      if (selectedProc?.category === "sauna") {
+        t = 0;
+      } else if (perClientProcs && perClientProcs.length > 0)
+        t = perClientProcs.filter(p => p && p.category !== "sauna").reduce((sum, p) => sum + (p?.therapistsRequired || 0), 0);
       else
         t = clientCount * (selectedProc?.therapistsRequired || 0);
       if (withPeeling && selectedProc?.category === "sauna" && salon.hasPeeling)
@@ -3148,7 +3152,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
         procedureId: selectedProc.id, procedureName: selectedProc.name,
         startTime: validStartTime, endTime: minsToTime(endM),
         roomId: isSauna ? null : effectiveRoom,
-        therapistCount: clientCount * selectedProc.therapistsRequired,
+        therapistCount: isSauna ? 0 : clientCount * selectedProc.therapistsRequired,
         resourceType: isSauna ? "sauna" : "room",
         masterIds: isSauna ? [] : assignedMasterIds,
       }];
