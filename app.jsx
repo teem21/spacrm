@@ -5067,11 +5067,24 @@ function JournalScreen({ salons, onShowToast }) {
                       {totalDuration(b)} м
                     </td>
                     <td style={{ padding: "16px 20px" }}>
-                      <div style={{ fontSize: 14, fontWeight: 900, color: C.textMain }}>{b.totalPrice.toLocaleString()} ₸</div>
-                      {(b.discount || 0) > 0 && (
-                        <div style={{ fontSize: 10, color: "#7B68AE", fontWeight: 800 }}>−{b.discount.toLocaleString()} ₸ скидка</div>
+                      {(b.discount || 0) > 0 ? (
+                        <>
+                          <div style={{ fontSize: 14, fontWeight: 900, color: C.textMain }}>
+                            {(b.basePrice || (b.totalPrice + b.discount)).toLocaleString()} ₸
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "#7B68AE", marginTop: 2 }}>
+                            −{b.discount.toLocaleString()} ₸ скидка
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 800, color: C.accent, marginTop: 2 }}>
+                            Итого: {b.totalPrice.toLocaleString()} ₸
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: 14, fontWeight: 900, color: C.textMain }}>
+                          {b.totalPrice.toLocaleString()} ₸
+                        </div>
                       )}
-                      <div style={{ fontSize: 10, color: C.textSub, fontWeight: 800 }}>{PAYMENT_LABEL[b.paymentMethod] || "НАЛ"}</div>
+                      <div style={{ fontSize: 10, color: C.textSub, fontWeight: 800, marginTop: 2 }}>{PAYMENT_LABEL[b.paymentMethod] || "НАЛ"}</div>
                     </td>
                     <td style={{ padding: "16px 20px" }}>
                       <select value={b.status}
@@ -5307,7 +5320,6 @@ function DashboardScreen({ salons }) {
     const keys = await Storage.list("spa-crm:bookings:");
     const arrays = await Promise.all(keys.map(k => Storage.get(k)));
     const all = arrays.flat().filter(Boolean);
-    console.log("[Dashboard] loaded bookings:", all.length, "with discounts:", all.filter(b => b.discount > 0).map(b => ({ id: b.id, date: b.date, discount: b.discount, totalPrice: b.totalPrice, basePrice: b.basePrice })));
     setAllBookings(all);
     setLoadingD(false);
   }, []);
@@ -5339,10 +5351,11 @@ function DashboardScreen({ salons }) {
     
     const totalBookings = active.length;
     const totalClients = active.reduce((a, b) => a + (b.clientCount || 1), 0);
-    const revenue = paid.reduce((a, b) => a + (b.totalPrice || 0), 0);
+    const grossRevenue = paid.reduce((a, b) => a + (b.basePrice || (b.totalPrice || 0) + (b.discount || 0)), 0);
+    const totalDiscount = paid.reduce((a, b) => a + (b.discount || 0), 0);
+    const discountCount = paid.filter(b => (b.discount || 0) > 0).length;
+    const revenue = grossRevenue - totalDiscount;
     const avgCheck = paid.length > 0 ? Math.round(revenue / paid.length) : 0;
-    const totalDiscount = bks.reduce((a, b) => a + (b.discount || 0), 0);
-    const discountCount = bks.filter(b => (b.discount || 0) > 0).length;
 
     const targetSalons = salonFilter ? salons.filter(s => s.id === salonFilter) : salons;
     let roomBusyMins = 0, roomTotalMins = 0;
@@ -5369,7 +5382,7 @@ function DashboardScreen({ salons }) {
     active.forEach(b => { pmBreakdown[b.paymentMethod || "cash"]++; });
 
     return {
-      totalBookings, totalClients, revenue, avgCheck, 
+      totalBookings, totalClients, grossRevenue, revenue, avgCheck,
       roomPct: roomTotalMins > 0 ? Math.round(roomBusyMins / roomTotalMins * 100) : 0,
       therPct: therTotalMins > 0 ? Math.round(therBusyMins / therTotalMins * 100) : 0,
       refunded: bks.filter(b => b.status === "cancelled_refund").reduce((a, b) => a + (b.totalPrice || 0), 0),
@@ -5393,6 +5406,7 @@ function DashboardScreen({ salons }) {
     return {
       totalBookings: Math.round(perSalon.reduce((a, k) => a + k.totalBookings, 0)),
       totalClients: Math.round(perSalon.reduce((a, k) => a + k.totalClients, 0)),
+      grossRevenue: Math.round(perSalon.reduce((a, k) => a + k.grossRevenue, 0)),
       revenue: Math.round(perSalon.reduce((a, k) => a + k.revenue, 0)),
       avgCheck: Math.round(perSalon.reduce((a, k) => a + (k.revenue > 0 ? k.avgCheck : 0), 0) / perSalon.filter(k => k.revenue > 0).length || 0),
       roomPct: Math.round(perSalon.reduce((a, k) => a + k.roomPct, 0) / n),
@@ -5516,15 +5530,29 @@ function DashboardScreen({ salons }) {
         {[
           { label: "Всего записей", val: kpi.totalBookings, icon: "📋" },
           { label: "Клиентов", val: kpi.totalClients, icon: "👥" },
-          { label: "Выручка", val: `${kpi.revenue.toLocaleString()} ₸`, icon: "💰", accent: true },
           { label: "Средний чек", val: `${kpi.avgCheck.toLocaleString()} ₸`, icon: "📈" }
         ].map((item, i) => (
-          <div key={i} style={{ ...bentoCard, borderBottom: item.accent ? `4px solid ${C.accent}` : bentoCard.border }}>
+          <div key={i} style={bentoCard}>
             <div style={{ fontSize: 20, marginBottom: 8 }}>{item.icon}</div>
             <div style={{ fontSize: 28, fontWeight: 900, color: C.textMain, letterSpacing: "-0.03em" }}>{item.val}</div>
             <div style={{ fontSize: 12, fontWeight: 700, color: C.textSub, textTransform: "uppercase", letterSpacing: "0.05em" }}>{item.label}</div>
           </div>
         ))}
+        <div style={{ ...bentoCard, borderBottom: `4px solid ${C.accent}` }}>
+          <div style={{ fontSize: 20, marginBottom: 8 }}>💰</div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: C.textMain, letterSpacing: "-0.03em" }}>
+            {kpi.revenue.toLocaleString()} ₸
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.textSub, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Чистая выручка
+          </div>
+          {kpi.totalDiscount > 0 && (
+            <div style={{ marginTop: 10, fontSize: 12, color: C.textSub, fontWeight: 600, lineHeight: 1.8 }}>
+              <div>До скидок: <span style={{ color: C.textMain, fontWeight: 800 }}>{kpi.grossRevenue.toLocaleString()} ₸</span></div>
+              <div>Скидки: <span style={{ color: "#7B68AE", fontWeight: 800 }}>−{kpi.totalDiscount.toLocaleString()} ₸</span></div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Utilizations */}
