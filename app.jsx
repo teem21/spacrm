@@ -3,7 +3,7 @@
 // Stack: React (hooks), Tailwind CSS, Lucide-react
 
 const { useState, useEffect, useCallback, useRef, useMemo } = React;
-const { Gem, Settings, Calendar, BookOpen, LayoutDashboard, Loader2, Plus, Trash2, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, X, Moon, Phone, Search, Users, LogOut, Shield, Eye, EyeOff, ClipboardList, UserPlus, Lock, Menu, ArrowUp, ArrowDown, Database, Download, Upload } = lucide;
+const { Gem, Settings, Calendar, BookOpen, LayoutDashboard, Loader2, Plus, Trash2, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, X, Moon, Phone, Search, Users, LogOut, Shield, Eye, EyeOff, ClipboardList, UserPlus, Lock, Menu, ArrowUp, ArrowDown, Database, Download, Upload, Pencil } = lucide;
 
 // ─── Mobile Detection Hook ──────────────────────────────────────────────────
 function useIsMobile(breakpoint = 768) {
@@ -2866,29 +2866,42 @@ function validateBooking(booking, existingBookings, salon) {
 
 // ─── Booking Modal (STEP-07) ───────────────────────────────────────────────
 
-function BookingModal({ salon, procedures, combos, initialDate, initialTime, initialMasterId, onSave, onClose }) {
+function BookingModal({ salon, procedures, combos, initialDate, initialTime, initialMasterId, editBooking, onSave, onClose }) {
   const isMobile = useIsMobile();
   const activeProcedures = procedures.filter(p => p.isActive);
   const bookableProcedures = activeProcedures.filter(p => p.category !== "peeling");
   const activeCombos = combos.filter(c => c.isActive);
 
-  const [clientName, setClientName] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
-  const [clientCount, setClientCount] = useState(1);
-  const [bookingType, setBookingType] = useState("single");
-  const [procedureId, setProcedureId] = useState(bookableProcedures[0]?.id || "");
-  const [comboId, setComboId] = useState(activeCombos[0]?.id || "");
-  const [clientProcedureIds, setClientProcedureIds] = useState([]);
-  const [date, setDate] = useState(initialDate || toDateStr(new Date()));
-  const [startTime, setStartTime] = useState(initialTime || "");
-  const [roomId, setRoomId] = useState("");
-  const [peelingCount, setPeelingCount] = useState(1);
-  const [withPeeling, setWithPeeling] = useState(false);
-  const [notes, setNotes] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [masters, setMasters] = useState([]);
-  const [comboStepMasters, setComboStepMasters] = useState([]);
-  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const eb = editBooking;
+  const [clientName, setClientName] = useState(eb?.clientName || "");
+  const [clientPhone, setClientPhone] = useState(eb?.clientPhone || "");
+  const [clientCount, setClientCount] = useState(eb?.clientCount || 1);
+  const [bookingType, setBookingType] = useState(eb ? (eb.bookingType === "combo" ? "combo" : "single") : "single");
+  const [procedureId, setProcedureId] = useState(eb?.procedureId || bookableProcedures[0]?.id || "");
+  const [comboId, setComboId] = useState(eb?.comboId || activeCombos[0]?.id || "");
+  const [clientProcedureIds, setClientProcedureIds] = useState(eb?.clientProcedureIds || []);
+  const [date, setDate] = useState(eb?.date || initialDate || toDateStr(new Date()));
+  const [startTime, setStartTime] = useState(eb?.totalStartTime || initialTime || "");
+  const [roomId, setRoomId] = useState(eb?.segments?.[0]?.roomId || "");
+  const [peelingCount, setPeelingCount] = useState(() => {
+    if (!eb) return 1;
+    const peelSeg = eb.segments?.find(s => s.resourceType === "peeling");
+    return peelSeg ? (peelSeg.clientCount || 1) : 1;
+  });
+  const [withPeeling, setWithPeeling] = useState(eb ? eb.segments?.some(s => s.resourceType === "peeling") || false : false);
+  const [notes, setNotes] = useState(eb?.notes || "");
+  const [discount, setDiscount] = useState(eb?.discount || 0);
+  const [masters, setMasters] = useState(() => {
+    if (!eb || eb.bookingType === "combo") return [];
+    const massageSegs = (eb.segments || []).filter(s => s.resourceType !== "sauna" && s.resourceType !== "peeling");
+    return massageSegs[0]?.masterIds || [];
+  });
+  const [comboStepMasters, setComboStepMasters] = useState(() => {
+    if (!eb || eb.bookingType !== "combo") return [];
+    const massageSegs = (eb.segments || []).filter(s => s.resourceType !== "sauna" && s.resourceType !== "peeling");
+    return massageSegs.map(s => s.masterIds || []);
+  });
+  const [paymentMethod, setPaymentMethod] = useState(eb?.paymentMethod || "cash");
   const [err, setErr] = useState("");
   const [saving, setSaving] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -2958,7 +2971,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     const ym = date.slice(0, 7);
     (async () => {
       const bkgs = await Storage.get(KEYS.bookings(salon.id, ym)) || [];
-      if (!cancelled) setExistingBookings(bkgs);
+      if (!cancelled) setExistingBookings(editBooking ? bkgs.filter(b => b.id !== editBooking.id) : bkgs);
     })();
     return () => { cancelled = true; };
   }, [date, salon.id]);
@@ -3246,10 +3259,9 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const handleConfirmedSave = async () => {
     setShowConfirm(false);
     setSaving(true);
-    const ym = date.slice(0, 7);
-    const existing = await Storage.get(KEYS.bookings(salon.id, ym)) || [];
-    const booking = {
-      id: makeId(), salonId: salon.id, date,
+    const newYm = date.slice(0, 7);
+    const bookingFields = {
+      salonId: salon.id, date,
       clientName: clientName.trim(), clientPhone: clientPhone.trim(), clientCount,
       bookingType: bookingType === "single" ? "single_procedure" : "combo",
       procedureId: bookingType === "single" && clientCount === 1 ? (selectedProc?.id || null) : null,
@@ -3261,16 +3273,39 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       basePrice,
       discount: discount || 0,
       totalPrice,
-      status: "booked",
-      createdAt: new Date().toISOString(),
       notes: notes.trim(),
       masterName: allAssignedMasterIds.map(id => (salon.therapists || []).find(t => t.id === id)?.name || id).join(", "),
       paymentMethod,
     };
-    const updated = [...existing, booking];
-    await Storage.set(KEYS.bookings(salon.id, ym), updated);
-    setSaving(false);
-    onSave(booking, ym, updated);
+
+    if (editBooking) {
+      // Edit mode — preserve id, createdAt, status
+      const booking = { ...editBooking, ...bookingFields };
+      const oldYm = editBooking.date.slice(0, 7);
+      if (oldYm === newYm) {
+        const all = await Storage.get(KEYS.bookings(salon.id, newYm)) || [];
+        const updated = all.map(b => b.id === editBooking.id ? booking : b);
+        await Storage.set(KEYS.bookings(salon.id, newYm), updated);
+        setSaving(false);
+        onSave(booking, newYm, updated);
+      } else {
+        const oldAll = await Storage.get(KEYS.bookings(salon.id, oldYm)) || [];
+        await Storage.set(KEYS.bookings(salon.id, oldYm), oldAll.filter(b => b.id !== editBooking.id));
+        const newAll = await Storage.get(KEYS.bookings(salon.id, newYm)) || [];
+        const updated = [...newAll, booking];
+        await Storage.set(KEYS.bookings(salon.id, newYm), updated);
+        setSaving(false);
+        onSave(booking, newYm, updated);
+      }
+    } else {
+      // Create mode
+      const booking = { id: makeId(), ...bookingFields, status: "booked", createdAt: new Date().toISOString() };
+      const existing = await Storage.get(KEYS.bookings(salon.id, newYm)) || [];
+      const updated = [...existing, booking];
+      await Storage.set(KEYS.bookings(salon.id, newYm), updated);
+      setSaving(false);
+      onSave(booking, newYm, updated);
+    }
   };
 
   return (
@@ -3296,7 +3331,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
             color: C.textMain,
             fontFamily: "'Poppins', sans-serif",
             letterSpacing: "-0.02em"
-          }}>Новая запись</h3>
+          }}>{editBooking ? "Редактировать запись" : "Новая запись"}</h3>
           <button onClick={onClose} style={{ 
             background: "rgba(0,0,0,0.05)", border: "none", cursor: "pointer", color: C.textSub,
             width: 32, height: 32, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center"
@@ -3896,7 +3931,7 @@ function isBookingOverdue(b) {
   return now > endDate;
 }
 
-function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDelete, onClose }) {
+function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDelete, onEdit, onClose }) {
   const isMobile = useIsMobile();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const panelRef = useRef(null);
@@ -4074,6 +4109,26 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
         )}
       </div>
 
+      {/* Edit */}
+      {(() => {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const bDate = new Date(booking.date + "T00:00:00");
+        if (bDate < today) return null;
+        return (
+          <div style={{ padding: "0 32px 16px" }}>
+            <button onClick={() => onEdit(booking)} style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              width: "100%", padding: "14px 0", borderRadius: 24,
+              border: "none", backgroundColor: `${C.accent}20`,
+              color: C.accent, fontSize: 14, fontWeight: 700, cursor: "pointer",
+              transition: "all 200ms"
+            }}>
+              <Pencil size={16} /> Редактировать
+            </button>
+          </div>
+        );
+      })()}
+
       {/* Delete */}
       {(() => {
         const today = new Date();
@@ -4208,19 +4263,25 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
   })();
 
   const handleBookingCreated = async (_booking, bookingYm, updatedBookings) => {
+    const isEdit = bookingModal?.editBooking != null;
     if (bookingYm === ym) setMonthBookings(updatedBookings);
+    // If booking moved to different month, refresh current month view
+    if (isEdit && bookingModal.editBooking.date.slice(0, 7) === ym && bookingYm !== ym) {
+      const refreshed = await Storage.get(KEYS.bookings(activeSalonId, ym)) || [];
+      setMonthBookings(refreshed);
+    }
     setBookingModal(null);
     if (currentUser) {
       await UserStorage.saveLog({
         id: makeId(), userId: currentUser.id, userName: currentUser.name,
-        action: "create", targetDate: _booking.date, targetTime: _booking.totalStartTime,
+        action: isEdit ? "edit" : "create", targetDate: _booking.date, targetTime: _booking.totalStartTime,
         clientName: _booking.clientName,
         details: `Услуга: ${_booking.segments?.[0]?.procedureName || "комбо"}, Цена: ${_booking.totalPrice}₸`,
         timestamp: new Date().toISOString(),
       });
     }
-    if (window.notifyTelegram) window.notifyTelegram("create", { ..._booking, salonName: salon?.name || "" });
-    if (onShowToast) onShowToast("Запись создана");
+    if (window.notifyTelegram) window.notifyTelegram(isEdit ? "edit" : "create", { ..._booking, salonName: salon?.name || "" });
+    if (onShowToast) onShowToast(isEdit ? "Запись обновлена" : "Запись создана");
   };
 
   const handleStatusChange = async (bookingId, newStatus) => {
@@ -4269,6 +4330,16 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
     }
     if (window.notifyTelegram && target) window.notifyTelegram("delete", { ...target, salonName: salon?.name || "" });
     if (onShowToast) onShowToast("Запись удалена");
+  };
+
+  const handleEditBooking = (booking) => {
+    setSelectedBookingId(null);
+    setBookingModal({
+      initialDate: booking.date,
+      initialTime: booking.totalStartTime,
+      initialMasterId: booking.segments?.[0]?.masterIds?.[0] || null,
+      editBooking: booking,
+    });
   };
 
   const selectedBooking = selectedBookingId ? monthBookings.find(b => b.id === selectedBookingId) : null;
@@ -4841,6 +4912,7 @@ const getRowSegments = (row) => {
           initialDate={bookingModal.initialDate || toDateStr(new Date())}
           initialTime={bookingModal.initialTime}
           initialMasterId={bookingModal.initialMasterId}
+          editBooking={bookingModal.editBooking || null}
           onSave={handleBookingCreated}
           onClose={() => setBookingModal(null)}
         />
@@ -4854,6 +4926,7 @@ const getRowSegments = (row) => {
           procedures={procedures}
           onStatusChange={handleStatusChange}
           onDelete={handleDeleteBooking}
+          onEdit={handleEditBooking}
           onClose={() => setSelectedBookingId(null)}
         />
       )}
