@@ -4167,7 +4167,7 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
     let cancelled = false;
     (async () => {
       const bkgs = await Storage.get(KEYS.bookings(activeSalonId, ym));
-      if (!cancelled) setMonthBookings(bkgs || []);
+      if (!cancelled) setMonthBookings((bkgs || []).map(b => (b.discount || 0) > 0 && !b.basePrice ? { ...b, basePrice: (b.totalPrice || 0) + (b.discount || 0) } : b));
     })();
     return () => { cancelled = true; };
   }, [activeSalonId, ym]);
@@ -5070,7 +5070,7 @@ function JournalScreen({ salons, onShowToast }) {
                       {(b.discount || 0) > 0 ? (
                         <>
                           <div style={{ fontSize: 14, fontWeight: 900, color: C.textMain }}>
-                            {(b.basePrice || (b.totalPrice + b.discount)).toLocaleString()} ₸
+                            {(b.basePrice || ((b.totalPrice || 0) + (b.discount || 0))).toLocaleString()} ₸
                           </div>
                           <div style={{ fontSize: 12, fontWeight: 700, color: "#7B68AE", marginTop: 2 }}>
                             −{b.discount.toLocaleString()} ₸ скидка
@@ -5319,7 +5319,12 @@ function DashboardScreen({ salons }) {
     setLoadingD(true);
     const keys = await Storage.list("spa-crm:bookings:");
     const arrays = await Promise.all(keys.map(k => Storage.get(k)));
-    const all = arrays.flat().filter(Boolean);
+    const all = arrays.flat().filter(Boolean).map(b => {
+      if ((b.discount || 0) > 0 && !b.basePrice) {
+        return { ...b, basePrice: (b.totalPrice || 0) + (b.discount || 0) };
+      }
+      return b;
+    });
     setAllBookings(all);
     setLoadingD(false);
   }, []);
