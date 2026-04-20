@@ -3267,7 +3267,6 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       masterName: allAssignedMasterIds.map(id => (salon.therapists || []).find(t => t.id === id)?.name || id).join(", "),
       paymentMethod,
     };
-    console.log("[SAVE] booking:", JSON.stringify({ basePrice: booking.basePrice, discount: booking.discount, totalPrice: booking.totalPrice }));
     const updated = [...existing, booking];
     await Storage.set(KEYS.bookings(salon.id, ym), updated);
     setSaving(false);
@@ -5320,9 +5319,7 @@ function DashboardScreen({ salons }) {
     setLoadingD(true);
     const keys = await Storage.list("spa-crm:bookings:");
     const arrays = await Promise.all(keys.map(k => Storage.get(k)));
-    const raw = arrays.flat().filter(Boolean);
-    console.log("[JOURNAL] raw bookings with prices:", raw.map(b => ({ id: b.id?.slice(0,6), date: b.date, basePrice: b.basePrice, discount: b.discount, totalPrice: b.totalPrice })));
-    const all = raw.map(b => {
+    const all = arrays.flat().filter(Boolean).map(b => {
       if ((b.discount || 0) > 0 && !b.basePrice) {
         return { ...b, basePrice: (b.totalPrice || 0) + (b.discount || 0) };
       }
