@@ -2910,8 +2910,9 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   });
   const [comboStepMasters, setComboStepMasters] = useState(() => {
     if (!eb || eb.bookingType !== "combo") return [];
+    // Flat master list: take masterIds from the first massage segment (same masters do all steps)
     const massageSegs = (eb.segments || []).filter(s => s.resourceType !== "sauna" && s.resourceType !== "peeling");
-    return massageSegs.map(s => s.masterIds || []);
+    return massageSegs[0]?.masterIds || [];
   });
   const [paymentMethod, setPaymentMethod] = useState(eb?.paymentMethod || "cash");
   const [err, setErr] = useState("");
@@ -2958,22 +2959,25 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   }, [clientCount, procedureId]);
 
   // Keep comboStepMasters in sync with selectedCombo and clientCount
+  // Combo steps are sequential — same masters do all steps, so flat array (like single booking)
   useEffect(() => {
     if (bookingType !== "combo" || !selectedCombo) {
       setComboStepMasters([]);
       return;
     }
+    // Max concurrent therapists across any single step
+    let maxNeeded = 0;
+    for (const step of (selectedCombo.steps || [])) {
+      const proc = activeProcedures.find(p => p.id === step.procId);
+      if (!proc || proc.category === "sauna" || proc.category === "peeling") continue;
+      const needed = clientCount * (proc.therapistsRequired || 1);
+      if (needed > maxNeeded) maxNeeded = needed;
+    }
     setComboStepMasters(prev => {
-      const steps = selectedCombo.steps || [];
-      return steps.map((step, i) => {
-        const proc = activeProcedures.find(p => p.id === step.procId);
-        if (!proc || proc.category === "sauna" || proc.category === "peeling") return [];
-        const needed = clientCount * (proc.therapistsRequired || 1);
-        const existing = prev[i] || [];
-        if (existing.length === needed) return existing;
-        if (existing.length < needed) return [...existing, ...Array(needed - existing.length).fill("")];
-        return existing.slice(0, needed);
-      });
+      const existing = Array.isArray(prev) ? prev.flat() : [];
+      if (existing.length === maxNeeded) return existing;
+      if (existing.length < maxNeeded) return [...existing, ...Array(maxNeeded - existing.length).fill("")];
+      return existing.slice(0, maxNeeded);
     });
   }, [bookingType, selectedCombo, clientCount]);
 
@@ -3059,15 +3063,18 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       return t;
     }
     if (!selectedCombo) return 0;
-    let total = 0;
+    // Steps are sequential — take MAX concurrent need, not sum
+    let maxMassage = 0;
+    let peelingTherapists = 0;
     for (const step of (selectedCombo.steps || [])) {
       const proc = activeProcedures.find(p => p.id === step.procId);
       if (!proc) continue;
       if (proc.category === "sauna") continue;
-      if (proc.category === "peeling") { total += Math.min(peelingCount, salon.peelingMastersMax || 2); continue; }
-      total += clientCount * (proc.therapistsRequired || 1);
+      if (proc.category === "peeling") { peelingTherapists = Math.min(peelingCount, salon.peelingMastersMax || 2); continue; }
+      const needed = clientCount * (proc.therapistsRequired || 1);
+      if (needed > maxMassage) maxMassage = needed;
     }
-    return total;
+    return maxMassage + peelingTherapists;
   })();
 
   // Number of massage master slots (excluding peeling masters)
@@ -3215,7 +3222,8 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       const isSauna = proc.category === "sauna";
       if (isSauna) saunaStartM = currentM;
 
-      const stepMasterIds = isSauna ? [] : (comboStepMasters[stepIdx] || []).filter(m => m);
+      // comboStepMasters is a flat array — same masters do all sequential steps
+      const stepMasterIds = isSauna ? [] : (Array.isArray(comboStepMasters) ? comboStepMasters : []).filter(m => m);
       segments.push({
         procedureId: proc.id, procedureName: proc.name,
         startTime: minsToTime(currentM), endTime: minsToTime(endM),
@@ -3622,44 +3630,27 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           </div>
         )}
 
-        {/* Combo: per-step master selectors */}
-        {bookingType === "combo" && comboStepMasters.some(arr => arr.length > 0) && (
+        {/* Combo: flat master selectors (same masters do all sequential steps) */}
+        {bookingType === "combo" && Array.isArray(comboStepMasters) && comboStepMasters.length > 0 && (
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Мастера</label>
-            {(selectedCombo?.steps || []).map((step, stepIdx) => {
-              const stepSlots = comboStepMasters[stepIdx];
-              if (!stepSlots || stepSlots.length === 0) return null;
-              const proc = activeProcedures.find(p => p.id === step.procId);
-              const procName = proc?.name || `Шаг ${stepIdx + 1}`;
-              return (
-                <div key={stepIdx} style={{ marginBottom: stepIdx < (selectedCombo.steps.length - 1) ? 12 : 0 }}>
-                  <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                    {procName}
-                  </div>
-                  {stepSlots.map((m, mIdx) => {
-                    const slotLabel = stepSlots.length > 1 ? `Мастер ${mIdx + 1}` : null;
-                    return (
-                      <div key={mIdx} style={{ marginBottom: mIdx < stepSlots.length - 1 ? 6 : 0 }}>
-                        {slotLabel && (
-                          <div style={{ fontSize: 11, color: C.textSub, marginBottom: 2 }}>{slotLabel}</div>
-                        )}
-                        <select value={m} onChange={e => {
-                          const updated = comboStepMasters.map((arr, si) =>
-                            si === stepIdx ? arr.map((v, mi) => mi === mIdx ? e.target.value : v) : arr
-                          );
-                          setComboStepMasters(updated);
-                        }} style={{ ...inputStyle(), cursor: "pointer" }}>
-                          <option value="" style={{ backgroundColor: C.card }}>— Не назначен —</option>
-                          {(salon.therapists || []).map(t => (
-                            <option key={t.id} value={t.id} style={{ backgroundColor: C.card }}>{t.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
+            <label style={labelStyle}>Маст��ра</label>
+            {comboStepMasters.map((m, idx) => (
+              <div key={idx} style={{ marginBottom: idx < comboStepMasters.length - 1 ? 6 : 0 }}>
+                {comboStepMasters.length > 1 && (
+                  <div style={{ fontSize: 11, color: C.textSub, marginBottom: 2 }}>Масте�� {idx + 1}</div>
+                )}
+                <select value={m} onChange={e => {
+                  const updated = [...comboStepMasters];
+                  updated[idx] = e.target.value;
+                  setComboStepMasters(updated);
+                }} style={{ ...inputStyle(), cursor: "pointer" }}>
+                  <option value="" style={{ backgroundColor: C.card }}>— Не назначен —</option>
+                  {(salon.therapists || []).filter(t => !comboStepMasters.includes(t.id) || t.id === m).map(t => (
+                    <option key={t.id} value={t.id} style={{ backgroundColor: C.card }}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
           </div>
         )}
 
