@@ -2831,11 +2831,12 @@ function validateBooking(booking, existingBookings, salon) {
 
   // 7. Beds check — room capacity vs clients assigned
   if (booking.clientCount >= 2) {
-    // Count clients per room from segments
+    // Max clients per room (combo steps are sequential — same clients reuse the room)
     const roomClientMap = {};
     for (const seg of booking.segments) {
       if (seg.resourceType === "room" && seg.roomId) {
-        roomClientMap[seg.roomId] = (roomClientMap[seg.roomId] || 0) + (seg.clientsInRoom || booking.clientCount);
+        const c = seg.clientsInRoom || booking.clientCount;
+        roomClientMap[seg.roomId] = Math.max(roomClientMap[seg.roomId] || 0, c);
       }
     }
     for (const [rid, count] of Object.entries(roomClientMap)) {
