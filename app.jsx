@@ -5506,6 +5506,7 @@ function DashboardScreen({ salons }) {
       refundedCount: bks.filter(b => b.status === "cancelled_refund").reduce((a, b) => a + (b.clientCount || 1), 0),
       keptDeposit: bks.filter(b => b.status === "cancelled_no_refund").reduce((a, b) => a + (b.totalPrice || 0), 0),
       keptCount: bks.filter(b => b.status === "cancelled_no_refund").reduce((a, b) => a + (b.clientCount || 1), 0),
+      comboRevenue: paid.filter(b => b.bookingType === "combo").reduce((a, b) => a + (b.totalPrice || 0), 0),
       certDepCount: certDep.length,
       certDepOriginalPrice: certDep.reduce((a, b) => a + (b.totalPrice || 0), 0),
       totalDiscount,
@@ -5533,6 +5534,7 @@ function DashboardScreen({ salons }) {
       keptDeposit: perSalon.reduce((a, k) => a + k.keptDeposit, 0),
       keptCount: perSalon.reduce((a, k) => a + k.keptCount, 0),
       overdueBookings: perSalon.reduce((a, k) => a + k.overdueBookings, 0),
+      comboRevenue: perSalon.reduce((a, k) => a + k.comboRevenue, 0),
       certDepCount: perSalon.reduce((a, k) => a + k.certDepCount, 0),
       certDepOriginalPrice: perSalon.reduce((a, k) => a + k.certDepOriginalPrice, 0),
       totalDiscount: perSalon.reduce((a, k) => a + k.totalDiscount, 0),
@@ -5720,6 +5722,15 @@ function DashboardScreen({ salons }) {
         <div style={bentoCard}>
           <div style={{ fontSize: 20, fontWeight: 900, color: "#7B68AE" }}>{kpi.totalDiscount.toLocaleString()} ₸</div>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.textSub }}>Скидки ({kpi.discountCount})</div>
+        </div>
+      </div>
+
+      {/* Combo Revenue */}
+      <div style={{ ...bentoCard, flexDirection: "row", alignItems: "center", gap: 20, borderBottom: `4px solid ${C.accent}` }}>
+        <div style={{ fontSize: 28 }}>🎯</div>
+        <div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: C.textMain, letterSpacing: "-0.03em" }}>{kpi.comboRevenue.toLocaleString()} ₸</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.textSub, textTransform: "uppercase", letterSpacing: "0.05em" }}>Заработок с комбо</div>
         </div>
       </div>
 
