@@ -2874,6 +2874,15 @@ function validateBooking(booking, existingBookings, salon) {
     }
   }
 
+  // 9. Certificate validation
+  if (booking.paymentMethod === "certificate") {
+    if (!booking.certAmount || booking.certAmount <= 0) {
+      errors.push({ field: "certAmount", message: "Укажите сумму сертификата" });
+    } else if (booking.certAmount < (booking.totalPrice || 0) && !booking.remainderMethod) {
+      errors.push({ field: "remainderMethod", message: "Укажите способ доплаты" });
+    }
+  }
+
   return { valid: errors.length === 0, errors };
 }
 
@@ -2915,7 +2924,17 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     const massageSegs = (eb.segments || []).filter(s => s.resourceType !== "sauna" && s.resourceType !== "peeling");
     return massageSegs.map(seg => seg.masterIds || []);
   });
-  const [paymentMethod, setPaymentMethod] = useState(eb?.paymentMethod || "cash");
+  // Normalize legacy cert_dep → certificate with full coverage
+  const [paymentMethod, setPaymentMethod] = useState(() => {
+    const pm = eb?.paymentMethod;
+    if (pm === "cert_dep") return "certificate";
+    return pm || "cash";
+  });
+  const [certAmount, setCertAmount] = useState(() => {
+    if (eb?.paymentMethod === "cert_dep") return eb.totalPrice || 0;
+    return eb?.certAmount || 0;
+  });
+  const [remainderMethod, setRemainderMethod] = useState(eb?.remainderMethod || "cash");
   const [err, setErr] = useState("");
   const [saving, setSaving] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -3308,6 +3327,8 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       notes: notes.trim(),
       masterName: allAssignedMasterIds.map(id => (salon.therapists || []).find(t => t.id === id)?.name || id).join(", "),
       paymentMethod,
+      certAmount: paymentMethod === "certificate" ? (certAmount || 0) : 0,
+      remainderMethod: (paymentMethod === "certificate" && (certAmount || 0) < totalPrice) ? remainderMethod : null,
     };
 
     if (editBooking) {
@@ -3792,7 +3813,10 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           <label style={labelStyle}>Способ оплаты</label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {PAYMENT_METHODS.map(pm => (
-              <button key={pm.value} type="button" onClick={() => setPaymentMethod(pm.value)} style={{
+              <button key={pm.value} type="button" onClick={() => {
+                setPaymentMethod(pm.value);
+                if (pm.value !== "certificate") { setCertAmount(0); setRemainderMethod("cash"); }
+              }} style={{
                 padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500,
                 border: paymentMethod === pm.value ? `1px solid ${C.accent}` : `1px solid ${C.border}`,
                 backgroundColor: paymentMethod === pm.value ? `${C.accent}22` : "transparent",
@@ -3801,10 +3825,59 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
               }}>{pm.label}</button>
             ))}
           </div>
-          {paymentMethod === "cert_dep" && (
+          {paymentMethod === "deposit" && (
             <div style={{ marginTop: 6, padding: "6px 10px", borderRadius: 6,
               backgroundColor: "#FBBF2422", border: "1px solid #FBBF2444", fontSize: 12, color: "#FBBF24" }}>
-              СЕРТ / ДЕП — не учитывается в выручке
+              ДЕПОЗИТ — не учитывается в выручке (деньги получены ранее)
+            </div>
+          )}
+          {paymentMethod === "certificate" && (
+            <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: 8,
+              backgroundColor: "#FBBF2411", border: "1px solid #FBBF2444" }}>
+              <div style={{ fontSize: 12, color: "#B8860B", fontWeight: 700, marginBottom: 8 }}>Сертификат</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                <label style={{ fontSize: 12, color: C.textDark, minWidth: 140 }}>Сумма сертификата:</label>
+                <input
+                  type="text" inputMode="numeric"
+                  value={certAmount || ""}
+                  onChange={e => { const v = parseInt(e.target.value.replace(/\D/g, ""), 10); setCertAmount(isNaN(v) ? 0 : v); }}
+                  placeholder="0"
+                  style={{ ...inputStyle(), width: 120 }}
+                />
+                <span style={{ fontSize: 12, color: C.textDarkSub }}>₸</span>
+              </div>
+              <div style={{ fontSize: 12, color: C.textDarkSub, marginBottom: 6 }}>
+                Стоимость услуги: <b style={{ color: C.textDark }}>{totalPrice.toLocaleString("ru-RU")} ₸</b>
+              </div>
+              {(() => {
+                const effCert = Math.min(certAmount || 0, totalPrice);
+                const remainder = totalPrice - effCert;
+                if (remainder <= 0) {
+                  return (
+                    <div style={{ fontSize: 12, color: "#2D7A3E", fontWeight: 600 }}>
+                      Сертификат полностью покрывает услугу
+                    </div>
+                  );
+                }
+                return (
+                  <>
+                    <div style={{ fontSize: 12, color: C.textDark, fontWeight: 700, marginBottom: 6 }}>
+                      Доплата клиента: {remainder.toLocaleString("ru-RU")} ₸
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {REMAINDER_METHODS.map(pm => (
+                        <button key={pm.value} type="button" onClick={() => setRemainderMethod(pm.value)} style={{
+                          padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500,
+                          border: remainderMethod === pm.value ? `1px solid ${C.accent}` : `1px solid ${C.borderLight}`,
+                          backgroundColor: remainderMethod === pm.value ? `${C.accent}22` : "transparent",
+                          color: remainderMethod === pm.value ? C.accent : C.textDarkSub,
+                          cursor: "pointer",
+                        }}>{pm.label}</button>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -3943,12 +4016,21 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
 // ─── Booking Details Panel (STEP-09) ───────────────────────────────────────
 
 const PAYMENT_METHODS = [
-  { value: "cash",     label: "НАЛ" },
-  { value: "card",     label: "БЕЗНАЛ" },
-  { value: "qr",       label: "QR" },
-  { value: "transfer", label: "ПЕРЕВОДЫ" },
-  { value: "cert_dep", label: "СЕРТ / ДЕП" },
+  { value: "cash",        label: "НАЛ" },
+  { value: "card",        label: "БЕЗНАЛ" },
+  { value: "qr",          label: "QR" },
+  { value: "transfer",    label: "ПЕРЕВОДЫ" },
+  { value: "deposit",     label: "ДЕПОЗИТ" },
+  { value: "certificate", label: "СЕРТИФИКАТ" },
 ];
+const REMAINDER_METHODS = PAYMENT_METHODS.filter(m => m.value !== "deposit" && m.value !== "certificate");
+
+// Revenue formula: deposit = 0 today; certificate partially/fully reduces by effective cert amount
+function computeBookingRevenue(b) {
+  if (b.paymentMethod === "deposit") return 0;
+  const effCert = Math.min(b.certAmount || 0, b.totalPrice || 0);
+  return (b.totalPrice || 0) - effCert;
+}
 const PAYMENT_LABEL = Object.fromEntries(PAYMENT_METHODS.map(m => [m.value, m.label]));
 
 const STATUS_CFG = {
@@ -4103,16 +4185,30 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
             <span style={{ marginLeft: 8, color: "#7B68AE", fontWeight: 700 }}>−{booking.discount.toLocaleString("ru-RU")} ₸ скидка</span>
           </div>
         )}
-        <div style={{ fontSize: 18, fontWeight: 700, color: booking.paymentMethod === "cert_dep" ? C.textSub : C.accent, marginBottom: 4 }}>
-          {booking.paymentMethod === "cert_dep"
-            ? <><s>{(booking.totalPrice || 0).toLocaleString("ru-RU")} ₸</s> <span style={{ fontSize: 13, color: "#FBBF24" }}>СЕРТ / ДЕП</span></>
-            : <>{(booking.totalPrice || 0).toLocaleString("ru-RU")} ₸</>}
-        </div>
-        <div style={{ fontSize: 12, color: C.textSub, marginBottom: 4 }}>
-          Оплата: <span style={{ color: booking.paymentMethod === "cert_dep" ? "#FBBF24" : C.textMain, fontWeight: 500 }}>
-            {PAYMENT_LABEL[booking.paymentMethod] || booking.paymentMethod || "НАЛ"}
-          </span>
-        </div>
+        {(() => {
+          const isDeposit = booking.paymentMethod === "deposit";
+          const isCert = booking.paymentMethod === "certificate";
+          const effCert = isCert ? Math.min(booking.certAmount || 0, booking.totalPrice || 0) : 0;
+          const remainder = (booking.totalPrice || 0) - effCert;
+          const isPartial = isCert && remainder > 0;
+          const isFullCert = isCert && remainder <= 0;
+          return (
+            <>
+              <div style={{ fontSize: 18, fontWeight: 700, color: (isDeposit || isFullCert) ? C.textSub : C.accent, marginBottom: 4 }}>
+                {(booking.totalPrice || 0).toLocaleString("ru-RU")} ₸
+                {isDeposit && <span style={{ fontSize: 13, color: "#FBBF24", marginLeft: 8 }}>ДЕПОЗИТ</span>}
+                {isFullCert && <span style={{ fontSize: 13, color: "#B8860B", marginLeft: 8 }}>СЕРТИФИКАТ</span>}
+              </div>
+              <div style={{ fontSize: 12, color: C.textSub, marginBottom: 4 }}>
+                Оплата: <span style={{ color: (isDeposit || isFullCert) ? "#B8860B" : C.textMain, fontWeight: 500 }}>
+                  {isPartial
+                    ? `Сертификат ${effCert.toLocaleString("ru-RU")} ₸ + ${PAYMENT_LABEL[booking.remainderMethod] || "НАЛ"} ${remainder.toLocaleString("ru-RU")} ₸`
+                    : (PAYMENT_LABEL[booking.paymentMethod] || booking.paymentMethod || "НАЛ")}
+                </span>
+              </div>
+            </>
+          );
+        })()}
 
         {divider}
 
@@ -4261,7 +4357,12 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
     let cancelled = false;
     (async () => {
       const bkgs = await Storage.get(KEYS.bookings(activeSalonId, ym));
-      if (!cancelled) setMonthBookings((bkgs || []).map(b => (b.discount || 0) > 0 && !b.basePrice ? { ...b, basePrice: (b.totalPrice || 0) + (b.discount || 0) } : b));
+      if (!cancelled) setMonthBookings((bkgs || []).map(b => {
+        let fixed = b;
+        if ((fixed.discount || 0) > 0 && !fixed.basePrice) fixed = { ...fixed, basePrice: (fixed.totalPrice || 0) + (fixed.discount || 0) };
+        if (fixed.paymentMethod === "cert_dep") fixed = { ...fixed, paymentMethod: "certificate", certAmount: fixed.totalPrice || 0 };
+        return fixed;
+      }));
     })();
     return () => { cancelled = true; };
   }, [activeSalonId, ym]);
@@ -4527,10 +4628,13 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
 
                 // Day KPI
                 const active = dayBkgs.filter(b => b.status !== "cancelled_refund" && b.status !== "cancelled_no_refund");
-                const paid = dayBkgs.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "cert_dep");
+                const paid = dayBkgs.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "deposit");
                 const overdueCount = dayBkgs.filter(b => isBookingOverdue(b)).length;
                 const clients = active.reduce((s, b) => s + (b.clientCount || 1), 0);
-                const revenue = paid.reduce((s, b) => s + (b.totalPrice || 0), 0);
+                const revenue = paid.reduce((s, b) => {
+                  const eff = Math.min(b.certAmount || 0, b.totalPrice || 0);
+                  return s + (b.totalPrice || 0) - eff;
+                }, 0);
 
                 // Master utilization for this day
                 let masterBusy = 0;
@@ -5432,10 +5536,15 @@ function DashboardScreen({ salons }) {
     const keys = await Storage.list("spa-crm:bookings:");
     const arrays = await Promise.all(keys.map(k => Storage.get(k)));
     const all = arrays.flat().filter(Boolean).map(b => {
-      if ((b.discount || 0) > 0 && !b.basePrice) {
-        return { ...b, basePrice: (b.totalPrice || 0) + (b.discount || 0) };
+      let fixed = b;
+      if ((fixed.discount || 0) > 0 && !fixed.basePrice) {
+        fixed = { ...fixed, basePrice: (fixed.totalPrice || 0) + (fixed.discount || 0) };
       }
-      return b;
+      // Legacy cert_dep → certificate with full coverage
+      if (fixed.paymentMethod === "cert_dep") {
+        fixed = { ...fixed, paymentMethod: "certificate", certAmount: fixed.totalPrice || 0 };
+      }
+      return fixed;
     });
     setAllBookings(all);
     setLoadingD(false);
@@ -5463,16 +5572,27 @@ function DashboardScreen({ salons }) {
   const computeKpi = (bookings, salonFilter) => {
     const bks = salonFilter ? bookings.filter(b => b.salonId === salonFilter) : bookings;
     const active = bks.filter(b => b.status !== "cancelled_refund" && b.status !== "cancelled_no_refund");
-    const paid = bks.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "cert_dep");
-    const certDep = bks.filter(b => b.paymentMethod === "cert_dep" && b.status !== "cancelled_refund" && b.status !== "cancelled_no_refund");
-    
+    // paid = bookings that register SOME money today (not pure deposits/full certs)
+    const paidOrCompleted = bks.filter(b => b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund");
+    const paid = paidOrCompleted.filter(b => b.paymentMethod !== "deposit");
+    const depositsActive = bks.filter(b => b.paymentMethod === "deposit" && b.status !== "cancelled_refund" && b.status !== "cancelled_no_refund");
+    const certsActive = bks.filter(b => b.paymentMethod === "certificate" && b.status !== "cancelled_refund" && b.status !== "cancelled_no_refund");
+
     const totalBookings = active.length;
     const totalClients = active.reduce((a, b) => a + (b.clientCount || 1), 0);
-    const grossRevenue = paid.reduce((a, b) => a + (b.basePrice || (b.totalPrice || 0) + (b.discount || 0)), 0);
+    // Revenue: for each paid booking → totalPrice - min(certAmount, totalPrice). Deposits contribute 0.
+    const revenue = paid.reduce((a, b) => {
+      const eff = Math.min(b.certAmount || 0, b.totalPrice || 0);
+      return a + ((b.totalPrice || 0) - eff);
+    }, 0);
+    const grossRevenue = paid.reduce((a, b) => {
+      const eff = Math.min(b.certAmount || 0, b.totalPrice || 0);
+      return a + ((b.basePrice || (b.totalPrice || 0) + (b.discount || 0)) - eff);
+    }, 0);
     const totalDiscount = paid.reduce((a, b) => a + (b.discount || 0), 0);
     const discountCount = paid.filter(b => (b.discount || 0) > 0).length;
-    const revenue = grossRevenue - totalDiscount;
-    const avgCheck = paid.length > 0 ? Math.round(revenue / paid.length) : 0;
+    const revenueBookings = paid.filter(b => ((b.totalPrice || 0) - Math.min(b.certAmount || 0, b.totalPrice || 0)) > 0);
+    const avgCheck = revenueBookings.length > 0 ? Math.round(revenue / revenueBookings.length) : 0;
 
     const targetSalons = salonFilter ? salons.filter(s => s.id === salonFilter) : salons;
     let roomBusyMins = 0, roomTotalMins = 0;
@@ -5506,10 +5626,18 @@ function DashboardScreen({ salons }) {
       refundedCount: bks.filter(b => b.status === "cancelled_refund").reduce((a, b) => a + (b.clientCount || 1), 0),
       keptDeposit: bks.filter(b => b.status === "cancelled_no_refund").reduce((a, b) => a + (b.totalPrice || 0), 0),
       keptCount: bks.filter(b => b.status === "cancelled_no_refund").reduce((a, b) => a + (b.clientCount || 1), 0),
-      comboRevenue: paid.filter(b => b.bookingType === "combo").reduce((a, b) => a + (b.totalPrice || 0), 0),
-      saunaPeelingRevenue: paid.filter(b => b.bookingType !== "combo" && (b.segments || []).some(s => s.resourceType === "sauna" || s.resourceType === "peeling")).reduce((a, b) => a + (b.totalPrice || 0), 0),
-      certDepCount: certDep.length,
-      certDepOriginalPrice: certDep.reduce((a, b) => a + (b.totalPrice || 0), 0),
+      comboRevenue: paid.filter(b => b.bookingType === "combo").reduce((a, b) => {
+        const eff = Math.min(b.certAmount || 0, b.totalPrice || 0);
+        return a + ((b.totalPrice || 0) - eff);
+      }, 0),
+      saunaPeelingRevenue: paid.filter(b => b.bookingType !== "combo" && (b.segments || []).some(s => s.resourceType === "sauna" || s.resourceType === "peeling")).reduce((a, b) => {
+        const eff = Math.min(b.certAmount || 0, b.totalPrice || 0);
+        return a + ((b.totalPrice || 0) - eff);
+      }, 0),
+      depositCount: depositsActive.length,
+      depositAmount: depositsActive.reduce((a, b) => a + (b.totalPrice || 0), 0),
+      certCount: certsActive.length,
+      certAmount: certsActive.reduce((a, b) => a + Math.min(b.certAmount || 0, b.totalPrice || 0), 0),
       totalDiscount,
       discountCount,
       pmBreakdown,
@@ -5537,8 +5665,10 @@ function DashboardScreen({ salons }) {
       overdueBookings: perSalon.reduce((a, k) => a + k.overdueBookings, 0),
       comboRevenue: perSalon.reduce((a, k) => a + k.comboRevenue, 0),
       saunaPeelingRevenue: perSalon.reduce((a, k) => a + k.saunaPeelingRevenue, 0),
-      certDepCount: perSalon.reduce((a, k) => a + k.certDepCount, 0),
-      certDepOriginalPrice: perSalon.reduce((a, k) => a + k.certDepOriginalPrice, 0),
+      depositCount: perSalon.reduce((a, k) => a + k.depositCount, 0),
+      depositAmount: perSalon.reduce((a, k) => a + k.depositAmount, 0),
+      certCount: perSalon.reduce((a, k) => a + k.certCount, 0),
+      certAmount: perSalon.reduce((a, k) => a + k.certAmount, 0),
       totalDiscount: perSalon.reduce((a, k) => a + k.totalDiscount, 0),
       discountCount: perSalon.reduce((a, k) => a + k.discountCount, 0),
       pmBreakdown: mergedPM,
@@ -5558,9 +5688,10 @@ function DashboardScreen({ salons }) {
       curr.setDate(curr.getDate() + 1);
     }
 
-    filtered.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "cert_dep").forEach(b => {
+    filtered.filter(b => (b.status === "completed" || b.status === "no-show" || b.status === "cancelled_no_refund") && b.paymentMethod !== "deposit").forEach(b => {
       if (map[b.date] !== undefined) {
-        map[b.date] += (b.totalPrice || 0);
+        const eff = Math.min(b.certAmount || 0, b.totalPrice || 0);
+        map[b.date] += (b.totalPrice || 0) - eff;
       }
     });
 
@@ -5708,7 +5839,7 @@ function DashboardScreen({ salons }) {
       )}
 
       {/* Secondary KPIs Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5, 1fr)", gap: 24 }}>
         <div style={bentoCard}>
           <div style={{ fontSize: 20, fontWeight: 900, color: "#e03131" }}>{kpi.refunded.toLocaleString()} ₸</div>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.textSub }}>Возвраты ({kpi.refundedCount})</div>
@@ -5718,8 +5849,12 @@ function DashboardScreen({ salons }) {
           <div style={{ fontSize: 11, fontWeight: 700, color: C.textSub }}>Удержанные депозиты ({kpi.keptCount})</div>
         </div>
         <div style={bentoCard}>
-          <div style={{ fontSize: 20, fontWeight: 900, color: "#f08c00" }}>{kpi.certDepCount} шт.</div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.textSub }}>Серт/Деп ({kpi.certDepOriginalPrice.toLocaleString()} ₸)</div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: "#f08c00" }}>{kpi.depositAmount.toLocaleString()} ₸</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.textSub }}>Депозиты ({kpi.depositCount})</div>
+        </div>
+        <div style={bentoCard}>
+          <div style={{ fontSize: 20, fontWeight: 900, color: "#B8860B" }}>{kpi.certAmount.toLocaleString()} ₸</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.textSub }}>Сертификаты ({kpi.certCount})</div>
         </div>
         <div style={bentoCard}>
           <div style={{ fontSize: 20, fontWeight: 900, color: "#7B68AE" }}>{kpi.totalDiscount.toLocaleString()} ₸</div>

@@ -151,7 +151,7 @@
       salons: ['id','name','rooms','therapist_count','therapists','has_sauna','sauna_capacity','sauna_duration','has_peeling','peeling_max_per_hour','peeling_masters_max','peeling_time_per_person','work_start','work_end','day_off','buffer_minutes'],
       procedures: ['id','salon_id','name','category','duration','price','therapists_required','is_active'],
       combos: ['id','salon_id','name','steps','price','total_duration','is_active'],
-      bookings: ['id','salon_id','date','client_name','client_phone','client_count','booking_type','procedure_id','client_procedure_ids','combo_id','segments','total_start_time','total_end_time','base_price','discount','total_price','status','created_at','notes','master_name','payment_method'],
+      bookings: ['id','salon_id','date','client_name','client_phone','client_count','booking_type','procedure_id','client_procedure_ids','combo_id','segments','total_start_time','total_end_time','base_price','discount','total_price','status','created_at','notes','master_name','payment_method','cert_amount','remainder_method'],
       activity_logs: ['id','user_id','user_name','action','target_date','target_time','client_name','details','timestamp'],
     };
     function pickCols(table, obj) {
