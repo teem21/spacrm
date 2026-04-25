@@ -2304,40 +2304,87 @@ function SaunaPeelingTab({ salon, onSalonChange, onShowToast }) {
 
 function ComboModal({ initial, procedures, onSave, onCancel }) {
   const [name, setName] = useState(initial?.name || "");
-  // selected: [{ procedureId, offsetMinutes }] — internal format for UI
-  const [selected, setSelected] = useState(
-    (initial?.steps || []).map(s => ({ procedureId: s.procId, offsetMinutes: s.offsetMinutes || 0 }))
-  );
-  const [step, setStep] = useState(1); // 1: Name & Procs, 2: Price/Meta
+  const [clientCount, setClientCount] = useState(initial?.clientCount || 1);
+
+  // Migrate legacy steps: { procId } → { isShared: true, procIds: [procId, procId, ...] }
+  const initialSteps = (initial?.steps || []).map(s => {
+    if (s.perClientProcIds && Array.isArray(s.perClientProcIds)) {
+      return { isShared: !!s.isShared, procIds: s.perClientProcIds, offsetMinutes: s.offsetMinutes || 0 };
+    }
+    return { isShared: true, procIds: [s.procId], offsetMinutes: s.offsetMinutes || 0 };
+  });
+
+  // Sequential steps: array of { isShared, procIds: [N], offsetMinutes }
+  // procIds length always === clientCount (filled with same id when isShared)
+  const [steps, setSteps] = useState(() => {
+    if (initialSteps.length === 0) return [];
+    const cc = initial?.clientCount || 1;
+    return initialSteps.map(s => ({
+      isShared: s.isShared,
+      procIds: Array.from({ length: cc }, (_, i) => s.procIds[i] || s.procIds[0] || ""),
+      offsetMinutes: s.offsetMinutes,
+    }));
+  });
+
+  const [stage, setStage] = useState(1); // 1: Name & Steps, 2: Price/Meta
   const [price, setPrice] = useState(initial?.price != null ? String(initial.price) : "");
 
-  const autoPrice = selected.reduce((sum, item) => {
-    const p = procedures.find(x => x.id === item.procedureId);
-    return sum + (p ? p.price : 0);
+  // Resize step.procIds when clientCount changes
+  useEffect(() => {
+    setSteps(prev => prev.map(s => {
+      const ids = Array.from({ length: clientCount }, (_, i) => {
+        if (s.isShared) return s.procIds[0] || "";
+        return s.procIds[i] || s.procIds[0] || "";
+      });
+      return { ...s, procIds: ids };
+    }));
+  }, [clientCount]);
+
+  const activeProcs = procedures.filter(p => p.isActive);
+
+  const autoPrice = steps.reduce((sum, s) => {
+    if (s.isShared) {
+      const p = procedures.find(x => x.id === s.procIds[0]);
+      return sum + (p ? p.price * clientCount : 0);
+    }
+    return sum + s.procIds.reduce((sub, pid) => {
+      const p = procedures.find(x => x.id === pid);
+      return sub + (p ? p.price : 0);
+    }, 0);
   }, 0);
 
-  const toggleProc = (proc) => {
-    if (selected.find(s => s.procedureId === proc.id)) {
-      setSelected(selected.filter(s => s.procedureId !== proc.id));
-    } else {
-      setSelected([...selected, { procedureId: proc.id, offsetMinutes: 0 }]);
-    }
+  const addStep = () => {
+    const firstProc = activeProcs[0]?.id || "";
+    setSteps([...steps, { isShared: true, procIds: Array(clientCount).fill(firstProc), offsetMinutes: 0 }]);
   };
+  const removeStep = (idx) => setSteps(steps.filter((_, i) => i !== idx));
+  const updateStep = (idx, patch) => setSteps(steps.map((s, i) => i === idx ? { ...s, ...patch } : s));
+  const setSharedProc = (idx, procId) => updateStep(idx, { procIds: Array(clientCount).fill(procId) });
+  const setClientProc = (idx, clientIdx, procId) => updateStep(idx, {
+    procIds: steps[idx].procIds.map((p, c) => c === clientIdx ? procId : p),
+  });
 
-  const updateOffset = (procId, off) => {
-    setSelected(selected.map(s => s.procedureId === procId ? { ...s, offsetMinutes: off } : s));
+  const stepCategory = (s) => {
+    const proc = procedures.find(x => x.id === s.procIds[0]);
+    return proc?.category || "massage";
   };
 
   const handleSave = () => {
     if (!name.trim()) return;
-    if (selected.length < 2) return;
+    if (steps.length < 2) return;
+    if (steps.some(s => s.procIds.some(pid => !pid))) return; // any unfilled
     const finalPrice = price !== "" ? (parseInt(price, 10) || 0) : autoPrice;
-    // Save steps with procId + category so booking code can work without extra lookups
-    const steps = selected.map(s => {
-      const p = procedures.find(x => x.id === s.procedureId);
-      return { procId: s.procedureId, category: p?.category || "massage", offsetMinutes: s.offsetMinutes || 0 };
+    const savedSteps = steps.map(s => {
+      const cat = stepCategory(s);
+      return {
+        procId: s.procIds[0],                         // primary (back-compat for old code paths)
+        perClientProcIds: s.isShared ? null : s.procIds,
+        isShared: s.isShared,
+        category: cat,
+        offsetMinutes: s.offsetMinutes || 0,
+      };
     });
-    onSave({ name, steps, price: finalPrice });
+    onSave({ name, steps: savedSteps, price: finalPrice, clientCount });
   };
 
   return (
@@ -2361,84 +2408,121 @@ function ComboModal({ initial, procedures, onSave, onCancel }) {
             </button>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <div style={{ height: 4, flex: 1, borderRadius: 2, backgroundColor: step >= 1 ? C.accent : "rgba(0,0,0,0.05)" }} />
-            <div style={{ height: 4, flex: 1, borderRadius: 2, backgroundColor: step >= 2 ? C.accent : "rgba(0,0,0,0.05)" }} />
+            <div style={{ height: 4, flex: 1, borderRadius: 2, backgroundColor: stage >= 1 ? C.accent : "rgba(0,0,0,0.05)" }} />
+            <div style={{ height: 4, flex: 1, borderRadius: 2, backgroundColor: stage >= 2 ? C.accent : "rgba(0,0,0,0.05)" }} />
           </div>
         </div>
 
         {/* Content */}
         <div style={{ padding: 32, overflowY: "auto", flex: 1 }}>
-          {step === 1 ? (
+          {stage === 1 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
               <div>
                 <label style={labelStyle}>Название предложения</label>
                 <input type="text" value={name} onChange={e => setName(e.target.value)}
                   placeholder="Например: Релакс для двоих" style={{ ...inputStyle(), borderRadius: 16, height: 48 }} />
               </div>
-              
+
               <div>
-                <label style={labelStyle}>Выберите услуги (мин. 2)</label>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  {procedures.filter(p => p.isActive).map(p => {
-                    const isSel = selected.find(s => s.procedureId === p.id);
-                    return (
-                      <button key={p.id} onClick={() => toggleProc(p)} style={{
-                        padding: "16px", borderRadius: 16, border: isSel ? `2px solid ${C.accent}` : "1px solid rgba(0,0,0,0.05)",
-                        backgroundColor: isSel ? "rgba(253, 192, 3, 0.05)" : "#fff",
-                        textAlign: "left", cursor: "pointer", transition: "all 200ms",
-                        display: "flex", alignItems: "center", gap: 12
-                      }}>
-                        <div style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: isSel ? C.accent : "rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {isSel && <Check size={14} color="#1b1c15" />}
+                <label style={labelStyle}>Количество клиентов</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {[1, 2, 3, 4].map(n => (
+                    <button key={n} type="button" onClick={() => setClientCount(n)} style={{
+                      padding: "10px 18px", borderRadius: 12,
+                      border: clientCount === n ? `2px solid ${C.accent}` : "1px solid rgba(0,0,0,0.05)",
+                      backgroundColor: clientCount === n ? `${C.accent}22` : "#fff",
+                      color: clientCount === n ? C.accent : C.textMain,
+                      fontSize: 13, fontWeight: 700, cursor: "pointer",
+                    }}>{n}</button>
+                  ))}
+                </div>
+                {clientCount > 1 && (
+                  <div style={{ fontSize: 11, color: C.textSub, marginTop: 6 }}>
+                    Для каждого шага укажите процедуру каждому клиенту (или общую)
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label style={labelStyle}>Шаги программы (мин. 2)</label>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {steps.map((s, idx) => (
+                    <div key={idx} style={{ padding: 14, borderRadius: 16, border: "1px solid rgba(0,0,0,0.06)", backgroundColor: "#fff" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: clientCount > 1 ? 10 : 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: C.textSub, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                          Шаг {idx + 1}
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: C.textMain }}>{p.name}</div>
-                          <div style={{ fontSize: 11, color: C.textSub, fontWeight: 600 }}>{p.price.toLocaleString()} ₸</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          {clientCount > 1 && (
+                            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, color: C.textMain, fontWeight: 600 }}>
+                              <input type="checkbox" checked={s.isShared}
+                                onChange={e => updateStep(idx, { isShared: e.target.checked, procIds: e.target.checked ? Array(clientCount).fill(s.procIds[0] || "") : s.procIds })} />
+                              Общая для всех
+                            </label>
+                          )}
+                          <button type="button" onClick={() => removeStep(idx)} style={{
+                            padding: "4px 10px", borderRadius: 8, border: "none", background: "rgba(232,93,93,0.1)",
+                            color: "#E85D5D", fontSize: 11, fontWeight: 700, cursor: "pointer",
+                          }}>Удалить</button>
                         </div>
-                      </button>
-                    );
-                  })}
+                      </div>
+                      {s.isShared || clientCount === 1 ? (
+                        <select value={s.procIds[0] || ""} onChange={e => setSharedProc(idx, e.target.value)}
+                          style={{ ...inputStyle(), width: "100%", cursor: "pointer" }}>
+                          <option value="">— выберите процедуру —</option>
+                          {activeProcs.map(p => (
+                            <option key={p.id} value={p.id}>{p.name} • {p.duration} мин • {p.price.toLocaleString()} ₸</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {Array.from({ length: clientCount }, (_, ci) => (
+                            <div key={ci} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 11, color: C.textSub, fontWeight: 700, minWidth: 60 }}>Клиент {ci + 1}:</span>
+                              <select value={s.procIds[ci] || ""} onChange={e => setClientProc(idx, ci, e.target.value)}
+                                style={{ ...inputStyle(), flex: 1, cursor: "pointer" }}>
+                                <option value="">— выберите —</option>
+                                {activeProcs.map(p => (
+                                  <option key={p.id} value={p.id}>{p.name} • {p.duration} мин • {p.price.toLocaleString()} ₸</option>
+                                ))}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {idx > 0 && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+                          <span style={{ fontSize: 11, color: C.textSub, fontWeight: 600 }}>Пауза перед шагом (мин):</span>
+                          <input type="number" value={s.offsetMinutes}
+                            onChange={e => updateStep(idx, { offsetMinutes: parseInt(e.target.value, 10) || 0 })}
+                            style={{ ...inputStyle(), width: 70, height: 32, padding: "0 8px", textAlign: "center" }} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" onClick={addStep} style={{
+                    padding: 12, borderRadius: 12, border: `1px dashed ${C.accent}`,
+                    background: "transparent", color: C.accent, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  }}>+ Добавить шаг</button>
                 </div>
               </div>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              <div style={{ padding: 20, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.02)" }}>
-                <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: C.textSub }}>Настройка пауз</h4>
-                {selected.map((item, idx) => {
-                  const p = procedures.find(x => x.id === item.procedureId);
-                  if (!p) return null;
-                  return (
-                    <div key={item.procedureId} style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: idx === selected.length - 1 ? 0 : 16 }}>
-                      <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: C.textMain }}>{p.name}</div>
-                      {idx > 0 && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 12, color: C.textSub, fontWeight: 600 }}>Пауза (мин):</span>
-                          <input type="number" value={item.offsetMinutes} onChange={e => updateOffset(item.procedureId, parseInt(e.target.value, 10) || 0)}
-                            style={{ ...inputStyle(), width: 70, height: 36, borderRadius: 8, padding: "0 8px", textAlign: "center" }} />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="glass" style={{ padding: 24, borderRadius: 24, backgroundColor: "rgba(253, 192, 3, 0.05)", border: `1px solid ${C.accent}33` }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: C.textMain }}>Цена комбо-пакета</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <input
-                      type="text" inputMode="numeric" value={price}
-                      onChange={e => setPrice(e.target.value.replace(/\D/g, ""))}
-                      placeholder={String(autoPrice)}
-                      style={{ ...inputStyle(), flex: 1, height: 48, fontSize: 18, fontWeight: 800, borderRadius: 12, textAlign: "right" }}
-                    />
-                    <span style={{ fontSize: 18, fontWeight: 800, color: C.accent }}>₸</span>
-                  </div>
-                  <span style={{ fontSize: 12, color: C.textSub }}>
-                    Сумма услуг: {autoPrice.toLocaleString()} ₸ — можете указать другую цену
-                  </span>
+            <div className="glass" style={{ padding: 24, borderRadius: 24, backgroundColor: "rgba(253, 192, 3, 0.05)", border: `1px solid ${C.accent}33` }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.textMain }}>Цена комбо-пакета</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <input
+                    type="text" inputMode="numeric" value={price}
+                    onChange={e => setPrice(e.target.value.replace(/\D/g, ""))}
+                    placeholder={String(autoPrice)}
+                    style={{ ...inputStyle(), flex: 1, height: 48, fontSize: 18, fontWeight: 800, borderRadius: 12, textAlign: "right" }}
+                  />
+                  <span style={{ fontSize: 18, fontWeight: 800, color: C.accent }}>₸</span>
                 </div>
+                <span style={{ fontSize: 12, color: C.textSub }}>
+                  Сумма услуг: {autoPrice.toLocaleString()} ₸ — можете указать другую цену
+                </span>
               </div>
             </div>
           )}
@@ -2450,20 +2534,23 @@ function ComboModal({ initial, procedures, onSave, onCancel }) {
             padding: "16px 24px", borderRadius: 24, border: "1px solid rgba(0,0,0,0.05)",
             backgroundColor: "#fff", color: C.textSub, fontSize: 14, fontWeight: 700, cursor: "pointer"
           }}>Отмена</button>
-          
+
           <div style={{ flex: 1 }} />
-          
-          {step === 1 ? (
-            <button onClick={() => setStep(2)} disabled={selected.length < 2 || !name.trim()} style={{
-              padding: "16px 40px", borderRadius: 24, border: "none",
-              backgroundColor: C.accent, color: "#1b1c15", fontSize: 14, fontWeight: 800,
-              cursor: (selected.length < 2 || !name.trim()) ? "not-allowed" : "pointer",
-              opacity: (selected.length < 2 || !name.trim()) ? 0.5 : 1,
-              boxShadow: `0 8px 24px ${C.accent}44`
-            }}>Далее</button>
-          ) : (
+
+          {stage === 1 ? (() => {
+            const valid = name.trim() && steps.length >= 2 && steps.every(s => s.procIds.every(p => p));
+            return (
+              <button onClick={() => setStage(2)} disabled={!valid} style={{
+                padding: "16px 40px", borderRadius: 24, border: "none",
+                backgroundColor: C.accent, color: "#1b1c15", fontSize: 14, fontWeight: 800,
+                cursor: valid ? "pointer" : "not-allowed",
+                opacity: valid ? 1 : 0.5,
+                boxShadow: `0 8px 24px ${C.accent}44`
+              }}>Далее</button>
+            );
+          })() : (
             <>
-              <button onClick={() => setStep(1)} style={{
+              <button onClick={() => setStage(1)} style={{
                 padding: "16px 24px", borderRadius: 24, border: "1px solid rgba(0,0,0,0.05)",
                 backgroundColor: "#fff", color: C.textMain, fontSize: 14, fontWeight: 700, cursor: "pointer"
               }}>Назад</button>
@@ -2486,7 +2573,12 @@ function CombosTab({ combos, activeSalonId, salons, onCombosChange, procedures, 
   const isMobile = useIsMobile();
 
   const calcDuration = (steps, procs) =>
-    (steps || []).reduce((sum, s) => sum + (procs.find(p => p.id === s.procId)?.duration || 0), 0);
+    (steps || []).reduce((sum, s) => {
+      // Step duration = max across all client procedures (longest determines step length)
+      const ids = s.perClientProcIds && !s.isShared ? s.perClientProcIds : [s.procId];
+      const dur = Math.max(...ids.map(id => procs.find(p => p.id === id)?.duration || 0), 0);
+      return sum + dur + (s.offsetMinutes || 0);
+    }, 0);
 
   const persist = async (updated) => {
     // Ensure every combo has a valid totalDuration before saving to Supabase
@@ -2511,11 +2603,16 @@ function CombosTab({ combos, activeSalonId, salons, onCombosChange, procedures, 
       const otherSalons = (salons || []).filter(s => s.id !== activeSalonId);
       for (const salon of otherSalons) {
         const otherProcs = (await Storage.get(KEYS.procedures(salon.id))) || [];
-        const mappedSteps = (form.steps || []).map(step => {
-          const srcProc = procedures.find(p => p.id === step.procId);
-          const targetProc = srcProc ? otherProcs.find(p => p.name === srcProc.name) : null;
-          return { ...step, procId: targetProc ? targetProc.id : step.procId };
-        });
+        const mapId = (id) => {
+          const src = procedures.find(p => p.id === id);
+          const target = src ? otherProcs.find(p => p.name === src.name) : null;
+          return target ? target.id : id;
+        };
+        const mappedSteps = (form.steps || []).map(step => ({
+          ...step,
+          procId: mapId(step.procId),
+          perClientProcIds: step.perClientProcIds ? step.perClientProcIds.map(mapId) : null,
+        }));
         const otherDuration = calcDuration(mappedSteps, otherProcs);
         const existing = (await Storage.get(KEYS.combos(salon.id))) || [];
         await Storage.set(KEYS.combos(salon.id), [
@@ -2994,6 +3091,12 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     if (clientCount > maxClients) setClientCount(maxClients);
   }, [maxClients]);
 
+  // Lock clientCount when selecting a multi-client combo (e.g. combo for 2 people)
+  const comboLockedClientCount = bookingType === "combo" && selectedCombo?.clientCount > 1 ? selectedCombo.clientCount : null;
+  useEffect(() => {
+    if (comboLockedClientCount && clientCount !== comboLockedClientCount) setClientCount(comboLockedClientCount);
+  }, [comboLockedClientCount]);
+
   // Reset peeling when not sauna
   useEffect(() => {
     if (bookingType !== "single" || selectedProc?.category !== "sauna") setWithPeeling(false);
@@ -3018,9 +3121,15 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     // Build list of massage steps with their required master count
     const massageSteps = [];
     for (const step of (selectedCombo.steps || [])) {
-      const proc = activeProcedures.find(p => p.id === step.procId);
-      if (!proc || proc.category === "sauna" || proc.category === "peeling") continue;
-      massageSteps.push({ needed: clientCount * (proc.therapistsRequired || 1) });
+      const isMulti = step.perClientProcIds && Array.isArray(step.perClientProcIds) && !step.isShared;
+      const procIds = isMulti ? step.perClientProcIds : Array(clientCount).fill(step.procId);
+      const procs = procIds.map(id => activeProcedures.find(p => p.id === id)).filter(Boolean);
+      const primary = procs[0];
+      if (!primary || primary.category === "sauna" || primary.category === "peeling") continue;
+      const needed = isMulti
+        ? procs.reduce((s, p) => s + (p.therapistsRequired || 1), 0)
+        : clientCount * (primary.therapistsRequired || 1);
+      massageSteps.push({ needed });
     }
     setComboStepMasters(prev => {
       const prevArr = Array.isArray(prev) ? prev : [];
@@ -3328,16 +3437,20 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
 
     for (let stepIdx = 0; stepIdx < (selectedCombo.steps || []).length; stepIdx++) {
       const step = selectedCombo.steps[stepIdx];
-      const proc = activeProcedures.find(p => p.id === step.procId);
-      if (!proc) continue;
+      // Per-client procs (multi-client combo) or single procId (legacy/shared)
+      const isMultiProc = step.perClientProcIds && Array.isArray(step.perClientProcIds) && !step.isShared;
+      const stepProcIds = isMultiProc ? step.perClientProcIds : Array(clientCount).fill(step.procId);
+      const stepProcs = stepProcIds.map(id => activeProcedures.find(p => p.id === id)).filter(Boolean);
+      const primaryProc = stepProcs[0];
+      if (!primaryProc) continue;
 
-      if (proc.category === "peeling") {
+      if (primaryProc.category === "peeling") {
         const pStart = saunaStartM !== null ? saunaStartM : currentM;
         const pMasters = Math.min(peelingCount, salon.peelingMastersMax || 2);
         const pDuration = Math.ceil(peelingCount / pMasters) * (salon.peelingTimePerPerson || 30);
         const pEndM = pStart + pDuration;
         segments.push({
-          procedureId: proc.id, procedureName: proc.name,
+          procedureId: primaryProc.id, procedureName: primaryProc.name,
           startTime: minsToTime(pStart), endTime: minsToTime(pEndM),
           roomId: null, therapistCount: pMasters,
           resourceType: "peeling",
@@ -3346,13 +3459,15 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
         continue;
       }
 
-      const endM = currentM + proc.duration;
-      const isSauna = proc.category === "sauna";
+      // Step duration = max of all client procs (longest determines step length)
+      const stepDuration = Math.max(...stepProcs.map(p => p.duration || 0), 0);
+      const endM = currentM + stepDuration;
+      const isSauna = primaryProc.category === "sauna";
       if (isSauna) saunaStartM = currentM;
 
       if (isSauna) {
         segments.push({
-          procedureId: proc.id, procedureName: proc.name,
+          procedureId: primaryProc.id, procedureName: primaryProc.name,
           startTime: minsToTime(currentM), endTime: minsToTime(endM),
           roomId: null, therapistCount: 0,
           resourceType: "sauna",
@@ -3361,18 +3476,54 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       } else {
         const flatStepMasters = Array.isArray(comboStepMasters[massageStepIdx])
           ? comboStepMasters[massageStepIdx].filter(m => m) : [];
-        const sliced = sliceMastersByRoom(flatStepMasters, proc.therapistsRequired || 1);
-        for (let i = 0; i < dist.length; i++) {
-          const d = dist[i];
-          segments.push({
-            procedureId: proc.id, procedureName: proc.name,
-            startTime: minsToTime(currentM), endTime: minsToTime(endM),
-            roomId: d.roomId,
-            clientsInRoom: d.clientsInRoom,
-            therapistCount: d.clientsInRoom * (proc.therapistsRequired || 1),
-            resourceType: "room",
-            masterIds: sliced[i] || [],
-          });
+
+        if (isMultiProc) {
+          // Per-client procedures: group rooms × procedures. For each room, collect which clients are in it
+          // and group by procedure. Build a segment per (room, procedure) combo.
+          let clientCursor = 0;
+          let masterCursor = 0;
+          for (let i = 0; i < dist.length; i++) {
+            const d = dist[i];
+            const roomClientIdxs = Array.from({ length: d.clientsInRoom }, (_, k) => clientCursor + k);
+            clientCursor += d.clientsInRoom;
+            // Group clients in this room by their procedure
+            const byProc = new Map();
+            for (const ci of roomClientIdxs) {
+              const procId = stepProcIds[ci];
+              if (!byProc.has(procId)) byProc.set(procId, []);
+              byProc.get(procId).push(ci);
+            }
+            for (const [pid, clientIdxs] of byProc) {
+              const p = activeProcedures.find(pp => pp.id === pid);
+              if (!p) continue;
+              const need = clientIdxs.length * (p.therapistsRequired || 1);
+              const procEnd = currentM + (p.duration || 0);
+              segments.push({
+                procedureId: p.id, procedureName: p.name,
+                startTime: minsToTime(currentM), endTime: minsToTime(procEnd),
+                roomId: d.roomId,
+                clientsInRoom: clientIdxs.length,
+                therapistCount: need,
+                resourceType: "room",
+                masterIds: flatStepMasters.slice(masterCursor, masterCursor + need),
+              });
+              masterCursor += need;
+            }
+          }
+        } else {
+          const sliced = sliceMastersByRoom(flatStepMasters, primaryProc.therapistsRequired || 1);
+          for (let i = 0; i < dist.length; i++) {
+            const d = dist[i];
+            segments.push({
+              procedureId: primaryProc.id, procedureName: primaryProc.name,
+              startTime: minsToTime(currentM), endTime: minsToTime(endM),
+              roomId: d.roomId,
+              clientsInRoom: d.clientsInRoom,
+              therapistCount: d.clientsInRoom * (primaryProc.therapistsRequired || 1),
+              resourceType: "room",
+              masterIds: sliced[i] || [],
+            });
+          }
         }
         massageStepIdx++;
       }
@@ -3544,11 +3695,17 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>Кол-во клиентов</label>
           <select value={clientCount} onChange={e => setClientCount(Number(e.target.value))}
-            style={{ ...inputStyle(), width: "auto", minWidth: 100, cursor: "pointer" }}>
+            disabled={!!comboLockedClientCount}
+            style={{ ...inputStyle(), width: "auto", minWidth: 100, cursor: comboLockedClientCount ? "not-allowed" : "pointer", opacity: comboLockedClientCount ? 0.6 : 1 }}>
             {Array.from({ length: maxClients }, (_, i) => i + 1).map(n => (
               <option key={n} value={n} style={{ backgroundColor: C.card }}>{n}</option>
             ))}
           </select>
+          {comboLockedClientCount && (
+            <div style={{ fontSize: 11, color: C.textSub, marginTop: 4 }}>
+              Зафиксировано выбранным комбо «{selectedCombo?.name}» — на {comboLockedClientCount} клиента(ов)
+            </div>
+          )}
         </div>
 
         {/* Booking type */}
