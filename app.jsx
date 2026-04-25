@@ -3868,32 +3868,41 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
         {needsRoom && (
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>Кабинки</label>
-            {clientCount >= 2 && (
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                <span style={{ fontSize: 12, color: C.textDarkSub }}>Количество комнат:</span>
-                <button type="button" onClick={() => setRoomDistribution(prev => prev.length > 1 ? autoDistribute(prev.length - 1, clientCount, prev.slice(0, -1)) : prev)}
-                  style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.borderLight}`, background: "transparent", color: C.textDark, cursor: "pointer" }}>−</button>
-                <span style={{ fontSize: 14, fontWeight: 700, color: C.textDark, minWidth: 16, textAlign: "center" }}>{roomDistribution.length}</span>
-                <button type="button" onClick={() => setRoomDistribution(prev => prev.length < Math.min(clientCount, salon.rooms.length) ? autoDistribute(prev.length + 1, clientCount, prev) : prev)}
-                  style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.borderLight}`, background: "transparent", color: C.textDark, cursor: "pointer" }}>+</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 12, color: C.textDarkSub }}>Количество комнат:</span>
+              <button type="button"
+                disabled={roomDistribution.length <= 1}
+                onClick={() => setRoomDistribution(prev => prev.length > 1 ? autoDistribute(prev.length - 1, clientCount, prev.slice(0, -1)) : prev)}
+                style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.borderLight}`,
+                  background: "transparent", color: roomDistribution.length <= 1 ? C.textDarkSub : C.textDark,
+                  cursor: roomDistribution.length <= 1 ? "not-allowed" : "pointer", opacity: roomDistribution.length <= 1 ? 0.4 : 1 }}>−</button>
+              <span style={{ fontSize: 14, fontWeight: 700, color: C.textDark, minWidth: 16, textAlign: "center" }}>{roomDistribution.length}</span>
+              <button type="button"
+                disabled={roomDistribution.length >= Math.min(clientCount, salon.rooms.length)}
+                onClick={() => setRoomDistribution(prev => prev.length < Math.min(clientCount, salon.rooms.length) ? autoDistribute(prev.length + 1, clientCount, prev) : prev)}
+                style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.borderLight}`,
+                  background: "transparent", color: roomDistribution.length >= Math.min(clientCount, salon.rooms.length) ? C.textDarkSub : C.textDark,
+                  cursor: roomDistribution.length >= Math.min(clientCount, salon.rooms.length) ? "not-allowed" : "pointer",
+                  opacity: roomDistribution.length >= Math.min(clientCount, salon.rooms.length) ? 0.4 : 1 }}>+</button>
+              {clientCount >= 2 && (
                 <span style={{ fontSize: 11, color: C.textDarkSub, marginLeft: 8 }}>
-                  Всего: {roomDistribution.reduce((a, d) => a + (d.clientsInRoom || 0), 0)} / {clientCount}
+                  Распределено: <b style={{ color: C.textDark }}>{roomDistribution.reduce((a, d) => a + (d.clientsInRoom || 0), 0)}</b> / {clientCount}
                 </span>
-              </div>
-            )}
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              )}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {roomDistribution.map((dist, i) => {
                 const usedIds = new Set(roomDistribution.map((d, j) => j !== i ? d.roomId : null).filter(Boolean));
-                const minBeds = clientCount >= 2 ? 1 : 1;
-                const eligible = salon.rooms.filter(r => !usedIds.has(r.id) && r.beds >= minBeds);
+                const eligible = salon.rooms.filter(r => !usedIds.has(r.id));
                 const room = salon.rooms.find(r => r.id === dist.roomId);
                 const maxClientsInRoom = room?.beds || 1;
                 return (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 11, color: C.textDarkSub, fontWeight: 700, minWidth: 22 }}>#{i + 1}</span>
                     <select value={dist.roomId}
                       onChange={e => setRoomDistribution(prev => prev.map((d, j) => j === i ? { ...d, roomId: e.target.value } : d))}
                       style={{ ...inputStyle(), cursor: "pointer", flex: 1 }}>
-                      {!dist.roomId && <option value="" style={{ backgroundColor: C.cardLight }}>—</option>}
+                      <option value="" style={{ backgroundColor: C.cardLight }}>— выберите кабинку —</option>
                       {eligible.map(r => (
                         <option key={r.id} value={r.id} style={{ backgroundColor: C.cardLight }}>
                           {r.name} ({r.beds} кр.)
