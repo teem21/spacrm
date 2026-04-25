@@ -2829,9 +2829,9 @@ function validateBooking(booking, existingBookings, salon) {
     }
   }
 
-  // 7. Beds check — room capacity vs clients assigned
-  if (booking.clientCount >= 2) {
-    // Max clients per room (combo steps are sequential — same clients reuse the room)
+  // 7. Beds check + room distribution validation
+  {
+    // Max clients per room across all room segments (combo steps reuse same rooms)
     const roomClientMap = {};
     for (const seg of booking.segments) {
       if (seg.resourceType === "room" && seg.roomId) {
@@ -2846,7 +2846,24 @@ function validateBooking(booking, existingBookings, salon) {
         break;
       }
     }
-    // Also check total bed capacity
+    // Sum check: clients distributed must equal total clientCount (only for bookings with rooms)
+    const needsRoomCheck = booking.segments.some(s => s.resourceType === "room" && s.roomId);
+    if (needsRoomCheck) {
+      // Count clients per step (use the first time-window): segments at the same start time = same step
+      const stepGroups = {};
+      for (const seg of booking.segments) {
+        if (seg.resourceType !== "room" || !seg.roomId) continue;
+        const key = seg.startTime;
+        stepGroups[key] = (stepGroups[key] || 0) + (seg.clientsInRoom || 0);
+      }
+      for (const [time, sum] of Object.entries(stepGroups)) {
+        if (sum !== booking.clientCount) {
+          errors.push({ field: "room", message: `Распределение клиентов по комнатам в ${time} — ${sum}, должно быть ${booking.clientCount}` });
+          break;
+        }
+      }
+    }
+    // Total beds check
     const totalBeds = salon.rooms.reduce((sum, r) => sum + r.beds, 0);
     if (booking.clientCount > totalBeds) {
       errors.push({ field: "room", message: `Всего ${totalBeds} кроватей — недостаточно для ${booking.clientCount} клиентов` });
@@ -2904,7 +2921,21 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const [clientProcedureIds, setClientProcedureIds] = useState(eb?.clientProcedureIds || []);
   const [date, setDate] = useState(eb?.date || initialDate || toDateStr(new Date()));
   const [startTime, setStartTime] = useState(eb?.totalStartTime || initialTime || "");
-  const [roomId, setRoomId] = useState(eb?.segments?.[0]?.roomId || "");
+  // roomDistribution: list of { roomId, clientsInRoom } — one entry per room used for the booking.
+  // For combo: same distribution applies to every massage step. For sauna/peeling: ignored.
+  const [roomDistribution, setRoomDistribution] = useState(() => {
+    if (eb) {
+      const roomSegs = (eb.segments || []).filter(s => s.resourceType === "room" && s.roomId);
+      if (roomSegs.length > 0) {
+        const seen = new Map();
+        for (const s of roomSegs) {
+          if (!seen.has(s.roomId)) seen.set(s.roomId, s.clientsInRoom || eb.clientCount || 1);
+        }
+        return [...seen].map(([rid, c]) => ({ roomId: rid, clientsInRoom: c }));
+      }
+    }
+    return [{ roomId: "", clientsInRoom: 1 }];
+  });
   const [peelingCount, setPeelingCount] = useState(() => {
     if (!eb) return 1;
     const peelSeg = eb.segments?.find(s => s.resourceType === "peeling");
@@ -3054,22 +3085,49 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const needsRoom = bookingType === "single"
     ? selectedProc?.category !== "sauna"
     : selectedCombo?.steps?.some(s => s.category !== "sauna" && s.category !== "peeling");
-  const eligibleRooms = clientCount >= 2 ? salon.rooms.filter(r => r.beds >= 2) : salon.rooms;
-  const validRoomId = eligibleRooms.find(r => r.id === roomId)?.id || eligibleRooms[0]?.id || "";
 
-  // Multi-room allocation for 3+ clients
-  const roomAllocation = (() => {
-    if (clientCount <= 2) return null;
+  // Auto-balance: distribute clientCount across `roomCount` rooms (largest first), capped by room beds
+  const autoDistribute = (roomCount, totalClients, prevDist) => {
+    const used = new Set();
     const result = [];
-    let remaining = clientCount;
-    for (const r of [...salon.rooms].sort((a, b) => b.beds - a.beds)) {
+    for (let i = 0; i < roomCount; i++) {
+      const prevRid = prevDist?.[i]?.roomId;
+      if (prevRid && salon.rooms.find(r => r.id === prevRid) && !used.has(prevRid)) {
+        result.push({ roomId: prevRid, clientsInRoom: 0 });
+        used.add(prevRid);
+      } else {
+        const next = [...salon.rooms].sort((a, b) => b.beds - a.beds).find(r => !used.has(r.id));
+        if (next) {
+          result.push({ roomId: next.id, clientsInRoom: 0 });
+          used.add(next.id);
+        } else {
+          result.push({ roomId: "", clientsInRoom: 0 });
+        }
+      }
+    }
+    // Distribute clients largest-room first
+    let remaining = totalClients;
+    const order = result.map((d, idx) => ({ idx, beds: salon.rooms.find(r => r.id === d.roomId)?.beds || 1 }))
+      .sort((a, b) => b.beds - a.beds);
+    for (const { idx, beds } of order) {
       if (remaining <= 0) break;
-      const take = Math.min(r.beds, remaining);
-      result.push({ room: r, count: take });
+      const take = Math.min(beds, remaining);
+      result[idx].clientsInRoom = take;
       remaining -= take;
     }
     return result;
-  })();
+  };
+
+  // Sync roomDistribution when clientCount changes (or salon)
+  useEffect(() => {
+    if (!needsRoom) return;
+    setRoomDistribution(prev => {
+      const sum = prev.reduce((a, d) => a + (d.clientsInRoom || 0), 0);
+      // Only re-balance if invalid (sum mismatch or empty roomIds)
+      if (sum === clientCount && prev.every(d => d.roomId)) return prev;
+      return autoDistribute(prev.length || 1, clientCount, prev);
+    });
+  }, [clientCount, salon.id, needsRoom]);
 
   // Therapist count
   const therapistCount = (() => {
@@ -3154,11 +3212,22 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
 
   const generateSegments = () => {
     const startM = timeToMins(validStartTime);
-    const effectiveRoom = clientCount >= 3 ? (roomAllocation?.[0]?.room.id || "") : validRoomId;
+    const dist = roomDistribution.filter(d => d.roomId && d.clientsInRoom > 0);
+
+    // Slice a flat masters list across rooms by ratio (clientsInRoom × therapistsRequired)
+    const sliceMastersByRoom = (flatMasters, therRequired) => {
+      const result = [];
+      let cursor = 0;
+      for (const d of dist) {
+        const need = (d.clientsInRoom || 0) * (therRequired || 1);
+        result.push(flatMasters.slice(cursor, cursor + need));
+        cursor += need;
+      }
+      return result;
+    };
 
     if (bookingType === "single") {
       if (perClientProcs && perClientProcs.length > 0) {
-        // Per-client mode: different procedures per person, same room/time block
         const maxDuration = Math.max(...perClientProcs.map(p => p?.duration || 0));
         const endM = startM + maxDuration;
         const allSauna = perClientProcs.every(p => p?.category === "sauna");
@@ -3167,36 +3236,71 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
         const procedureName = uniqueNames.join(" + ");
         const assignedMasterIds = masters.filter(m => m);
         const totalTherapists = perClientProcs.filter(p => p && p.category !== "sauna" && p.category !== "peeling").reduce((sum, p) => sum + (p?.therapistsRequired || 0), 0);
-        const segs = [{
-          procedureId: perClientProcs[0]?.id || null,
-          procedureName,
-          startTime: validStartTime, endTime: minsToTime(endM),
-          roomId: allSauna ? null : effectiveRoom,
-          therapistCount: totalTherapists,
-          resourceType: allSauna ? "sauna" : "room",
-          masterIds: anySauna && allSauna ? [] : assignedMasterIds,
-          clientProcedureIds: clientProcedureIds.slice(0, clientCount),
-        }];
-        return {
-          segments: segs,
-          totalStartTime: validStartTime,
-          totalEndTime: minsToTime(endM + salon.bufferMinutes),
-        };
+
+        if (allSauna) {
+          return {
+            segments: [{
+              procedureId: perClientProcs[0]?.id || null,
+              procedureName,
+              startTime: validStartTime, endTime: minsToTime(endM),
+              roomId: null,
+              therapistCount: totalTherapists,
+              resourceType: "sauna",
+              masterIds: anySauna && allSauna ? [] : assignedMasterIds,
+              clientProcedureIds: clientProcedureIds.slice(0, clientCount),
+            }],
+            totalStartTime: validStartTime,
+            totalEndTime: minsToTime(endM + salon.bufferMinutes),
+          };
+        }
+        // Per-client mode with possible multi-room split
+        let cursor = 0;
+        const segs = dist.map(d => {
+          const slice = clientProcedureIds.slice(cursor, cursor + d.clientsInRoom);
+          cursor += d.clientsInRoom;
+          const sliceProcs = slice.map(pid => activeProcedures.find(p => p.id === pid)).filter(Boolean);
+          const sliceTher = sliceProcs.filter(p => p.category !== "sauna" && p.category !== "peeling").reduce((s, p) => s + (p?.therapistsRequired || 0), 0);
+          return {
+            procedureId: perClientProcs[0]?.id || null,
+            procedureName,
+            startTime: validStartTime, endTime: minsToTime(endM),
+            roomId: d.roomId,
+            clientsInRoom: d.clientsInRoom,
+            therapistCount: sliceTher,
+            resourceType: "room",
+            masterIds: assignedMasterIds, // simple: shared list across rooms
+            clientProcedureIds: slice,
+          };
+        });
+        return { segments: segs, totalStartTime: validStartTime, totalEndTime: minsToTime(endM + salon.bufferMinutes) };
       }
 
       if (!selectedProc) return null;
       const endM = startM + selectedProc.duration;
       const isSauna = selectedProc.category === "sauna";
       const assignedMasterIds = masters.filter(m => m);
-      const segs = [{
-        procedureId: selectedProc.id, procedureName: selectedProc.name,
-        startTime: validStartTime, endTime: minsToTime(endM),
-        roomId: isSauna ? null : effectiveRoom,
-        therapistCount: isSauna ? 0 : clientCount * selectedProc.therapistsRequired,
-        resourceType: isSauna ? "sauna" : "room",
-        masterIds: isSauna ? [] : assignedMasterIds,
-      }];
-      // Add peeling segment if sauna + peeling checkbox
+      let segs;
+      if (isSauna) {
+        segs = [{
+          procedureId: selectedProc.id, procedureName: selectedProc.name,
+          startTime: validStartTime, endTime: minsToTime(endM),
+          roomId: null,
+          therapistCount: 0,
+          resourceType: "sauna",
+          masterIds: [],
+        }];
+      } else {
+        const sliced = sliceMastersByRoom(assignedMasterIds, selectedProc.therapistsRequired);
+        segs = dist.map((d, i) => ({
+          procedureId: selectedProc.id, procedureName: selectedProc.name,
+          startTime: validStartTime, endTime: minsToTime(endM),
+          roomId: d.roomId,
+          clientsInRoom: d.clientsInRoom,
+          therapistCount: d.clientsInRoom * selectedProc.therapistsRequired,
+          resourceType: "room",
+          masterIds: sliced[i] || [],
+        }));
+      }
       if (isSauna && withPeeling && salon.hasPeeling) {
         const pMasters = Math.min(peelingCount, salon.peelingMastersMax || 2);
         const pDuration = Math.ceil(peelingCount / pMasters) * (salon.peelingTimePerPerson || 30);
@@ -3246,21 +3350,32 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
       const isSauna = proc.category === "sauna";
       if (isSauna) saunaStartM = currentM;
 
-      // Per-step master assignment: each massage step gets its own masters from comboStepMasters[massageStepIdx]
-      const stepMasterIds = isSauna ? [] : (
-        Array.isArray(comboStepMasters[massageStepIdx])
-          ? comboStepMasters[massageStepIdx].filter(m => m)
-          : []
-      );
-      segments.push({
-        procedureId: proc.id, procedureName: proc.name,
-        startTime: minsToTime(currentM), endTime: minsToTime(endM),
-        roomId: isSauna ? null : effectiveRoom,
-        therapistCount: isSauna ? 0 : clientCount * (proc.therapistsRequired || 1),
-        resourceType: isSauna ? "sauna" : "room",
-        masterIds: stepMasterIds,
-      });
-      if (!isSauna) massageStepIdx++;
+      if (isSauna) {
+        segments.push({
+          procedureId: proc.id, procedureName: proc.name,
+          startTime: minsToTime(currentM), endTime: minsToTime(endM),
+          roomId: null, therapistCount: 0,
+          resourceType: "sauna",
+          masterIds: [],
+        });
+      } else {
+        const flatStepMasters = Array.isArray(comboStepMasters[massageStepIdx])
+          ? comboStepMasters[massageStepIdx].filter(m => m) : [];
+        const sliced = sliceMastersByRoom(flatStepMasters, proc.therapistsRequired || 1);
+        for (let i = 0; i < dist.length; i++) {
+          const d = dist[i];
+          segments.push({
+            procedureId: proc.id, procedureName: proc.name,
+            startTime: minsToTime(currentM), endTime: minsToTime(endM),
+            roomId: d.roomId,
+            clientsInRoom: d.clientsInRoom,
+            therapistCount: d.clientsInRoom * (proc.therapistsRequired || 1),
+            resourceType: "room",
+            masterIds: sliced[i] || [],
+          });
+        }
+        massageStepIdx++;
+      }
       currentM = endM;
     }
 
@@ -3299,8 +3414,17 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     if (bookingType === "single" && !selectedProc)  { setErr("Выберите процедуру"); return; }
     if (bookingType === "combo"  && !selectedCombo) { setErr("Выберите комбо-пакет"); return; }
     if (timeSlots.length === 0) { setErr("Нет доступных временных слотов для этой процедуры"); return; }
-    if (needsRoom && eligibleRooms.length === 0 && clientCount < 3)
-      { setErr("Нет кабинок с 2 кроватями для " + clientCount + " клиентов"); return; }
+    if (needsRoom) {
+      const validDist = roomDistribution.filter(d => d.roomId && d.clientsInRoom > 0);
+      const sum = validDist.reduce((a, d) => a + d.clientsInRoom, 0);
+      if (sum !== clientCount) { setErr(`Распределите всех ${clientCount} клиентов по комнатам (сейчас ${sum})`); return; }
+      const ids = validDist.map(d => d.roomId);
+      if (new Set(ids).size !== ids.length) { setErr("Одна комната выбрана несколько раз"); return; }
+      for (const d of validDist) {
+        const room = salon.rooms.find(r => r.id === d.roomId);
+        if (room && d.clientsInRoom > room.beds) { setErr(`${room.name}: ${d.clientsInRoom} клиентов, но только ${room.beds} мест`); return; }
+      }
+    }
     if (hasValidationErrors) { setErr("Исправьте ошибки валидации"); return; }
     if (!segResult) { setErr("Ошибка генерации записи"); return; }
     setShowConfirm(true);
@@ -3740,32 +3864,61 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           </div>
         </div>
 
-        {/* Room */}
+        {/* Rooms */}
         {needsRoom && (
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Кабинка</label>
-            {clientCount >= 3 && roomAllocation ? (
-              <div style={{ padding: "8px 12px", borderRadius: 8, backgroundColor: C.gridBg,
-                border: `1px solid ${C.border}`, color: C.textMain, fontSize: 13 }}>
-                {roomAllocation.map((a, i) => (
-                  <span key={i}>{i > 0 && " + "}{a.room.name} ({a.count} чел.)</span>
-                ))}
-              </div>
-            ) : eligibleRooms.length > 0 ? (
-              <select value={validRoomId} onChange={e => setRoomId(e.target.value)}
-                style={{ ...inputStyle(), cursor: "pointer" }}>
-                {eligibleRooms.map(r => (
-                  <option key={r.id} value={r.id} style={{ backgroundColor: C.card }}>
-                    {r.name} ({r.beds} кр.) {r.id === eligibleRooms[0]?.id ? "— авто" : ""}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div style={{ padding: "8px 12px", borderRadius: 8, backgroundColor: "#EF444411",
-                border: "1px solid #EF4444", color: "#F87171", fontSize: 12 }}>
-                Нет кабинок с 2 кроватями для {clientCount} клиентов
+            <label style={labelStyle}>Кабинки</label>
+            {clientCount >= 2 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                <span style={{ fontSize: 12, color: C.textDarkSub }}>Количество комнат:</span>
+                <button type="button" onClick={() => setRoomDistribution(prev => prev.length > 1 ? autoDistribute(prev.length - 1, clientCount, prev.slice(0, -1)) : prev)}
+                  style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.borderLight}`, background: "transparent", color: C.textDark, cursor: "pointer" }}>−</button>
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.textDark, minWidth: 16, textAlign: "center" }}>{roomDistribution.length}</span>
+                <button type="button" onClick={() => setRoomDistribution(prev => prev.length < Math.min(clientCount, salon.rooms.length) ? autoDistribute(prev.length + 1, clientCount, prev) : prev)}
+                  style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.borderLight}`, background: "transparent", color: C.textDark, cursor: "pointer" }}>+</button>
+                <span style={{ fontSize: 11, color: C.textDarkSub, marginLeft: 8 }}>
+                  Всего: {roomDistribution.reduce((a, d) => a + (d.clientsInRoom || 0), 0)} / {clientCount}
+                </span>
               </div>
             )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {roomDistribution.map((dist, i) => {
+                const usedIds = new Set(roomDistribution.map((d, j) => j !== i ? d.roomId : null).filter(Boolean));
+                const minBeds = clientCount >= 2 ? 1 : 1;
+                const eligible = salon.rooms.filter(r => !usedIds.has(r.id) && r.beds >= minBeds);
+                const room = salon.rooms.find(r => r.id === dist.roomId);
+                const maxClientsInRoom = room?.beds || 1;
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <select value={dist.roomId}
+                      onChange={e => setRoomDistribution(prev => prev.map((d, j) => j === i ? { ...d, roomId: e.target.value } : d))}
+                      style={{ ...inputStyle(), cursor: "pointer", flex: 1 }}>
+                      {!dist.roomId && <option value="" style={{ backgroundColor: C.cardLight }}>—</option>}
+                      {eligible.map(r => (
+                        <option key={r.id} value={r.id} style={{ backgroundColor: C.cardLight }}>
+                          {r.name} ({r.beds} кр.)
+                        </option>
+                      ))}
+                      {dist.roomId && !eligible.find(r => r.id === dist.roomId) && room && (
+                        <option value={dist.roomId} style={{ backgroundColor: C.cardLight }}>{room.name} ({room.beds} кр.)</option>
+                      )}
+                    </select>
+                    {clientCount >= 2 && (
+                      <>
+                        <span style={{ fontSize: 11, color: C.textDarkSub }}>клиентов:</span>
+                        <select value={dist.clientsInRoom}
+                          onChange={e => setRoomDistribution(prev => prev.map((d, j) => j === i ? { ...d, clientsInRoom: parseInt(e.target.value, 10) || 0 } : d))}
+                          style={{ ...inputStyle(), cursor: "pointer", width: 70 }}>
+                          {Array.from({ length: maxClientsInRoom + 1 }, (_, n) => (
+                            <option key={n} value={n} style={{ backgroundColor: C.cardLight }}>{n}</option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
             {fieldErrors("room").map((e, i) => (
               <div key={i} style={{ color: "#F87171", fontSize: 12, marginTop: 4 }}>{e.message}</div>
             ))}
@@ -4073,9 +4226,22 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
   const overdue = isBookingOverdue(booking);
   const statusCfg = overdue ? OVERDUE_CFG : (STATUS_CFG[booking.status] || STATUS_CFG.booked);
 
-  // For single procedure — find room name
-  const roomSeg = segments.find(s => s.resourceType === "room" && s.roomId);
-  const roomName = roomSeg ? (salon.rooms.find(r => r.id === roomSeg.roomId)?.name || roomSeg.roomId) : null;
+  // Rooms used by this booking (deduped — combo reuses same rooms across steps)
+  const roomDist = (() => {
+    const seen = new Map();
+    for (const s of segments) {
+      if (s.resourceType === "room" && s.roomId && !seen.has(s.roomId)) {
+        seen.set(s.roomId, s.clientsInRoom || booking.clientCount || 1);
+      }
+    }
+    return [...seen].map(([rid, c]) => ({
+      name: salon.rooms.find(r => r.id === rid)?.name || rid,
+      clients: c,
+    }));
+  })();
+  const roomName = roomDist.length > 0
+    ? roomDist.map(r => booking.clientCount >= 2 ? `${r.name} (${r.clients})` : r.name).join(", ")
+    : null;
 
   const divider = <div style={{ height: 1, backgroundColor: C.border, margin: "16px 0" }} />;
 
