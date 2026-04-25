@@ -4360,7 +4360,12 @@ function ScheduleScreen({ activeSalonId, salons, procedures, combos, onShowToast
       if (!cancelled) setMonthBookings((bkgs || []).map(b => {
         let fixed = b;
         if ((fixed.discount || 0) > 0 && !fixed.basePrice) fixed = { ...fixed, basePrice: (fixed.totalPrice || 0) + (fixed.discount || 0) };
-        if (fixed.paymentMethod === "cert_dep") fixed = { ...fixed, paymentMethod: "certificate", certAmount: fixed.totalPrice || 0 };
+        if (fixed.paymentMethod === "cert_dep") fixed = { ...fixed, paymentMethod: "certificate", certAmount: fixed.totalPrice || 0, totalPrice: 0 };
+        // Legacy cert bookings where totalPrice didn't account for cert: fix on the fly
+        if (fixed.paymentMethod === "certificate" && (fixed.certAmount || 0) > 0 && fixed.basePrice) {
+          const expected = Math.max(0, fixed.basePrice - (fixed.discount || 0) - Math.min(fixed.certAmount, fixed.basePrice - (fixed.discount || 0)));
+          if (fixed.totalPrice !== expected) fixed = { ...fixed, totalPrice: expected };
+        }
         return fixed;
       }));
     })();
@@ -5551,9 +5556,14 @@ function DashboardScreen({ salons }) {
       if ((fixed.discount || 0) > 0 && !fixed.basePrice) {
         fixed = { ...fixed, basePrice: (fixed.totalPrice || 0) + (fixed.discount || 0) };
       }
-      // Legacy cert_dep → certificate with full coverage
+      // Legacy cert_dep → certificate with full coverage (totalPrice was full price, cert covers it all)
       if (fixed.paymentMethod === "cert_dep") {
-        fixed = { ...fixed, paymentMethod: "certificate", certAmount: fixed.totalPrice || 0 };
+        fixed = { ...fixed, paymentMethod: "certificate", certAmount: fixed.totalPrice || 0, totalPrice: 0 };
+      }
+      // Legacy cert bookings where totalPrice didn't account for cert
+      if (fixed.paymentMethod === "certificate" && (fixed.certAmount || 0) > 0 && fixed.basePrice) {
+        const expected = Math.max(0, fixed.basePrice - (fixed.discount || 0) - Math.min(fixed.certAmount, fixed.basePrice - (fixed.discount || 0)));
+        if (fixed.totalPrice !== expected) fixed = { ...fixed, totalPrice: expected };
       }
       return fixed;
     });
