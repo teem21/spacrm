@@ -5283,23 +5283,34 @@ function JournalScreen({ salons, onShowToast }) {
                       {totalDuration(b)} м
                     </td>
                     <td style={{ padding: "16px 20px" }}>
-                      {(b.discount || 0) > 0 ? (
-                        <>
-                          <div style={{ fontSize: 14, fontWeight: 900, color: C.textMain }}>
-                            {(b.basePrice || ((b.totalPrice || 0) + (b.discount || 0))).toLocaleString()} ₸
-                          </div>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: "#7B68AE", marginTop: 2 }}>
-                            −{b.discount.toLocaleString()} ₸ скидка
-                          </div>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: C.accent, marginTop: 2 }}>
-                            Итого: {b.totalPrice.toLocaleString()} ₸
-                          </div>
-                        </>
-                      ) : (
-                        <div style={{ fontSize: 14, fontWeight: 900, color: C.textMain }}>
-                          {b.totalPrice.toLocaleString()} ₸
-                        </div>
-                      )}
+                      {(() => {
+                        const disc = b.discount || 0;
+                        const cert = b.certAmount || 0;
+                        const base = b.basePrice || ((b.totalPrice || 0) + disc + cert);
+                        const showStruck = disc > 0 || cert > 0;
+                        return (
+                          <>
+                            {showStruck && (
+                              <div style={{ fontSize: 14, fontWeight: 900, color: C.textMain }}>
+                                {base.toLocaleString()} ₸
+                              </div>
+                            )}
+                            {disc > 0 && (
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#7B68AE", marginTop: 2 }}>
+                                −{disc.toLocaleString()} ₸ скидка
+                              </div>
+                            )}
+                            {cert > 0 && (
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#B8860B", marginTop: 2 }}>
+                                −{cert.toLocaleString()} ₸ сертификат
+                              </div>
+                            )}
+                            <div style={{ fontSize: showStruck ? 12 : 14, fontWeight: showStruck ? 800 : 900, color: showStruck ? C.accent : C.textMain, marginTop: showStruck ? 2 : 0 }}>
+                              {showStruck ? "Итого: " : ""}{(b.totalPrice || 0).toLocaleString()} ₸
+                            </div>
+                          </>
+                        );
+                      })()}
                       <div style={{ fontSize: 10, color: C.textSub, fontWeight: 800, marginTop: 2 }}>{PAYMENT_LABEL[b.paymentMethod] || "НАЛ"}</div>
                     </td>
                     <td style={{ padding: "16px 20px" }}>
