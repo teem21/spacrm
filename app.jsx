@@ -3692,7 +3692,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
           </div>
           <div>
             <label style={labelStyle}>Статус</label>
-            <input type="text" value={clientStatus} placeholder="VIP / постоянный / новичок"
+            <input type="text" value={clientStatus}
               onChange={e => setClientStatus(e.target.value)} style={inputStyle()} />
           </div>
         </div>
