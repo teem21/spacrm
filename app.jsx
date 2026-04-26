@@ -3011,6 +3011,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
   const eb = editBooking;
   const [clientName, setClientName] = useState(eb?.clientName || "");
   const [clientPhone, setClientPhone] = useState(eb?.clientPhone || "");
+  const [clientStatus, setClientStatus] = useState(eb?.clientStatus || "");
   const [clientCount, setClientCount] = useState(eb?.clientCount || 1);
   const [bookingType, setBookingType] = useState(eb ? (eb.bookingType === "combo" ? "combo" : "single") : "single");
   const [procedureId, setProcedureId] = useState(eb?.procedureId || bookableProcedures[0]?.id || "");
@@ -3588,7 +3589,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
     const newYm = date.slice(0, 7);
     const bookingFields = {
       salonId: salon.id, date,
-      clientName: clientName.trim(), clientPhone: clientPhone.trim(), clientCount,
+      clientName: clientName.trim(), clientPhone: clientPhone.trim(), clientStatus: clientStatus.trim(), clientCount,
       bookingType: bookingType === "single" ? "single_procedure" : "combo",
       procedureId: bookingType === "single" && clientCount === 1 ? (selectedProc?.id || null) : null,
       clientProcedureIds: bookingType === "single" && clientCount > 1 ? clientProcedureIds.slice(0, clientCount) : undefined,
@@ -3678,7 +3679,7 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
         </div>
 
         {/* Client info */}
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 12 : 16, marginBottom: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: isMobile ? 12 : 16, marginBottom: 20 }}>
           <div>
             <label style={labelStyle}>Имя клиента *</label>
             <input type="text" value={clientName} placeholder="Иван Иванов"
@@ -3688,6 +3689,11 @@ function BookingModal({ salon, procedures, combos, initialDate, initialTime, ini
             <label style={labelStyle}>Телефон *</label>
             <input type="text" value={clientPhone} placeholder="+7 700 123 45 67"
               onChange={e => setClientPhone(e.target.value)} style={inputStyle()} />
+          </div>
+          <div>
+            <label style={labelStyle}>Статус</label>
+            <input type="text" value={clientStatus} placeholder="VIP / постоянный / новичок"
+              onChange={e => setClientStatus(e.target.value)} style={inputStyle()} />
           </div>
         </div>
 
@@ -4445,8 +4451,12 @@ function BookingDetailsPanel({ booking, salon, procedures, onStatusChange, onDel
 
       <div style={{ padding: "32px", flex: 1 }}>
         {/* Client info */}
-        <div style={{ fontSize: 24, fontWeight: 800, color: C.textMain, marginBottom: 8, fontFamily: "'Poppins', sans-serif", letterSpacing: "-0.02em" }}>
+        <div style={{ fontSize: 24, fontWeight: 800, color: C.textMain, marginBottom: 8, fontFamily: "'Poppins', sans-serif", letterSpacing: "-0.02em", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           {booking.clientName}
+          {booking.clientStatus && (
+            <span style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 999,
+              backgroundColor: `${C.accent}22`, color: "#927000", letterSpacing: 0 }}>{booking.clientStatus}</span>
+          )}
         </div>
         <a href={`tel:${booking.clientPhone}`} style={{
           display: "inline-flex", alignItems: "center", gap: 8,
@@ -5207,6 +5217,11 @@ const getRowSegments = (row) => {
                                             <div style={{ flex: 1, padding: isMobile ? "4px 6px" : "6px 10px", display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0 }}>
                                               <div style={{ fontSize: 12, fontWeight: 800, color: isCompleted ? "#2D6A4F" : "#fff", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", lineHeight: 1.2 }}>
                                                 {seg.booking.clientName}
+                                                {seg.booking.clientStatus && (
+                                                  <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 8,
+                                                    backgroundColor: isCompleted ? "rgba(45,106,79,0.2)" : "rgba(255,255,255,0.25)",
+                                                    color: isCompleted ? "#2D6A4F" : "#fff", verticalAlign: "middle" }}>{seg.booking.clientStatus}</span>
+                                                )}
                                               </div>
                                               <div style={{ fontSize: 10, fontWeight: 500, color: isCompleted ? "#2D6A4Fcc" : "rgba(255,255,255,0.85)", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
                                                 {roomName && !isMobile ? `${roomName} · ` : ""}{seg.procedureName}
@@ -5348,6 +5363,7 @@ const getRowSegments = (row) => {
                                                   overflow: "hidden", textOverflow: "ellipsis",
                                                 }}>
                                                   {rs.booking.clientName}
+                                                  {rs.booking.clientStatus && <span style={{ marginLeft: 4, fontSize: 9, padding: "0 5px", borderRadius: 6, backgroundColor: "rgba(255,255,255,0.25)" }}>{rs.booking.clientStatus}</span>}
                                                   {!isMobile && ` · ${rs.startTime}–${rs.endTime}`}
                                                 </span>
                                               </div>
@@ -5604,7 +5620,13 @@ function JournalScreen({ salons, onShowToast }) {
                       <div style={{ fontSize: 11, color: C.textSub, fontWeight: 600 }}>{b.totalStartTime}</div>
                     </td>
                     <td style={{ padding: "16px 20px" }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: C.textMain }}>{b.clientName}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.textMain, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        {b.clientName}
+                        {b.clientStatus && (
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
+                            backgroundColor: `${C.accent}22`, color: "#927000" }}>{b.clientStatus}</span>
+                        )}
+                      </div>
                       <div style={{ fontSize: 12, color: C.textSub, fontWeight: 600 }}>{b.clientPhone}</div>
                     </td>
                     <td style={{ padding: "16px 20px" }}>
